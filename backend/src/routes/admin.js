@@ -10,7 +10,7 @@ router.post('/agents', wrap(async (req, res) => res.status(201).json(await agent
 router.put('/agents/:id', wrap(async (req, res) => res.json(await agentsSvc.update(req.params.id, req.body))));
 router.post('/agents/:id/password', wrap(async (req, res) => { await agentsSvc.setPassword(req.params.id, String(req.body.password || '')); res.json({ ok: true }); }));
 
-router.get('/params', wrap(async (req, res) => res.json({ defs: DEFS.map(({ def, ...d }) => d), values: await getParams() })));
+router.get('/params', wrap(async (req, res) => res.json({ defs: DEFS.map(({ def, ...d }) => ({ ...d, lines: def.split('\n').length })), values: await getParams() })));
 router.put('/params', wrap(async (req, res) => res.json(await setParams(req.body))));
 
 router.get('/contrats', wrap(async (req, res) => res.json({ contrats: await cs.contrats(), fonctions: await cs.fonctions() })));
