@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Pointage</title>
+
+  <!-- PWA : installation sur l'écran d'accueil -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#006b6c">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Pointage">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+  <style>
+    :root { --main: #006b6c; --accent: #62b232; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body { display: flex; flex-direction: column; font: 15px/1.45 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #1d2733; background: #fff; }
+
+    /* Bande d'invitation à installer (masquée par défaut, affichée par le JavaScript) */
+    .install-banner { display: none; align-items: center; gap: 12px; margin: 8px; padding: 10px 12px; border-radius: 14px; color: #fff; background: linear-gradient(135deg, var(--main), var(--accent)); box-shadow: 0 2px 10px rgba(0, 0, 0, .18); }
+    .install-icon { width: 40px; height: 40px; border-radius: 10px; background: #fff; flex: none; }
+    .install-text { display: grid; gap: 1px; flex: 1; min-width: 0; }
+    .install-text strong { font-size: 1rem; }
+    .install-sub, .install-ios { font-size: .85rem; opacity: .95; }
+    .install-ios[hidden] { display: none; }
+    #install-btn { flex: none; padding: 9px 16px; border: 0; border-radius: 10px; background: #fff; color: var(--main); font: inherit; font-weight: 700; cursor: pointer; }
+    #install-btn:hover { background: #f1fafa; }
+    .install-close { flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: #fff; font-size: 1.4rem; line-height: 1; opacity: .75; cursor: pointer; }
+    .install-close:hover { opacity: 1; background: rgba(255, 255, 255, .18); }
+    @media (max-width: 640px) { .install-sub { display: none; } }
+
+    /* Application (Apps Script) affichée en plein écran */
+    #app { flex: 1; width: 100%; border: 0; }
+    #app[hidden] { display: none; }
+
+    /* Première configuration : adresse de l'application */
+    .setup { max-width: 460px; margin: auto; padding: 24px 16px; }
+    .setup[hidden] { display: none; }
+    .setup img { width: 72px; height: 72px; }
+    .setup input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #c9d1d9; border-radius: 8px; font: inherit; }
+    .setup button { padding: 10px 16px; border: 0; border-radius: 8px; background: var(--main); color: #fff; font: inherit; cursor: pointer; }
+    .setup .err { color: #b3261e; min-height: 1.4em; }
+    .setup small { display: block; color: #6b7785; }
+  </style>
+</head>
+<body>
+
+  <!-- Bande « Installer l'application » -->
+  <div id="install-banner" class="install-banner" role="region" aria-label="Installer l'application">
+    <img class="install-icon" src="icon-192.png" alt="">
+    <div class="install-text">
+      <strong>Installer Pointage</strong>
+      <span class="install-sub">Accès direct depuis votre écran d'accueil, en plein écran.</span>
+      <span class="install-ios" hidden>Touchez <b>Partager</b> <span aria-hidden="true">⬆️</span> puis <b>« Sur l'écran d'accueil »</b>.</span>
+    </div>
+    <button id="install-btn" type="button">Installer</button>
+    <button id="install-close" class="install-close" type="button" aria-label="Fermer">&times;</button>
+  </div>
+
+  <!-- Première visite : adresse de l'application Apps Script -->
+  <section id="setup" class="setup" hidden>
+    <img src="icon-192.png" alt="">
+    <h1>Pointage</h1>
+    <p>Collez l'adresse de votre application (déploiement Apps Script, se termine par <code>/exec</code>).</p>
+    <form id="setup-form">
+      <input id="setup-url" type="url" placeholder="https://script.google.com/macros/s/…/exec" required autocomplete="off">
+      <div id="setup-err" class="err" role="alert"></div>
+      <button type="submit">Ouvrir l'application</button>
+      <small>Cette adresse est mémorisée sur cet appareil.</small>
+    </form>
+  </section>
+
+  <iframe id="app" title="Pointage" hidden allow="clipboard-write; fullscreen"></iframe>
+
+  <script>
+  // ---------- Application : adresse du déploiement Apps Script ----------
+  (function () {
+    var APP_URL = ''; // facultatif : écrire ici l'adresse /exec pour la figer pour tous les utilisateurs
+    var URL_RE = /^https:\/\/script\.google\.com\/(a\/macros\/[\w.-]+|macros)\/s\/[\w-]+\/(exec|dev)$/;
+    var store = { get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } }, del: function (k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } } };
+    if (/[?&]reset\b/.test(location.search)) store.del('app-url');
+    var url = APP_URL || store.get('app-url');
+    var frame = document.getElementById('app');
+    var setup = document.getElementById('setup');
+    if (url && URL_RE.test(url)) { frame.src = url; frame.hidden = false; } else { setup.hidden = false; }
+    document.getElementById('setup-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var v = document.getElementById('setup-url').value.trim().replace(/[?#].*$/, '');
+      if (!URL_RE.test(v)) { document.getElementById('setup-err').textContent = "Adresse non reconnue : elle doit commencer par https://script.google.com/macros/s/ et finir par /exec."; return; }
+      store.set('app-url', v); frame.src = v; frame.hidden = false; setup.hidden = true;
+    });
+  })();
+
+  // ---------- PWA : service worker + bande d'installation ----------
+  (function () {
+    var banner = document.getElementById('install-banner');
+    var btn = document.getElementById('install-btn');
+    var close = document.getElementById('install-close');
+    var iosHint = banner.querySelector('.install-ios');
+    var KEY = 'pwa-install-dismissed';
+    var SNOOZE_MS = 7 * 24 * 3600 * 1000; // la bande ne revient qu'après 7 jours si on la ferme
+    var deferred = null;
+
+    function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+    function set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } }
+    function snoozed() { var t = Number(get(KEY)); return t && Date.now() - t < SNOOZE_MS; }
+    function show() { if (!snoozed()) banner.style.display = 'flex'; }
+    function hide() { banner.style.display = 'none'; }
+    var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+    var ua = navigator.userAgent;
+    var iOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var safari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+
+    // 1. Service worker (nécessaire pour l'installation sous Chrome / Edge)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () { /* HTTPS requis */ }); });
+    }
+    if (standalone) return; // déjà installée : pas de bande
+
+    // 2. Chrome / Edge / Android : événement d'installation natif
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      deferred = e;
+      btn.hidden = false; iosHint.hidden = true;
+      show();
+    });
+    btn.addEventListener('click', function () {
+      if (!deferred) return;
+      deferred.prompt();
+      Promise.resolve(deferred.userChoice).then(function () { deferred = null; hide(); });
+    });
+    window.addEventListener('appinstalled', function () { deferred = null; hide(); });
+
+    // 3. iPhone / iPad : pas d'événement ni de bouton natif → instruction (Safari uniquement)
+    if (iOS) {
+      btn.hidden = true;
+      if (safari) { iosHint.hidden = false; banner.querySelector('.install-sub').style.display = 'none'; show(); }
+    }
+
+    // 4. Fermer la bande
+    close.addEventListener('click', function () { set(KEY, String(Date.now())); hide(); });
+  })();
+  </script>
+</body>
+</html>

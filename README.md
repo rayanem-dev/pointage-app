@@ -76,3 +76,13 @@ Charge la fiche d'août 2026, le contrat et l'attachement N°16 d'exemple (stock
 * Les documents déposés (fiches de paie…) sont stockés sur le disque du serveur (`UPLOAD_DIR`). Sur un hébergement à disque éphémère, prévoir un volume persistant.
 * Le pilote Google Sheets n'a pas pu être testé contre un vrai classeur dans l'environnement de développement (réseau restreint) : le reste est testé avec le pilote local, qui expose la même interface.
 * Pointer sur un agent écrit tout l'onglet du mois (et des mois suivants pour les cumuls) : adapté à quelques dizaines d'agents.
+
+## Installer sur l'écran d'accueil (PWA)
+
+À la racine du dépôt : `index.html`, `manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png` — un site **statique HTML/JS, sans framework**, qui affiche l'application Apps Script en plein écran et propose l'installation.
+
+* **Publier** : GitHub → *Settings → Pages* → source « Deploy from a branch », dossier `/ (root)`. L'adresse obtenue (HTTPS) est celle à donner aux utilisateurs.
+* **Première visite** : la page demande l'adresse `/exec` du déploiement Apps Script (mémorisée sur l'appareil ; `?reset` pour la changer). Pour la figer, renseigner `APP_URL` en haut du script d'`index.html`.
+* **Chrome / Edge / Android** : une bande « Installer Pointage » avec un bouton **Installer** apparaît (fermeture : elle ne revient qu'après 7 jours).
+* **iPhone / iPad** : seul **Safari** permet l'ajout, sans bouton natif — la bande affiche l'instruction « Partager → Sur l'écran d'accueil ».
+* Rien n'est affiché si l'application est déjà installée. Le service worker (`sw.js`) ne met rien en cache : il sert uniquement à rendre l'installation possible.
