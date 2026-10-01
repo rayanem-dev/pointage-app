@@ -1,5 +1,8 @@
 # Pointage ACOSCO
 
+> **Deux versions** : `appscript/` (Google Apps Script — **version recommandée**, 100 % Google, avec demandes groupées par thème, accès Setup au choix, champ Prestataire et coquille vide) et `backend/` + `frontend/` (Node.js + React, version initiale). Voir [`appscript/README.md`](appscript/README.md).
+
+
 Application web de gestion des pointages du personnel détaché (rotation T / R), avec **Google Sheets comme base de données** et génération des documents à valider avec le client : **fiche de pointage, attachement, facture** (Excel et PDF).
 
 ## Les trois espaces

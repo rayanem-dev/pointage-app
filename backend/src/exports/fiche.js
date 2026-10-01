@@ -35,7 +35,7 @@ async function xlsx(data) {
     }
     const rng = `C${row}:AG${row}`;
     [['T', 36, r.mois.T], ['R', 37, r.mois.R], ['ABS', 38, r.mois.ABS]].forEach(([k, col, v]) => {
-      const x = ws.getCell(row, col); x.value = { formula: `COUNTIF(${rng},"${k}")`, result: v }; x.border = border; x.alignment = { horizontal: 'center' };
+      const x = ws.getCell(row, col); x.value = data.prevu ? v : { formula: `COUNTIF(${rng},"${k}")`, result: v }; x.border = border; x.alignment = { horizontal: 'center' };
     });
   });
   const last = H + 2 + data.rows.length + 1;

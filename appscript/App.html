@@ -1,0 +1,604 @@
+<script>
+(function () {
+'use strict';
+var S = { token: null, user: null, params: null, canSetup: false, info: null };
+try { S.token = sessionStorage.getItem('tk'); } catch (e) { /* stockage indisponible */ }
+
+// ---------- utilitaires ----------
+function h(tag, props) {
+  var e = document.createElement(tag);
+  var kids = Array.prototype.slice.call(arguments, 2);
+  var value;
+  Object.keys(props || {}).forEach(function (k) {
+    var v = props[k];
+    if (v == null || v === false) return;
+    if (k === 'class') e.className = v;
+    else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), v);
+    else if (k === 'value') value = v;
+    else if (k === 'checked' || k === 'disabled' || k === 'selected') e[k] = !!v;
+    else e.setAttribute(k, v === true ? '' : v);
+  });
+  kids.flat(Infinity).forEach(function (c) { if (c == null || c === false) return; e.append(c.nodeType ? c : document.createTextNode(String(c))); });
+  if (value !== undefined) e.value = value;
+  return e;
+}
+var $app = function () { return document.getElementById('app'); };
+var MOIS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+var WEEK = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+var todayStr = function () { var d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+var thisMonth = function () { return todayStr().slice(0, 7); };
+var addDays = function (s, n) { var d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+var shiftMonth = function (k, n) { var y = +k.slice(0, 4); var m = +k.slice(5, 7); var t = y * 12 + m - 1 + n; return Math.floor(t / 12) + '-' + pad((t % 12) + 1); };
+var monthLabel = function (k) { return MOIS[+k.slice(5, 7) - 1] + ' ' + k.slice(0, 4); };
+var frDate = function (s) { return s ? s.slice(8, 10) + '/' + s.slice(5, 7) + '/' + s.slice(0, 4) : ''; };
+var frDateTime = function (s) { return s ? new Date(s).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : ''; };
+var signed = function (n) { return n > 0 ? '+' + n : String(n); };
+var plural = function (n, w) { return n + ' ' + w + (n > 1 ? 's' : ''); };
+var STATUS_LABEL = { T: 'En travail', R: 'En congé (repos)', ABS: 'Absent' };
+var STATUT_LABEL = { en_attente: 'En attente', envoyee: 'Envoyée à la direction', acceptee: 'Acceptée', refusee: 'Refusée', traitee: 'Traitée' };
+
+function call(name) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  return new Promise(function (resolve, reject) {
+    google.script.run
+      .withSuccessHandler(function (r) {
+        if (r && r.ok) return resolve(r.data);
+        if (r && r.code === 'SESSION') sessionEnd();
+        return reject(new Error((r && r.error) || 'Erreur'));
+      })
+      .withFailureHandler(function (e) { reject(new Error((e && e.message) || String(e))); })
+      .rpc(S.token, name, args);
+  });
+}
+function sessionEnd() { S.token = null; S.user = null; try { sessionStorage.removeItem('tk'); } catch (e) { /* ignore */ } render(); }
+function saveFile(r) {
+  var bin = atob(r.base64); var bytes = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+  var a = h('a', { href: URL.createObjectURL(new Blob([bytes], { type: r.mime })), download: r.nom });
+  document.body.append(a); a.click(); a.remove();
+}
+function fileToBase64(file) {
+  return new Promise(function (resolve, reject) {
+    var fr = new FileReader();
+    fr.onload = function () { resolve(String(fr.result).split(',')[1]); };
+    fr.onerror = function () { reject(new Error('Lecture du fichier impossible')); };
+    fr.readAsDataURL(file);
+  });
+}
+function msgBox() { var m = h('p', { class: 'msg', hidden: true, role: 'status' }); m.show = function (text, ok) { m.hidden = false; m.className = 'msg ' + (ok === 'warn' ? 'warn' : ok ? 'ok' : 'err'); m.textContent = text; }; m.hide = function () { m.hidden = true; }; return m; }
+// Exécute une action async depuis un bouton : désactive, affiche le résultat.
+function act(btn, box, fn, okText) {
+  btn.disabled = true; box.hide();
+  return fn().then(function (r) { if (okText) box.show(typeof okText === 'function' ? okText(r) : okText, true); return r; })
+    .catch(function (e) { box.show(e.message, false); })
+    .then(function (r) { btn.disabled = false; return r; });
+}
+function field(label, input, cls) { return h('label', { class: cls || '' }, label, input); }
+function opts(list, valueKey, labelFn) { return list.map(function (x) { return h('option', { value: valueKey ? x[valueKey] : x }, labelFn ? labelFn(x) : x); }); }
+function chip(s, prevu) { return h('span', { class: 'chip st-' + s + (prevu ? ' prevu' : '') }, s); }
+function loading() { return h('p', { class: 'muted' }, 'Chargement…'); }
+
+// Page asynchrone : affiche « Chargement… » puis le contenu (ou l'erreur).
+function asyncBlock(promiseFn) {
+  var box = h('div', null, loading());
+  promiseFn().then(function (node) { box.replaceChildren(node); }).catch(function (e) { box.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  return box;
+}
+
+// ---------- connexion ----------
+function loginView() {
+  var email = h('input', { type: 'email', required: true, autocomplete: 'username' });
+  var pw = h('input', { type: 'password', required: true, autocomplete: 'current-password' });
+  var box = msgBox();
+  var btn = h('button', { class: 'primary' }, 'Se connecter');
+  var info = S.info || {};
+  var form = h('form', { class: 'card', onsubmit: function (ev) {
+    ev.preventDefault();
+    act(btn, box, function () { return call('login', email.value, pw.value); }).then(function (r) {
+      if (!r) return;
+      S.token = r.token; try { sessionStorage.setItem('tk', r.token); } catch (e) { /* ignore */ }
+      boot();
+    });
+  } },
+    h('h1', null, info.prestataire || 'Pointage'), h('p', { class: 'muted' }, 'Connectez-vous à votre espace'),
+    info.installed === false ? h('p', { class: 'msg warn' }, "Application non installée : le propriétaire du classeur doit lancer le menu « Pointage → Installer / mettre à jour la structure ».") : null,
+    field('Email', email), field('Mot de passe', pw), box, btn);
+  return h('div', { class: 'login' }, form);
+}
+
+// ---------- structure ----------
+var NAV = {
+  agent: [['#/', 'Accueil'], ['#/demandes', 'Mes demandes'], ['#/documents', 'Mes documents']],
+  chef: [['#/', 'Mon espace'], ['#/pointer', 'Pointer'], ['#/groupe', 'Mon groupe'], ['#/agents', 'Agents'], ['#/demandes', 'Demandes'], ['#/documents', 'Documents']],
+  admin: [['#/pointer', 'Pointer'], ['#/groupe', 'Pointage global'], ['#/agents', 'Agents'], ['#/demandes', 'Demandes'], ['#/documents', 'Documents'], ['#/exports', 'Exports']]
+};
+function applyColors() { Object.keys(S.params.colors).forEach(function (k) { document.documentElement.style.setProperty('--c-' + k, S.params.colors[k]); }); }
+var ROUTES = {
+  '/': function () { return S.user.role === 'admin' ? PointerPage() : HomePage(); },
+  '/demandes': function () { return DemandesPage(); }, '/documents': function () { return DocumentsPage(); },
+  '/pointer': function () { return PointerPage(); }, '/groupe': function () { return GroupePage(); },
+  '/agents': function () { return AgentsPage(); }, '/setup': function () { return SetupPage(); },
+  '/exports': function () { return ExportsPage(); }, '/motdepasse': function () { return PasswordPage(); }
+};
+var STAFF_ONLY = ['/pointer', '/groupe', '/agents', '/demandes-staff'];
+function render() {
+  var root = $app();
+  if (!S.user) { root.replaceChildren(loginView()); return; }
+  var role = S.user.role;
+  var links = NAV[role].slice();
+  if (S.canSetup) links.push(['#/setup', 'Setup']);
+  var path = (location.hash.replace(/^#/, '') || '/');
+  var here = '#' + path;
+  var allowed = links.map(function (l) { return l[0].replace('#', ''); }).concat(['/motdepasse']);
+  if (allowed.indexOf(path) < 0) path = role === 'admin' ? '/pointer' : '/';
+  var bar = h('header', { class: 'top' },
+    h('strong', { class: 'brand' }, S.params.prestataire || 'Pointage'),
+    h('nav', null, links.map(function (l) { return h('a', { href: l[0], class: l[0] === '#' + path ? 'on' : '' }, l[1]); })),
+    h('span', { class: 'who' }, S.user.nom, h('small', null, '(' + (role === 'chef' ? 'chef de groupe' : role) + ')'),
+      h('a', { href: '#/motdepasse' }, 'Mot de passe'),
+      h('button', { class: 'link', onclick: function () { call('logout').catch(function () {}).then(sessionEnd); } }, 'Déconnexion')));
+  var main = h('main', null);
+  root.replaceChildren(bar, main);
+  main.append(ROUTES[path]());
+  window.scrollTo(0, 0);
+}
+function boot() {
+  call('appInfo').catch(function () { return {}; }).then(function (info) {
+    S.info = info;
+    if (!S.token) return render();
+    return call('me').then(function (me) { S.user = me.user; S.canSetup = me.canSetup; S.params = me.params; applyColors(); render(); }).catch(function () { render(); });
+  });
+}
+window.addEventListener('hashchange', function () { if (S.user) render(); });
+
+// ---------- accueil de l'agent ----------
+function HomePage() {
+  var month = thisMonth();
+  var wrap = h('div', { style: 'display:grid;gap:16px' });
+  function load() {
+    wrap.replaceChildren(loading());
+    call('overview', month).then(function (o) { wrap.replaceChildren.apply(wrap, homeView(o)); }).catch(function (e) { wrap.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  }
+  function homeView(o) {
+    var a = o.aujourdhui; var c = o.cycle;
+    var todayCard;
+    if (a) {
+      var last = a.change ? addDays(a.change, -1) : null;
+      todayCard = h('section', { class: 'card today s-' + a.status },
+        h('h3', null, "Aujourd'hui — " + frDate(o.today)),
+        h('div', { class: 'big' }, STATUS_LABEL[a.status] + (a.prevu ? ' (prévu)' : '')),
+        a.status === 'ABS' ? h('div', { class: 'muted' }, 'Absence pointée.') : [
+          h('div', { class: 'days' }, 'Il vous reste ', h('b', null, plural(a.remaining, 'jour')), a.status === 'T' ? ' de travail' : ' de congé', " (aujourd'hui compris)" + (last ? ', jusqu\'au ' + frDate(last) : '') + '.'),
+          a.change ? h('div', { class: 'muted' }, (a.changeStatus === 'R' ? 'Départ en congé le ' : 'Reprise du travail le ') + frDate(a.change) + ' (rotation ' + o.rotation.travail + ' T / ' + o.rotation.repos + ' R).') : null
+        ]);
+    } else {
+      todayCard = h('section', { class: 'card today' }, h('h3', null, "Aujourd'hui — " + frDate(o.today)), h('div', { class: 'muted' }, 'Aucun pointage enregistré : votre situation sera calculée dès le premier pointage par votre chef de groupe.'));
+    }
+    var stat = function (label, value, cls) { return h('div', { class: 'card stat ' + (cls || '') }, h('b', null, value), h('small', null, label)); };
+    var pct = c && c.total ? Math.min(100, Math.round(c.run / c.total * 100)) : 0;
+    var y = +month.slice(0, 4); var m = +month.slice(5, 7);
+    var offset = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7;
+    var cal = h('div', { class: 'cal' }, ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map(function (n) { return h('b', { class: 'calh' }, n); }),
+      Array.from({ length: offset }, function () { return h('span'); }),
+      o.grid.days.map(function (d, i) {
+        var s = d.statut || d.prevu; var date = month + '-' + pad(i + 1);
+        return h('span', { class: 'calday ' + (s ? 'st-' + s : '') + (!d.statut && s ? ' prevu' : '') + (date === o.today ? ' now' : '') }, h('small', null, i + 1), s);
+      }));
+    return [
+      h('section', { class: 'card' }, h('h2', null, 'Bonjour ' + o.agent.nom), h('p', { class: 'muted' }, [o.agent.fonction, o.agent.affectation, o.agent.contrat && 'Contrat ' + o.agent.contrat, o.chef && 'Chef de groupe : ' + o.chef.nom].filter(Boolean).join(' · '))),
+      todayCard,
+      h('div', { class: 'stats' }, stat('T ce mois', o.mois.T, 'st-T'), stat('CR ce mois', o.mois.R, 'st-R'), stat('ABS ce mois', o.mois.ABS, 'st-ABS'), stat('Total T', o.cumul.T), stat('Total CR', o.cumul.R), stat('Solde (T − CR)', signed(o.cumul.reliquat), o.cumul.reliquat < 0 ? 'neg' : 'pos')),
+      c && c.run ? h('section', { class: 'card' }, h('h3', null, 'Cycle en cours'),
+        h('p', null, chip(c.status), ' jour ', h('b', null, c.run), ' sur ' + c.total + (c.remaining > 0 ? ' — encore ' + plural(c.remaining, 'jour') : ' — cycle terminé')),
+        h('div', { class: 'bar' }, h('div', { class: 'st-' + c.status, style: 'width:' + pct + '%' })),
+        h('p', { class: 'muted' }, 'Prochain changement : ', h('b', null, frDate(c.next)), ' → ', chip(c.nextStatus, true))) : null,
+      h('section', { class: 'card' }, h('div', { class: 'toolbar' }, h('h3', null, o.label), monthNav(month, function (mk) { month = mk; load(); })), cal,
+        h('p', { class: 'legend' }, chip('T'), ' travail ', chip('R'), ' congé / repos ', chip('ABS'), ' absence ', chip('T', true), chip('R', true), ' prévus')),
+      h('div', { class: 'stats' },
+        h('a', { class: 'card tile', href: '#/demandes' }, h('b', null, o.demandes.en_attente), ' demande(s) en cours', h('small', null, o.demandes.total + ' au total · faire une demande')),
+        h('a', { class: 'card tile', href: '#/documents' }, h('b', null, o.documents), ' document(s)', h('small', null, "Fiches d'émoluments, attestations, ATS…")))
+    ];
+  }
+  load();
+  return wrap;
+}
+function monthNav(month, onChange) {
+  var input = h('input', { type: 'month', value: month, onchange: function () { if (input.value) onChange(input.value); } });
+  return h('div', { class: 'monthnav' }, h('button', { type: 'button', 'aria-label': 'Mois précédent', onclick: function () { onChange(shiftMonth(input.value || month, -1)); } }, '‹'), input,
+    h('button', { type: 'button', 'aria-label': 'Mois suivant', onclick: function () { onChange(shiftMonth(input.value || month, 1)); } }, '›'));
+}
+
+// ---------- grille mensuelle ----------
+function GridView(o) {
+  var month = o.month || thisMonth(); var prevu = true; var contrat = o.contrat || '';
+  var box = h('section', { class: 'card' });
+  var menu = null;
+  function closeMenu() { if (menu) { menu.remove(); menu = null; } }
+  document.addEventListener('click', closeMenu);
+  var msg = msgBox();
+  function setCell(agent, day, statut) {
+    closeMenu();
+    call('pointer', { agent_id: agent.id, date: month + '-' + pad(day), statut: statut }).then(load).catch(function (e) { msg.show(e.message, false); });
+  }
+  function openMenu(ev, agent, day) {
+    ev.stopPropagation(); closeMenu();
+    menu = h('div', { class: 'popmenu', style: 'left:' + Math.min(ev.clientX, window.innerWidth - 190) + 'px;top:' + ev.clientY + 'px', onclick: function (e) { e.stopPropagation(); } },
+      h('small', null, agent.nom + ' — ' + day + '/' + month.slice(5)),
+      h('div', null, ['T', 'R', 'ABS'].map(function (s) { return h('button', { class: 'chip st-' + s, onclick: function () { setCell(agent, day, s); } }, s); }), h('button', { onclick: function () { setCell(agent, day, ''); } }, '✕')));
+    document.body.append(menu);
+  }
+  function exp(format, btn) { act(btn, msg, function () { return call('exportFiche', { month: month, format: format, contrat: contrat, prevu: prevu }).then(saveFile); }, 'Document généré'); }
+  function load() {
+    box.replaceChildren(loading());
+    call('gridMonth', month, contrat).then(function (g) {
+      var xl = h('button', null, 'Excel'); var pdf = h('button', null, 'PDF');
+      xl.onclick = function () { exp('xlsx', xl); }; pdf.onclick = function () { exp('pdf', pdf); };
+      var chk = h('input', { type: 'checkbox', checked: prevu, onchange: function () { prevu = chk.checked; load(); } });
+      var head = ['', ''];
+      var thead = h('tr', null, h('th', { class: 'sticky' }, 'Nom et prénom'),
+        Array.from({ length: g.nd }, function (_, i) { var wd = new Date(Date.UTC(+month.slice(0, 4), +month.slice(5, 7) - 1, i + 1)).getUTCDay(); return h('th', { class: wd === 5 ? 'fri' : '' }, i + 1, h('small', null, WEEK[wd])); }),
+        h('th', null, 'T'), h('th', null, 'CR'), h('th', null, 'ABS'), h('th', { title: 'Cumul T − CR depuis le début' }, 'Solde'));
+      var body = g.rows.map(function (r) {
+        return h('tr', null, h('td', { class: 'sticky name' }, h('b', null, r.nom), h('small', null, r.fonction)),
+          r.days.map(function (d, i) {
+            var s = d.statut || (prevu ? d.prevu : '');
+            var td = h('td', { class: 'day ' + (s ? 'st-' + s : '') + (!d.statut && s ? ' prevu' : '') + (o.canEdit ? ' edit' : '') }, s);
+            if (o.canEdit) td.addEventListener('click', function (ev) { openMenu(ev, r, i + 1); });
+            return td;
+          }),
+          h('td', { class: 'num' }, r.mois.T), h('td', { class: 'num' }, r.mois.R), h('td', { class: 'num' }, r.mois.ABS), h('td', { class: 'num ' + (r.cumul.reliquat < 0 ? 'neg' : 'pos') }, signed(r.cumul.reliquat)));
+      });
+      box.replaceChildren(
+        h('div', { class: 'toolbar' }, monthNav(month, function (mk) { month = mk; load(); }), h('label', { class: 'inline' }, chk, ' Afficher les jours prévus'), o.exportable ? h('span', { class: 'grow right' }, xl, ' ', pdf) : null),
+        msg,
+        h('div', { class: 'gridwrap' }, h('table', { class: 'grid' }, h('thead', null, thead), h('tbody', null, body.length ? body : h('tr', null, h('td', { class: 'muted', colspan: g.nd + 5 }, 'Aucun agent.'))))),
+        h('p', { class: 'legend' }, chip('T'), ' travail ', chip('R'), ' congé / repos ', chip('ABS'), ' absence ', chip('T', true), chip('R', true), ' prévus' + (o.canEdit ? ' · cliquez sur une case pour la modifier' : '')));
+    }).catch(function (e) { box.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  }
+  load();
+  return { el: box, setMonth: function (m) { month = m; load(); }, reload: load };
+}
+
+// ---------- pointage (formulaire du chef de groupe / admin) ----------
+function PointerPage() {
+  var wrap = h('div', { style: 'display:grid;gap:16px' });
+  var gv = GridView({ canEdit: true });
+  var box = msgBox();
+  var sel = h('select');
+  var date = h('input', { type: 'date', value: todayStr(), required: true });
+  var fin = h('input', { type: 'date' });
+  var statut = 'T';
+  var seg = h('div', { class: 'seg', role: 'radiogroup' });
+  [['T', 'T — Travail'], ['R', 'R — Repos / congé'], ['ABS', 'ABS — Absence'], ['', 'Effacer']].forEach(function (p) {
+    var r = h('input', { type: 'radio', name: 'statut', checked: p[0] === 'T', onchange: function () { statut = p[0]; seg.querySelectorAll('.segopt').forEach(function (x) { x.classList.remove('on'); }); lab.classList.add('on'); } });
+    var lab = h('label', { class: 'segopt ' + (p[0] ? 'st-' + p[0] : '') + (p[0] === 'T' ? ' on' : '') }, r, p[1]);
+    seg.append(lab);
+  });
+  var btn = h('button', { class: 'primary' }, 'Valider le pointage');
+  var form = h('form', { class: 'card', onsubmit: function (ev) {
+    ev.preventDefault();
+    act(btn, box, function () { return call('pointer', { agent_id: sel.value, date: date.value, date_fin: fin.value || '', statut: statut }); }, function (r) { return plural(r.jours, 'jour') + ' pointé' + (r.jours > 1 ? 's' : ''); })
+      .then(function (r) { if (r) gv.setMonth(date.value.slice(0, 7)); });
+  } }, h('h2', null, 'Pointer un agent'),
+    h('div', { class: 'row' }, field('Agent', sel, 'grow2'), field('Date', date), field("Jusqu'au (facultatif)", fin)), seg, box, btn);
+  wrap.append(form, gv.el);
+  call('agentsVisible').then(function (list) { sel.replaceChildren.apply(sel, list.map(function (a) { return h('option', { value: a.id }, a.nom + (a.fonction ? ' — ' + a.fonction : '')); })); });
+  return wrap;
+}
+function GroupePage() { return GridView({ canEdit: true, exportable: true }).el; }
+
+// ---------- demandes ----------
+function DemandesPage() {
+  var wrap = h('div', { style: 'display:grid;gap:16px' });
+  var staff = S.user.role !== 'agent'; var isAdmin = S.user.role === 'admin';
+  var flash = null; // message de confirmation conservé après rechargement de la page
+  function flashNode(f) { return h('div', null, h('p', { class: 'msg ' + (f.ok === 'warn' ? 'warn' : 'ok'), role: 'status' }, f.text), f.pre ? h('pre', { class: 'card', style: 'white-space:pre-wrap' }, f.pre) : null); }
+  function load() {
+    call('demandesList').then(function (L) { var nodes = view(L); if (flash) { nodes.unshift(flashNode(flash)); flash = null; } wrap.replaceChildren.apply(wrap, nodes); }).catch(function (e) { wrap.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  }
+  function demandeCard(d, mine) {
+    var periode = d.date_debut ? ' · du ' + frDate(d.date_debut) + (d.date_fin ? ' au ' + frDate(d.date_fin) : '') : '';
+    return h('article', { class: 'item' }, h('div', null, h('b', null, d.type_label), h('span', { class: 'badge ' + d.statut }, STATUT_LABEL[d.statut])),
+      h('small', null, (mine ? '' : d.agent_nom + ' · ') + frDateTime(d.date_creation) + periode),
+      d.message ? h('p', null, d.message) : null, d.reponse ? h('p', { class: 'reply' }, 'Réponse' + (d.traite_par ? ' (' + d.traite_par + ')' : '') + ' : ' + d.reponse) : null);
+  }
+  function newForm() {
+    var type = h('select', null, opts(Object.keys(CFG_TYPES()), null, function (k) { return CFG_TYPES()[k]; }).map(function (o, i) { o.value = Object.keys(CFG_TYPES())[i]; return o; }));
+    var d1 = h('input', { type: 'date' }); var d2 = h('input', { type: 'date' });
+    var msg = h('textarea', { rows: 3, maxlength: 500, placeholder: 'Précisions utiles (motif, destination…)' });
+    var box = msgBox(); var btn = h('button', { class: 'primary' }, 'Envoyer ma demande');
+    var dest = S.user.chef_id ? 'à votre chef de groupe' : "à l'administration";
+    return h('form', { class: 'card', onsubmit: function (ev) {
+      ev.preventDefault();
+      act(btn, box, function () { return call('demandeCreate', { type: type.value, message: msg.value, date_debut: d1.value, date_fin: d2.value }); }, 'Demande envoyée ' + dest).then(function (r) { if (r) { flash = { text: 'Demande envoyée ' + dest + '.', ok: true }; load(); } });
+    } }, h('h2', null, 'Nouvelle demande'), h('p', { class: 'muted' }, 'Elle sera transmise ' + dest + '.'),
+      h('div', { class: 'row' }, field('Type de demande', type, 'grow2'), field('Du (facultatif)', d1), field('Au (facultatif)', d2)), field('Message', msg), box, btn);
+  }
+  function CFG_TYPES() { return { titre_conge: 'Titre de congé', attestation_travail: 'Attestation de travail', ats: 'ATS', fiche_emolument: "Fiche d'émoluments", prolongation_conge: 'Prolongation de congé', prolongation_sejour: 'Prolongation de séjour' }; }
+
+  // Boîte du chef : demandes en attente regroupées par thème, une seule demande envoyée à la direction.
+  function inbox(L) {
+    var pending = L.toHandle.filter(function (d) { return d.statut === 'en_attente'; });
+    var box = msgBox(); var checks = [];
+    var note = h('input', { placeholder: 'Note pour la direction (facultative)' });
+    var send = h('button', { class: 'primary' }, 'Envoyer à la direction');
+    function updateCount() { var n = checks.filter(function (c) { return c.el.checked; }).length; send.textContent = n ? 'Envoyer à la direction (' + n + ')' : 'Envoyer à la direction'; send.disabled = !n; }
+    var themes = Object.keys(L.types).map(function (t) {
+      var items = pending.filter(function (d) { return d.type === t; });
+      if (!items.length) return null;
+      var all = h('input', { type: 'checkbox', checked: true, 'aria-label': 'Tout sélectionner : ' + L.types[t], onchange: function () { items.forEach(function (d) { checks.filter(function (c) { return c.id === d.id; }).forEach(function (c) { c.el.checked = all.checked; }); }); updateCount(); } });
+      return h('div', { class: 'theme' }, h('h3', null, all, L.types[t], h('span', { class: 'badge' }, items.length)),
+        items.map(function (d) {
+          var c = h('input', { type: 'checkbox', checked: true, onchange: updateCount }); checks.push({ id: d.id, el: c });
+          var rb = h('button', { type: 'button', class: 'danger' }, 'Refuser'); var ab = h('button', { type: 'button' }, 'Accepter');
+          var decide = function (st, b) { var rep = window.prompt(st === 'refusee' ? 'Motif du refus (facultatif) :' : 'Réponse à l’agent (facultatif) :', ''); if (rep === null) return; act(b, box, function () { return call('demandeRepondre', d.id, st, rep); }, 'Réponse enregistrée').then(function (r) { if (r) { flash = { text: 'Réponse enregistrée', ok: true }; load(); } }); };
+          rb.onclick = function () { decide('refusee', rb); }; ab.onclick = function () { decide('acceptee', ab); };
+          return h('div', { class: 'pick' }, c, h('div', null, h('b', null, d.agent_nom), d.agent_fonction ? ' · ' + d.agent_fonction : '', h('small', null, frDateTime(d.date_creation) + (d.date_debut ? ' · du ' + frDate(d.date_debut) + (d.date_fin ? ' au ' + frDate(d.date_fin) : '') : '')), d.message ? h('div', null, d.message) : null), h('span', null, ab, rb));
+        }));
+    }).filter(Boolean);
+    send.onclick = function () {
+      var ids = checks.filter(function (c) { return c.el.checked; }).map(function (c) { return c.id; });
+      act(send, box, function () { return call('demandesEnvoyer', ids, note.value); }).then(function (r) {
+        if (!r) return;
+        flash = { ok: r.mail ? true : 'warn', text: 'Demande groupée envoyée (' + r.envoi.nb + ' demandes : ' + r.envoi.themes + ').' + (r.mail ? ' E-mail transmis à la direction.' : ' E-mail non envoyé : renseignez l’adresse de la direction dans Setup, ou copiez le texte ci-dessous.'), pre: r.mail ? null : r.texte };
+        load();
+      });
+    };
+    updateCount();
+    return h('section', { class: 'card' }, h('h2', null, 'Demandes à traiter' + (pending.length ? ' (' + pending.length + ')' : '')),
+      h('p', { class: 'muted' }, "Les demandes de votre groupe arrivent ici, regroupées par thème. Cochez celles à transmettre : une seule demande groupée part à la direction."),
+      themes.length ? themes : h('p', { class: 'muted' }, 'Aucune demande en attente.'), box,
+      themes.length ? h('div', { class: 'sendbar' }, note, send) : null);
+  }
+  function envoisView(L) {
+    return h('section', { class: 'card' }, h('h2', null, 'Envois à la direction'),
+      L.envois.length ? L.envois.map(function (e) {
+        var box = msgBox();
+        var res = h('select', null, h('option', { value: 'acceptee' }, 'Acceptées'), h('option', { value: 'refusee' }, 'Refusées'), h('option', { value: 'traitee' }, 'Traitées'));
+        var rep = h('input', { placeholder: 'Réponse de la direction (facultative)' }); var btn = h('button', { class: 'primary' }, 'Enregistrer la réponse');
+        btn.onclick = function () { act(btn, box, function () { return call('envoiTraiter', e.id, res.value, rep.value); }, 'Réponse appliquée à toutes les demandes').then(function (r) { if (r) { flash = { text: 'Réponse de la direction appliquée à toutes les demandes de l’envoi.', ok: true }; load(); } }); };
+        return h('article', { class: 'item' }, h('div', null, h('b', null, 'Envoi du ' + frDateTime(e.date_envoi)), h('span', { class: 'badge ' + (e.statut === 'envoye' ? 'envoyee' : 'traitee') }, e.statut === 'envoye' ? 'En attente de la direction' : 'Réponse reçue')),
+          h('small', null, plural(+e.nb, 'demande') + ' · par ' + e.chef_nom + (e.note ? ' · ' + e.note : '')),
+          e.groupes.map(function (g) { return h('p', null, h('b', null, g.label + ' (' + g.items.length + ') : '), g.items.map(function (d) { return d.agent_nom; }).join(', ')); }),
+          e.statut === 'envoye' ? h('div', { class: 'sendbar' }, res, rep, btn) : (e.reponse ? h('p', { class: 'reply' }, 'Réponse : ' + e.reponse) : null), box);
+      }) : h('p', { class: 'muted' }, 'Aucun envoi pour le moment.'));
+  }
+  function view(L) {
+    var out = [];
+    if (!isAdmin) out.push(newForm());
+    if (staff) {
+      out.push(inbox(L), envoisView(L));
+      var done = L.toHandle.filter(function (d) { return d.statut !== 'en_attente' && d.statut !== 'envoyee'; }).slice(0, 25);
+      if (done.length) out.push(h('section', { class: 'card' }, h('h2', null, 'Dernières demandes traitées'), done.map(function (d) { return demandeCard(d, false); })));
+    }
+    if (!isAdmin) out.push(h('section', { class: 'card' }, h('h2', null, 'Mes demandes'), L.mine.length ? L.mine.map(function (d) { return demandeCard(d, true); }) : h('p', { class: 'muted' }, "Vous n'avez fait aucune demande.")));
+    return out;
+  }
+  wrap.append(loading()); load();
+  return wrap;
+}
+
+// ---------- documents ----------
+var DOC_TYPES = { fiche_emolument: "Fiche d'émoluments", attestation_travail: 'Attestation de travail', ats: 'ATS', titre_conge: 'Titre de congé', autre: 'Autre' };
+function DocumentsPage() {
+  var staff = S.user.role !== 'agent';
+  var wrap = h('div', { style: 'display:grid;gap:16px' });
+  var list = h('section', { class: 'card' }, loading());
+  var sel = h('select'); var box = msgBox();
+  function target() { return staff ? sel.value : S.user.id; }
+  function loadList() {
+    if (!target()) { list.replaceChildren(h('h2', null, 'Documents'), h('p', { class: 'muted' }, 'Aucun agent.')); return; }
+    call('documentsList', target()).then(function (docs) {
+      list.replaceChildren(h('h2', null, staff ? "Documents de l'agent" : 'Mes documents'),
+        docs.length ? h('ul', { class: 'docs' }, docs.map(function (d) {
+          var dl = h('button', null, 'Télécharger'); dl.onclick = function () { act(dl, box, function () { return call('documentDownload', d.id).then(saveFile); }); };
+          var del = staff ? h('button', { class: 'danger' }, 'Supprimer') : null;
+          if (del) del.onclick = function () { if (window.confirm('Supprimer « ' + d.titre + ' » ?')) act(del, box, function () { return call('documentDelete', d.id); }).then(loadList); };
+          return h('li', null, h('div', null, h('b', null, d.titre), h('small', null, (DOC_TYPES[d.type] || d.type) + ' · déposé par ' + d.depose_par + ' le ' + frDateTime(d.date))), h('span', null, dl, del));
+        })) : h('p', { class: 'muted' }, 'Aucun document.'), box);
+    }).catch(function (e) { list.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  }
+  if (staff) {
+    var type = h('select', null, Object.keys(DOC_TYPES).map(function (k) { return h('option', { value: k }, DOC_TYPES[k]); }));
+    var titre = h('input', { placeholder: "ex. Fiche d'émoluments août 2026" }); var file = h('input', { type: 'file', required: true });
+    var up = msgBox(); var btn = h('button', { class: 'primary' }, 'Déposer');
+    var form = h('form', { class: 'card', onsubmit: function (ev) {
+      ev.preventDefault();
+      var f = file.files[0]; if (!f) return;
+      act(btn, up, function () { return fileToBase64(f).then(function (b64) { return call('documentUpload', { agent_id: sel.value, type: type.value, titre: titre.value, nom: f.name, mime: f.type, base64: b64 }); }); }, 'Document déposé').then(function (r) { if (r) { form.reset(); loadList(); } });
+    } }, h('h2', null, 'Déposer un document dans le compte d’un agent'),
+      h('div', { class: 'row' }, field('Agent', sel, 'grow2'), field('Type', type)), field('Titre', titre), field('Fichier (6 Mo maximum)', file), up, btn);
+    sel.onchange = loadList;
+    wrap.append(form);
+    call('agentsVisible').then(function (agents) { sel.replaceChildren.apply(sel, agents.map(function (a) { return h('option', { value: a.id }, a.nom); })); loadList(); });
+  } else loadList();
+  wrap.append(list);
+  return wrap;
+}
+
+// ---------- agents ----------
+function AgentsPage() {
+  var isAdmin = S.user.role === 'admin';
+  var wrap = h('div', { style: 'display:grid;gap:16px' });
+  var cfg = { contrats: [], fonctions: [] }; var agents = []; var editing = null; var flash = null;
+  var formHost = h('div'); var listHost = h('div');
+  function load() {
+    Promise.all([call('agentsManage'), call('contratsLite')]).then(function (r) { agents = r[0]; cfg = r[1]; drawForm(); drawList(); }).catch(function (e) { listHost.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  }
+  function drawForm() {
+    var a = editing || { nom: '', email: '', role: 'agent', fonction: '', affectation: '', contrat: '', chef_id: '', acces_setup: '0' };
+    var nom = h('input', { value: a.nom, required: true }); var email = h('input', { type: 'email', value: a.email, required: true });
+    var fonction = h('input', { value: a.fonction, list: 'fl' }); var dl = h('datalist', { id: 'fl' }, cfg.fonctions.map(function (f) { return h('option', { value: f }); }));
+    var aff = h('input', { value: a.affectation, placeholder: 'ex. Rhourde Nouss' });
+    var contrat = h('select', { value: a.contrat }, h('option', { value: '' }, '—'), cfg.contrats.map(function (c) { return h('option', { value: c.numero }, c.numero + (c.client ? ' — ' + c.client : '')); }));
+    var chefs = agents.filter(function (x) { return x.role === 'chef' && x.actif === '1'; });
+    var role = h('select', { value: a.role }, ['agent', 'chef', 'admin'].map(function (r) { return h('option', { value: r }, { agent: 'Agent', chef: 'Chef de groupe', admin: 'Administrateur' }[r]); }));
+    var chef = h('select', { value: a.chef_id }, h('option', { value: '' }, '—'), chefs.map(function (c) { return h('option', { value: c.id }, c.nom); }));
+    var setup = h('input', { type: 'checkbox', checked: a.acces_setup === '1' });
+    var pw = h('input', { minlength: 6, placeholder: 'généré automatiquement si vide' });
+    var box = msgBox(); var btn = h('button', { class: 'primary' }, editing ? 'Enregistrer' : "Créer l'agent");
+    if (flash) { box.show(flash, true); flash = null; }
+    var form = h('form', { class: 'card', onsubmit: function (ev) {
+      ev.preventDefault();
+      var data = { nom: nom.value, email: email.value, fonction: fonction.value, affectation: aff.value, contrat: contrat.value };
+      if (isAdmin) { data.role = role.value; data.chef_id = chef.value; data.acces_setup = setup.checked; }
+      if (!editing) data.password = pw.value;
+      act(btn, box, function () { return editing ? call('agentUpdate', editing.id, data) : call('agentCreate', data); }, function (r) {
+        return editing ? 'Agent modifié' : 'Compte créé : ' + r.agent.email + ' — mot de passe : ' + r.password + ' (à communiquer à l’agent)';
+      }).then(function (r) { if (r) { flash = editing ? 'Agent modifié' : 'Compte créé : ' + r.agent.email + ' — mot de passe : ' + r.password + ' (à communiquer à l’agent)'; editing = null; load(); } });
+    } }, h('h2', null, editing ? "Modifier l'agent" : 'Nouvel agent'),
+      isAdmin ? null : h('p', { class: 'muted' }, 'Le nouvel agent sera rattaché à votre groupe.'),
+      h('div', { class: 'row' }, field('Nom et prénom', nom, 'grow2'), field('Email (identifiant)', email, 'grow2'), isAdmin ? field('Rôle', role) : null),
+      h('div', { class: 'row' }, field('Métier / fonction', fonction), dl, field('Affectation', aff), field('N° contrat de prestation', contrat), isAdmin ? field('Chef de groupe', chef) : null),
+      isAdmin ? h('label', { class: 'inline' }, setup, " Autoriser l'accès à l'onglet Setup (chef de groupe uniquement)") : null,
+      editing ? null : field('Mot de passe initial', pw), box, btn, editing ? h('button', { type: 'button', onclick: function () { editing = null; drawForm(); } }, 'Annuler') : null);
+    formHost.replaceChildren(form);
+  }
+  function drawList() {
+    var rows = agents.map(function (a) {
+      var tg = h('button', null, a.actif === '1' ? 'Désactiver' : 'Réactiver');
+      tg.onclick = function () { call('agentUpdate', a.id, { actif: a.actif !== '1' }).then(load).catch(function (e) { alert(e.message); }); };
+      var ed = h('button', null, 'Modifier'); ed.onclick = function () { editing = a; drawForm(); window.scrollTo(0, 0); };
+      var rp = h('button', null, 'Mot de passe'); rp.onclick = function () { var p = window.prompt('Nouveau mot de passe pour ' + a.nom + ' (6 caractères min.)'); if (p) call('agentPassword', a.id, p).then(function () { alert('Mot de passe modifié'); }).catch(function (e) { alert(e.message); }); };
+      var chefNom = (agents.filter(function (c) { return c.id === a.chef_id; })[0] || {}).nom || '';
+      return h('tr', { class: a.actif !== '1' ? 'off' : '' }, h('td', null, h('b', null, a.nom), h('small', null, a.email)),
+        h('td', null, { agent: 'Agent', chef: 'Chef de groupe', admin: 'Admin' }[a.role] + (a.role === 'chef' && a.acces_setup === '1' ? ' · accès Setup' : '')), h('td', null, a.fonction), h('td', null, a.affectation), h('td', null, a.contrat), h('td', null, chefNom), h('td', { class: 'actions' }, ed, rp, tg));
+    });
+    listHost.replaceChildren(h('section', { class: 'card' }, h('h2', null, 'Personnel (' + agents.filter(function (a) { return a.actif === '1'; }).length + ' actifs)'),
+      h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Nom', 'Rôle', 'Fonction', 'Affectation', 'Contrat', 'Chef', ''].map(function (t) { return h('th', null, t); }))), h('tbody', null, rows)))));
+  }
+  wrap.append(formHost, listHost); load();
+  return wrap;
+}
+
+// ---------- Setup ----------
+function SetupPage() {
+  var wrap = h('div', { style: 'display:grid;gap:16px' });
+  wrap.append(loading());
+  call('setupGet').then(function (data) {
+    var vals = {}; Object.keys(data.values).forEach(function (k) { vals[k] = data.values[k]; });
+    var inputs = {};
+    var groups = []; data.defs.forEach(function (d) { if (groups.indexOf(d.group) < 0) groups.push(d.group); });
+    var box = msgBox(); var btn = h('button', { class: 'primary' }, 'Enregistrer');
+    var sets = groups.map(function (g) {
+      var fields = data.defs.filter(function (d) { return d.group === g; }).map(function (d) {
+        var el = d.type === 'area' ? h('textarea', { rows: 3 }) : h('input', { type: d.type === 'number' ? 'number' : d.type === 'color' ? 'color' : 'text', min: 1 });
+        el.value = vals[d.key] || (d.type === 'color' ? '#000000' : ''); inputs[d.key] = el;
+        return field(d.label, el, d.type === 'text' || d.type === 'area' ? 'grow2' : '');
+      });
+      var extra = g === 'Prestataire' ? h('p', { class: 'muted' }, "Le prestataire est la société qui utilise l'application : son nom apparaît dans l'en-tête, les documents et les e-mails.")
+        : g === 'Rotation' ? h('p', { class: 'muted' }, "Après un retour pointé T, les jours suivants sont prévus T jusqu'au dernier jour du shift, puis R pendant la durée de repos, et ainsi de suite.")
+        : g === 'Direction' ? h('p', { class: 'muted' }, 'Les demandes des agents, regroupées par thème par le chef de groupe, sont envoyées à cette adresse en une seule demande.') : null;
+      return h('fieldset', null, h('legend', null, g), extra, h('div', { class: 'row' }, fields));
+    });
+    var form = h('form', { class: 'card', onsubmit: function (ev) {
+      ev.preventDefault();
+      var out = {}; Object.keys(inputs).forEach(function (k) { out[k] = inputs[k].value; });
+      act(btn, box, function () { return call('setupSave', out); }, 'Paramètres enregistrés').then(function (r) { if (r) { S.params.prestataire = out.prestataire_nom; S.params.jours_travail = +out.jours_travail; S.params.jours_repos = +out.jours_repos; ['T', 'R', 'ABS', 'T_prevu', 'R_prevu'].forEach(function (k) { S.params.colors[k] = out['couleur_' + k]; }); applyColors(); document.querySelector('.brand').textContent = out.prestataire_nom || 'Pointage'; } });
+    } }, h('h2', null, 'Setup'), sets, box, btn);
+    wrap.replaceChildren(form, contratsCard(), data.isAdmin ? maintenanceCard(data.status) : h('p', { class: 'muted' }, "L'installation et la remise à zéro sont réservées à l'administrateur."));
+  }).catch(function (e) { wrap.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  return wrap;
+}
+function contratsCard() {
+  var host = h('section', { class: 'card' }, loading());
+  call('contratsGet').then(function (data) {
+    var C = data.contrats; var F = data.fonctions; var box = msgBox();
+    function draw() {
+      var save = h('button', { class: 'primary' }, 'Enregistrer les contrats');
+      var addC = h('button', { type: 'button' }, '+ Contrat');
+      addC.onclick = function () { C.push({ numero: '', client: '', objet: '', date_contrat: '', ref_mois: '', ref_attachement: '', rep_prestataire: '', rep_client: '' }); draw(); };
+      var sets = C.map(function (c, i) {
+        var bind = function (k, type) { var el = h('input', { type: type || 'text', value: c[k] }); el.oninput = function () { c[k] = el.value; }; return el; };
+        var rows = F.map(function (f, j) {
+          if (f.contrat !== c.numero) return null;
+          var cellIn = function (k, num) { var el = h('input', { type: num ? 'number' : 'text', min: 0, step: 'any', value: f[k] }); el.oninput = function () { f[k] = el.value; }; return h('td', null, el); };
+          var del = h('button', { type: 'button', class: 'danger' }, '×'); del.onclick = function () { F.splice(j, 1); draw(); };
+          return h('tr', null, cellIn('designation'), cellIn('libelle'), cellIn('positions', 1), cellIn('delai', 1), cellIn('prix_unitaire', 1), cellIn('qte_precedente_ref', 1), h('td', null, del));
+        });
+        var addF = h('button', { type: 'button' }, '+ Fonction'); addF.onclick = function () { F.push({ contrat: c.numero, designation: '', libelle: '', positions: 1, delai: 540, prix_unitaire: 0, qte_precedente_ref: 0 }); draw(); };
+        var delC = h('button', { type: 'button', class: 'danger' }, 'Supprimer le contrat'); delC.onclick = function () { if (window.confirm('Supprimer ce contrat et ses fonctions ?')) { F = F.filter(function (f) { return f.contrat !== c.numero; }); C.splice(i, 1); draw(); } };
+        return h('fieldset', null, h('legend', null, 'Contrat ' + (c.numero || 'nouveau')),
+          h('div', { class: 'row' }, field('N° de contrat', bind('numero')), field('Client', bind('client'), 'grow2'), field('Date du contrat', bind('date_contrat'))), field('Objet', bind('objet')),
+          h('div', { class: 'row' }, field('Mois de référence', bind('ref_mois', 'month')), field("N° d'attachement de ce mois", bind('ref_attachement', 'number')), field('Représentant prestataire', bind('rep_prestataire')), field('Représentant client', bind('rep_client'))),
+          h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Désignation (attachement / facture)', 'Libellé sur la fiche', 'Positions (a)', 'Délai (b)', 'Prix unitaire HT', 'Qté cumulée avant le mois de réf.', ''].map(function (t) { return h('th', null, t); }))), h('tbody', null, rows))), addF, ' ', delC);
+      });
+      save.onclick = function () {
+        act(save, box, function () { return call('contratsSave', { contrats: C, fonctions: F }); }, 'Contrats enregistrés').then(function (r) { if (r) { C = r.contrats; F = r.fonctions; } });
+      };
+      host.replaceChildren.apply(host, [h('h2', null, 'Contrats de prestation, fonctions et prix'),
+        h('p', { class: 'muted' }, "Le n° d'attachement et les quantités précédentes partent d'un mois de référence : indiquez le mois et le n° d'attachement connus, et le cumul déjà facturé par fonction.")].concat(sets.concat([addC, box, save])));
+    }
+    draw();
+  }).catch(function (e) { host.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  return host;
+}
+function maintenanceCard(status) {
+  var box = msgBox();
+  var repair = h('button', null, 'Réparer / mettre à jour la structure');
+  repair.onclick = function () { act(repair, box, function () { return call('repairStructure'); }, 'Structure à jour (données conservées).'); };
+  var mode = h('select', null, h('option', { value: 'donnees' }, 'Vider les données (agents, pointages, demandes, documents) — garder la configuration'), h('option', { value: 'tout' }, 'Coquille vide complète (données + prestataire, contrats, paramètres)'));
+  var conf = h('input', { placeholder: 'Tapez VIDER pour confirmer' }); var vb = h('button', { class: 'danger' }, 'Vider');
+  vb.onclick = function () {
+    if (!window.confirm('Cette action est irréversible. Continuer ?')) return;
+    act(vb, box, function () { return call('vider', mode.value, conf.value.trim()); }, 'Données vidées. Votre compte administrateur est conservé.').then(function (r) { if (r) conf.value = ''; });
+  };
+  return h('section', { class: 'card danger-zone' }, h('h2', null, 'Maintenance'),
+    h('p', { class: 'muted' }, 'Version ' + status.version + ' · structure ' + (status.installed ? 'installée' : 'incomplète')), repair,
+    h('h3', { style: 'margin-top:16px' }, 'Remise à zéro'), h('p', { class: 'muted' }, "Pour livrer une copie vierge à un nouveau prestataire : créez une copie du classeur puis choisissez « Coquille vide complète »."),
+    h('div', { class: 'row' }, field('Mode', mode, 'grow2'), field('Confirmation', conf)), box, vb);
+}
+
+// ---------- exports (admin) ----------
+function ExportsPage() {
+  var wrap = h('div', { style: 'display:grid;gap:16px' });
+  call('contratsLite').then(function (cfg) {
+    var month = thisMonth(); var contrat = cfg.contrats[0] ? cfg.contrats[0].numero : '';
+    var box = msgBox(); var host = h('div', { style: 'display:grid;gap:16px' });
+    var csel = h('select', { onchange: function () { contrat = csel.value; draw(); } }, cfg.contrats.map(function (c) { return h('option', { value: c.numero }, c.numero); }));
+    var top = h('section', { class: 'card' }, h('div', { class: 'toolbar' }, monthNav(month, function (m) { month = m; draw(); }), cfg.contrats.length ? h('label', { class: 'inline' }, 'Contrat ', csel) : null),
+      cfg.contrats.length ? null : h('p', { class: 'msg err' }, 'Aucun contrat : créez-en un dans Setup.'), box);
+    var prevu = false; var fac = { numero: '', date: '' };
+    function getter(doc, extra) {
+      var xl = h('button', null, 'Excel (.xlsx)'); var pdf = h('button', null, 'PDF');
+      [[xl, 'xlsx'], [pdf, 'pdf']].forEach(function (p) { p[0].onclick = function () { var o = { month: month, contrat: contrat, format: p[1] }; Object.keys(extra ? extra() : {}).forEach(function (k) { o[k] = extra()[k]; }); act(p[0], box, function () { return call('export' + doc, o).then(saveFile); }, 'Document généré'); }; });
+      return h('p', null, xl, ' ', pdf);
+    }
+    function draw() {
+      var chk = h('input', { type: 'checkbox', checked: prevu, onchange: function () { prevu = chk.checked; } });
+      var fnum = h('input', { value: fac.numero, placeholder: '235/PS/2026', oninput: function () { fac.numero = fnum.value; } });
+      var fdate = h('input', { type: 'date', value: fac.date, oninput: function () { fac.date = fdate.value; } });
+      var prev = h('div', null, loading());
+      host.replaceChildren(
+        h('section', { class: 'card' }, h('h2', null, '1. Fiche de pointage ', h('small', null, 'à valider avec le client')), h('label', { class: 'inline' }, chk, ' Inclure les jours prévus'), getter('Fiche', function () { return { prevu: prevu }; })),
+        h('section', { class: 'card' }, h('h2', null, '2. Attachement'), prev, getter('Attachement')),
+        h('section', { class: 'card' }, h('h2', null, '3. Facture'), h('div', { class: 'row' }, field('N° de facture', fnum), field('Date de la facture', fdate)), getter('Facture', function () { return { facture_numero: fac.numero, date: fac.date }; })));
+      if (!contrat) { prev.replaceChildren(h('p', { class: 'muted' }, 'Choisissez un contrat.')); return; }
+      call('attachementPreview', month, contrat).then(function (p) {
+        var edit = {};
+        prev.replaceChildren(h('h3', null, 'Attachement N° ' + p.numero), h('p', { class: 'muted' }, 'Période du ' + frDate(p.debut) + ' au ' + frDate(p.fin) + '. Quantité du mois = positions × jours du mois, modifiable. « Pointés » = jours T réellement pointés (information). Total HT : ' + Number(p.totalHT).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' DA.'),
+          h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Désignation', 'Positions', 'Qté contrat', 'Précédente', 'Du mois', 'Cumulée', 'Pointés'].map(function (t) { return h('th', null, t); }))),
+            h('tbody', null, p.lines.map(function (l) {
+              var q = h('input', { class: 'qty', type: 'number', min: 0, value: l.mois }); var ok = h('button', { hidden: true }, 'OK');
+              q.oninput = function () { ok.hidden = false; };
+              ok.onclick = function () { act(ok, box, function () { return call('attachementQte', { contrat: contrat, mois: month, designation: l.designation, qte_mois: q.value }); }, 'Quantité enregistrée').then(draw); };
+              return h('tr', null, h('td', null, l.designation), h('td', null, l.positions), h('td', null, l.contrat), h('td', null, l.precedente), h('td', null, q, ok, l.auto ? null : h('small', null, 'modifié')), h('td', null, l.cumulee), h('td', null, l.pointes));
+            })))));
+      }).catch(function (e) { prev.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+    }
+    wrap.replaceChildren(top, host); draw();
+  }).catch(function (e) { wrap.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  return wrap;
+}
+
+function PasswordPage() {
+  var cur = h('input', { type: 'password', required: true }); var nxt = h('input', { type: 'password', minlength: 6, required: true }); var box = msgBox(); var btn = h('button', { class: 'primary' }, 'Enregistrer');
+  var form = h('form', { class: 'card narrow', onsubmit: function (ev) { ev.preventDefault(); act(btn, box, function () { return call('passwordOwn', cur.value, nxt.value); }, 'Mot de passe modifié').then(function (r) { if (r) form.reset(); }); } },
+    h('h2', null, 'Changer mon mot de passe'), field('Mot de passe actuel', cur), field('Nouveau mot de passe (6 caractères min.)', nxt), box, btn);
+  return form;
+}
+
+boot();
+})();
+</script>
