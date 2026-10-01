@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import Login from './components/Login';
 import App from './pages/App';
-import './App.css';
+import './styles/App.css';
 
 function MainApp() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
