@@ -33,7 +33,7 @@ var VIEWERS = ['chef', 'admin', 'client']; // consultation du pointage et des co
 // Un compte client rattaché à un contrat ne consulte que ce contrat.
 function clientScope_(user, numero) { if (user.role === 'client' && user.contrat && user.contrat !== numero) throw httpErr_('Contrat non autorisé', 'FORBIDDEN'); }
 function inScope_(user, agentId) { return Agents.visibleTo(user).some(function (a) { return a.id === agentId; }); }
-// Le chef de groupe n'extrait l'attachement et la facture que si l'administrateur lui a accordé ce privilège.
+// Le responsable d’équipe n'extrait l'attachement et la facture que si l'administrateur lui a accordé ce privilège.
 function exportsOk_(user) { if (user.role === 'chef' && user.acces_exports !== '1') throw httpErr_("Accès aux exports non accordé (demandez-le à l'administrateur)", 'FORBIDDEN'); }
 function monthOrNow_(m) { return Dates.isMonthKey(m) ? m : Dates.today().slice(0, 7); }
 
@@ -111,7 +111,7 @@ var HANDLERS = {
   demandeCreate: { roles: WORKERS, write: true, fn: function (u, a) { return Demandes.create(u, a[0] || {}); } },
   documentsList: { roles: WORKERS, fn: function (u, a) { return Documents.list(u, a[0]); } },
   documentDownload: { roles: WORKERS, fn: function (u, a) { return Documents.download(u, a[0]); } },
-  // ----- chef de groupe / admin -----
+  // ----- responsable d’équipe / admin -----
   // a[0] = true : personnes seulement (documents) ; sinon personnes et véhicules (pointage)
   agentsVisible: { roles: STAFF, fn: function (u, a) { return Agents.visibleTo(u).filter(function (x) { return !a[0] || x.type !== 'vehicule'; }).map(Agents.publicAgent); } },
   pointerCompleter: { roles: STAFF, write: true, fn: function (u, a) { return Pointage.completer(u, a[0] || {}); } },

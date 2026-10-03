@@ -5,13 +5,13 @@ Bonjour,
 Nous avons le plaisir de vous présenter Sijil : le pointage, les demandes (titre de congé, attestation…), les documents et le suivi du contrat au même endroit, sur téléphone comme sur ordinateur, en français, arabe et anglais.
 
 POUR L'AGENT : sa situation du jour, les jours restants, son solde et sa date de reprise ; pointage sur 1 mois, 3, 6 ou 12 mois.
-POUR LE CHEF DE GROUPE : pointage en un clic (T, R, ABS), rattrapage des jours oubliés d'un seul bouton, prévisions de rotation.
+POUR LE RESPONSABLE D’ÉQUIPE : pointage en un clic (T, R, ABS), rattrapage des jours oubliés d'un seul bouton, prévisions de rotation.
 POUR LA DIRECTION : une seule demande groupée par e-mail ; la réponse s'applique à toutes les demandes.
 DOCUMENTS : fiches de paie, titres de congé, attestations rangés par agent, avec notification.
 PROTECTION : chacun ne voit que ce qui le concerne ; mots de passe jamais en clair ; mot de passe oublié par e-mail.
 
 Se connecter à l'application : https://rayanem-dev.github.io/pointage-app/
-Identifiant et mot de passe : transmis par e-mail ou par votre chef de groupe.
+Identifiant et mot de passe : transmis par e-mail ou par votre responsable d’équipe.
 
 Présentation : https://docs.google.com/presentation/d/1ziQ3U7c2lvkEywjihQnhlqHUNaRj0OjS/edit?usp=sharing&ouid=100581094853869883670&rtpof=true&sd=true
 Document : https://drive.google.com/file/d/1A5EqFAm2lkxheq45ONfrDexYiD7oTxrp/view?usp=sharing

@@ -65,8 +65,8 @@
 " إظهار الأيام المتوقّعة"
 ],
 [
-" Autoriser l'accès à l'onglet Setup (chef de groupe uniquement)",
-" Allow access to the Setup tab (group leader only)",
+" Autoriser l'accès à l'onglet Setup (responsable d’équipe uniquement)",
+" Allow access to the Setup tab (team manager only)",
 " السماح بالوصول إلى تبويب الإعداد (رئيس الفريق فقط)"
 ],
 [
@@ -765,8 +765,8 @@
 "لا يوجد تسجيل: تبدأ التوقعات عند أول تسجيل (T أو R)"
 ],
 [
-"Aucun pointage enregistré : votre situation sera calculée dès le premier pointage par votre chef de groupe.",
-"No attendance recorded yet: your balance will be calculated from the first record by your group leader.",
+"Aucun pointage enregistré : votre situation sera calculée dès le premier pointage par votre responsable d’équipe.",
+"No attendance recorded yet: your balance will be calculated from the first record by your team manager.",
 "لا يوجد تسجيل بعد: سيُحسب رصيدك منذ أول تسجيل من رئيس فريقك."
 ],
 [
@@ -885,18 +885,18 @@
 "سياسة الخصوصية"
 ],
 [
-"Chef",
-"Leader",
-"رئيس"
+"Responsable",
+"Manager",
+"المسؤول"
 ],
 [
-"Chef de groupe",
-"Group leader",
+"Responsable d’équipe",
+"Team manager",
 "رئيس الفريق"
 ],
 [
-"Chef de groupe : ",
-"Group leader: ",
+"Responsable d’équipe : ",
+"Team manager: ",
 "رئيس الفريق: "
 ],
 [
@@ -2265,12 +2265,12 @@
 "ممثل المؤدّي"
 ],
 [
-"Responsable de groupe (par défaut) : ",
+"Responsable d’équipe (par défaut) : ",
 "Group manager (default): ",
 "مسؤول الفريق (افتراضي): "
 ],
 [
-"Responsable de groupe (par défaut) — aucun pour le moment",
+"Responsable d’équipe (par défaut) — aucun pour le moment",
 "Group manager (default) — none yet",
 "مسؤول الفريق (افتراضي) — لا أحد حاليًا"
 ],
@@ -2720,8 +2720,8 @@
 "مسودة، إرشادي"
 ],
 [
-"chef de groupe",
-"group leader",
+"responsable d’équipe",
+"team manager",
 "رئيس الفريق"
 ],
 [
@@ -2870,8 +2870,8 @@
 "للاعتماد مع الزبون"
 ],
 [
-"à votre chef de groupe",
-"to your group leader",
+"à votre responsable d’équipe",
+"to your team manager",
 "إلى رئيس فريقك"
 ],
 [
@@ -3750,8 +3750,8 @@
 "تم إرسال بيانات الدخول إلى "
 ],
 [
-"Aucun chef de groupe : créez d'abord un compte avec le rôle « Chef de groupe »",
-"No group leader: first create an account with the role \"Group leader\"",
+"Aucun responsable d’équipe : créez d'abord un compte avec le rôle « Responsable d’équipe »",
+"No team manager: first create an account with the role \"Team manager\"",
 "لا يوجد رئيس فريق: أنشئ أولًا حسابًا بدور «رئيس الفريق»"
 ],
 [
@@ -4135,8 +4135,8 @@
 "بإضافة البريد الإلكتروني لجهة اتصال الزبون في العقد، يُنشأ حسابه للاطلاع ويمكن إرسال بيانات الدخول إليه."
 ],
 [
-"Le client peut laisser une remarque sur n'importe quel jour du pointage. Le chef de groupe est prévenu, répond, et le client voit la réponse.",
-"The client can leave a remark on any day of the attendance. The group leader is notified, replies, and the client sees the reply.",
+"Le client peut laisser une remarque sur n'importe quel jour du pointage. Le responsable d’équipe est prévenu, répond, et le client voit la réponse.",
+"The client can leave a remark on any day of the attendance. The team manager is notified, replies, and the client sees the reply.",
 "يمكن للزبون ترك ملاحظة على أي يوم من الحضور. يُبلَّغ رئيس الفريق ويرد، ويرى الزبون الرد."
 ],
 [
@@ -4195,8 +4195,8 @@
 "تظهر إشارة على «وثائقي» للوثائق الجديدة. تظهر رسالة عند وصول وثيقة، ويتلقى العون أيضًا بريدًا إلكترونيًا."
 ],
 [
-"Le chef de groupe voit une pastille sur « Demandes » et reçoit un e-mail à chaque nouvelle demande.",
-"The group leader sees a bubble on \"Requests\" and receives an e-mail for each new request.",
+"Le responsable d’équipe voit une pastille sur « Demandes » et reçoit un e-mail à chaque nouvelle demande.",
+"The team manager sees a bubble on \"Requests\" and receives an e-mail for each new request.",
 "يرى رئيس الفريق إشارة على «الطلبات» ويتلقى بريدًا إلكترونيًا مع كل طلب جديد."
 ],
 [
@@ -4395,8 +4395,8 @@
 "النسخة الأولى"
 ],
 [
-"Espaces agent, chef de groupe et administrateur. Pointage T / R / ABS. Demandes des agents regroupées par thème et envoyées à la direction.",
-"Agent, group leader and administrator spaces. T / R / ABS attendance. Agents' requests grouped by theme and sent to management.",
+"Espaces agent, responsable d’équipe et administrateur. Pointage T / R / ABS. Demandes des agents regroupées par thème et envoyées à la direction.",
+"Agent, team manager and administrator spaces. T / R / ABS attendance. Agents' requests grouped by theme and sent to management.",
 "فضاءات العون ورئيس الفريق والمسؤول. تسجيل الحضور T / R / ABS. طلبات الأعوان مجمَّعة حسب الموضوع ومرسَلة إلى الإدارة."
 ],
 [
@@ -4490,8 +4490,8 @@
 "مساعدة مدمجة"
 ],
 [
-"Nouvel onglet « Aide » : le mode d'emploi de Sijil, expliqué simplement pour chaque profil (agent, chef de groupe, administrateur, client), avec une recherche.",
-"New \"Help\" tab: Sijil's user guide, explained simply for each profile (agent, group leader, administrator, client), with a search.",
+"Nouvel onglet « Aide » : le mode d'emploi de Sijil, expliqué simplement pour chaque profil (agent, responsable d’équipe, administrateur, client), avec une recherche.",
+"New \"Help\" tab: Sijil's user guide, explained simply for each profile (agent, team manager, administrator, client), with a search.",
 "تبويب جديد «مساعدة»: دليل استخدام Sijil مشروح ببساطة لكل صفة (عون، رئيس فريق، مسؤول، زبون) مع بحث."
 ],
 [
@@ -4720,9 +4720,9 @@
 "لم يُمنح الوصول إلى التصدير (اطلبه من المسؤول)"
 ],
 [
-"Autoriser l'extraction de l'attachement et de la facture (chef de groupe uniquement ; la fiche de pointage est toujours permise)",
-"Allow extracting the statement and the invoice (group leader only; the attendance sheet is always allowed)",
-"السماح باستخراج المحضر والفاتورة (لرئيس المجموعة فقط؛ ورقة الحضور مسموحة دائمًا)"
+"Autoriser l'extraction de l'attachement et de la facture (responsable d’équipe uniquement ; la fiche de pointage est toujours permise)",
+"Allow extracting the statement and the invoice (team manager only; the attendance sheet is always allowed)",
+"السماح باستخراج المحضر والفاتورة (لمسؤول الفريق فقط؛ ورقة الحضور مسموحة دائمًا)"
 ],
 [
 "L'attachement et la facture ne sont pas autorisés pour votre compte : demandez ce privilège à l'administrateur.",
@@ -4848,5 +4848,105 @@
 "à l’instant",
 "just now",
 "الآن"
+],
+[
+"Responsable d'équipe",
+"Team manager",
+"مسؤول الفريق"
+],
+[
+"Le « chef de groupe » devient « responsable d'équipe » partout dans l'application, l'aide et les documents.",
+"The \"group leader\" is now the \"team manager\" everywhere in the app, the help and the documents.",
+"أصبح «رئيس المجموعة» «مسؤول الفريق» في كل مكان: التطبيق والمساعدة والمستندات."
+],
+[
+"Qui est en ligne ?",
+"Who is online?",
+"من متصل؟"
+],
+[
+"Nouvel onglet « Connexions » pour l'administrateur : qui est en ligne maintenant, la date de la dernière connexion de chacun, le nombre de connexions, et ceux qui ne se sont jamais connectés.",
+"New \"Connections\" tab for the administrator: who is online now, each person's last connection date, the number of connections, and who has never connected.",
+"علامة جديدة «الاتصالات» للمسؤول: من متصل الآن، وتاريخ آخر اتصال لكل شخص، وعدد الاتصالات، ومن لم يتصل أبدًا."
+],
+[
+"Privilèges du responsable d’équipe et plusieurs e-mails",
+"Team manager privileges and several e-mails",
+"صلاحيات مسؤول الفريق وعدة عناوين بريد"
+],
+[
+"L'administrateur choisit, chef par chef, s'il peut extraire l'attachement et la facture (case dans sa fiche), en plus de l'accès au Setup.",
+"The administrator chooses, manager by manager, whether they can extract the statement and invoice (tick box in their record), in addition to Setup access.",
+"يختار المسؤول، لكل مسؤول فريق، هل يمكنه استخراج المحضر والفاتورة (خانة في بطاقته)، إضافةً إلى الوصول إلى الإعدادات."
+],
+[
+"L'onglet Client accepte jusqu'à 4 e-mails de contact client (Setup → Client) : chacun reçoit son compte de consultation, avec les mêmes droits.",
+"The Client tab accepts up to 4 client contact e-mails (Setup → Client): each gets a view-only account with the same rights.",
+"تقبل علامة العميل حتى 4 عناوين بريد (الإعدادات ← العميل): يحصل كل عنوان على حساب اطلاع بنفس الحقوق."
+],
+[
+"L'e-mail de la direction du prestataire accepte aussi 4 adresses.",
+"The provider management e-mail also accepts 4 addresses.",
+"يقبل بريد إدارة المزوّد أيضًا 4 عناوين."
+],
+[
+"Exports pour le responsable d’équipe",
+"Exports for the team manager",
+"التصدير لمسؤول الفريق"
+],
+[
+"Le responsable d’équipe a un nouvel onglet « Exports » : il extrait en Excel ou PDF la fiche de pointage, l'attachement et la facture déjà établie. Il consulte seulement ; la validation reste à l'administrateur.",
+"The team manager has a new \"Exports\" tab: extract the attendance sheet, the statement and the issued invoice as Excel or PDF. Read-only; validation stays with the administrator.",
+"لمسؤول الفريق علامة جديدة «التصدير»: يستخرج ورقة الحضور والمحضر والفاتورة الصادرة بصيغة Excel أو PDF. للاطلاع فقط؛ الاعتماد يبقى للمسؤول."
+],
+[
+"Dans Setup, les onglets sont dans un nouvel ordre : Prestataire (mon entreprise), Client, Contrat, Rotation.",
+"In Setup, the tabs have a new order: Provider (my company), Client, Contract, Rotation.",
+"في الإعدادات، ترتيب جديد للعلامات: المزوّد (شركتي)، العميل، العقد، التناوب."
+],
+[
+"Sécurité renforcée et listes triées",
+"Stronger security and sorted lists",
+"أمان معزّز وقوائم مرتبة"
+],
+[
+"Les agents sont classés par ordre alphabétique partout (pointage, gestion, documents).",
+"Agents are sorted alphabetically everywhere (attendance, management, documents).",
+"يُرتَّب الأعوان أبجديًا في كل مكان (الحضور، الإدارة، المستندات)."
+],
+[
+"Un texte saisi (nom, message, remarque) ne peut plus jamais être pris pour une formule du classeur.",
+"Typed text (name, message, remark) can never again be mistaken for a spreadsheet formula.",
+"لم يعد بالإمكان اعتبار أي نص مُدخل (اسم، رسالة، ملاحظة) صيغة في الجدول."
+],
+[
+"Protection contre les envois en masse : nombre de demandes, de remarques et de codes de réinitialisation limité par heure.",
+"Protection against mass sending: requests, remarks and reset codes are limited per hour.",
+"حماية من الإرسال الجماعي: عدد الطلبات والملاحظات ورموز إعادة التعيين محدود في الساعة."
+],
+[
+"Les logos importés sont vérifiés (vrai format PNG, JPG ou GIF).",
+"Imported logos are checked (real PNG, JPG or GIF format).",
+"يتم التحقق من الشعارات المستوردة (تنسيق PNG أو JPG أو GIF حقيقي)."
+],
+[
+"Logos par import et demandes modifiables",
+"Logo upload and editable requests",
+"استيراد الشعارات وطلبات قابلة للتعديل"
+],
+[
+"Les logos du prestataire et du client s'ajoutent maintenant en important une image (PNG, JPG ou GIF) dans Setup, sans rien recopier. Ils apparaissent sur les documents exportés.",
+"Provider and client logos are now added by importing an image (PNG, JPG or GIF) in Setup, with nothing to retype. They appear on exported documents.",
+"تُضاف شعارات المزوّد والعميل الآن باستيراد صورة (PNG أو JPG أو GIF) في الإعدادات دون نسخ أي شيء. تظهر على المستندات المصدّرة."
+],
+[
+"Dans « Demandes à traiter » et « Mes demandes », un bouton « Modifier » permet de corriger une demande en attente (oubli, mauvaise date…).",
+"In \"Requests to handle\" and \"My requests\", an \"Edit\" button corrects a pending request (omission, wrong date…).",
+"في «طلبات للمعالجة» و«طلباتي»، يتيح زر «تعديل» تصحيح طلب قيد الانتظار (نسيان، تاريخ خاطئ…)."
+],
+[
+"Une demande envoyée à la direction est marquée « Traitée : demande transmise à la direction » avec le nom de l'entreprise prestataire.",
+"A request sent to management is marked \"Processed: request sent to management\" with the provider company's name.",
+"يُعلَّم الطلب المرسل إلى الإدارة «تمت المعالجة: تم إرسال الطلب إلى الإدارة» مع اسم الشركة المزوّدة."
 ]
 ]

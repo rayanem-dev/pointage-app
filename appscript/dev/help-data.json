@@ -129,8 +129,8 @@
      "طلباتي"
     ],
     "x": [
-     "Choisissez le type (titre de congé, attestation de travail, ATS, fiche d'émoluments, prolongation de congé ou de séjour), les dates si besoin, un message, puis « Envoyer ma demande ». Elle part chez votre chef de groupe, qui est prévenu par e-mail. Pour un titre de congé, la date de reprise est calculée pour vous.",
-     "Choose the type (leave certificate, work certificate, ATS, pay sheet, leave or stay extension), the dates if needed, a message, then \"Send my request\". It goes to your group leader, who is notified by e-mail. For a leave certificate, the return date is calculated for you.",
+     "Choisissez le type (titre de congé, attestation de travail, ATS, fiche d'émoluments, prolongation de congé ou de séjour), les dates si besoin, un message, puis « Envoyer ma demande ». Elle part chez votre responsable d’équipe, qui est prévenu par e-mail. Pour un titre de congé, la date de reprise est calculée pour vous.",
+     "Choose the type (leave certificate, work certificate, ATS, pay sheet, leave or stay extension), the dates if needed, a message, then \"Send my request\". It goes to your team manager, who is notified by e-mail. For a leave certificate, the return date is calculated for you.",
      "اختر النوع (وثيقة إجازة، شهادة عمل، ATS، كشف أجر، تمديد إجازة أو إقامة) والتواريخ عند الحاجة ورسالة ثم «إرسال طلبي». يصل الطلب إلى رئيس فريقك ويُبلَّغ بالبريد. وبالنسبة لوثيقة الإجازة تُحسب لك تاريخ العودة."
     ]
    },
@@ -227,9 +227,9 @@
      "التصدير: الورقة، المحضر، الفاتورة"
     ],
     "x": [
-     "L'onglet « Exports » permet au chef de groupe d'extraire en Excel ou PDF la fiche de pointage. L'attachement du mois et la facture déjà établie ne sont disponibles que si l'administrateur a coché « Autoriser l'extraction de l'attachement et de la facture » dans la fiche du chef. Il consulte seulement : la validation et la facturation restent à l'administrateur.",
-     "The \"Exports\" tab lets the group leader extract the attendance sheet as Excel or PDF. The month's statement and the issued invoice are only available if the administrator ticked \"Allow extracting the statement and the invoice\" in the leader's record. Read-only: validating and invoicing remain with the administrator.",
-     "تتيح علامة «التصدير» لرئيس المجموعة استخراج ورقة الحضور بصيغة Excel أو PDF. لا يتوفر محضر الشهر والفاتورة الصادرة إلا إذا فعّل المسؤول خيار «السماح باستخراج المحضر والفاتورة» في بطاقة الرئيس. للاطلاع فقط: الاعتماد والفوترة يبقيان للمسؤول."
+     "L'onglet « Exports » permet au responsable d’équipe d'extraire en Excel ou PDF la fiche de pointage. L'attachement du mois et la facture déjà établie ne sont disponibles que si l'administrateur a coché « Autoriser l'extraction de l'attachement et de la facture » dans la fiche du chef. Il consulte seulement : la validation et la facturation restent à l'administrateur.",
+     "The \"Exports\" tab lets the team manager extract the attendance sheet as Excel or PDF. The month's statement and the issued invoice are only available if the administrator ticked \"Allow extracting the statement and the invoice\" in the leader's record. Read-only: validating and invoicing remain with the administrator.",
+     "تتيح علامة «التصدير» لمسؤول الفريق استخراج ورقة الحضور بصيغة Excel أو PDF. لا يتوفر محضر الشهر والفاتورة الصادرة إلا إذا فعّل المسؤول خيار «السماح باستخراج المحضر والفاتورة» في بطاقة الرئيس. للاطلاع فقط: الاعتماد والفوترة يبقيان للمسؤول."
     ]
    }
   ]
@@ -253,8 +253,8 @@
      "إنشاء عون"
     ],
     "x": [
-     "Page « Agents » : nom, e-mail (c'est son identifiant), rôle, contrat, fonction, affectation, rotation, chef de groupe. Laissez le mot de passe vide : il est généré. La case « Envoyer ses accès par e-mail » lui envoie le lien, son identifiant et son mot de passe provisoire.",
-     "\"Agents\" page: name, e-mail (this is the login), role, contract, function, assignment, rotation, group leader. Leave the password empty: it is generated. The \"Send access by e-mail\" box sends the link, the login and a temporary password.",
+     "Page « Agents » : nom, e-mail (c'est son identifiant), rôle, contrat, fonction, affectation, rotation, responsable d’équipe. Laissez le mot de passe vide : il est généré. La case « Envoyer ses accès par e-mail » lui envoie le lien, son identifiant et son mot de passe provisoire.",
+     "\"Agents\" page: name, e-mail (this is the login), role, contract, function, assignment, rotation, team manager. Leave the password empty: it is generated. The \"Send access by e-mail\" box sends the link, the login and a temporary password.",
      "صفحة «الأعوان»: الاسم والبريد (وهو المعرّف) والدور والعقد والوظيفة والتعيين والتناوب ورئيس الفريق. اترك كلمة المرور فارغة: تُنشأ تلقائيًا. خانة «إرسال بيانات الدخول بالبريد» ترسل الرابط والمعرّف وكلمة المرور المؤقتة."
     ]
    },
@@ -272,13 +272,13 @@
    },
    {
     "t": [
-     "Chef de groupe",
-     "Group leader",
+     "Responsable d’équipe",
+     "Team manager",
      "رئيس الفريق"
     ],
     "x": [
-     "Donnez le rôle « Chef de groupe » à un agent, puis choisissez-le dans le champ « Chef de groupe » des autres agents (ou en modification groupée). Il voit et pointe son équipe, et reçoit ses demandes.",
-     "Give the role \"Group leader\" to an agent, then choose them in the \"Group leader\" field of the other agents (or in bulk edit). They see and record their team's attendance and receive its requests.",
+     "Donnez le rôle « Responsable d’équipe » à un agent, puis choisissez-le dans le champ « Responsable d’équipe » des autres agents (ou en modification groupée). Il voit et pointe son équipe, et reçoit ses demandes.",
+     "Give the role \"Team manager\" to an agent, then choose them in the \"Team manager\" field of the other agents (or in bulk edit). They see and record their team's attendance and receive its requests.",
      "امنح دور «رئيس الفريق» لأحد الأعوان ثم اخترْه في حقل «رئيس الفريق» لدى بقية الأعوان (أو بالتعديل الجماعي). يرى فريقه ويسجّل حضوره ويتلقى طلباته."
     ]
    },
@@ -289,9 +289,9 @@
      "تعديل عدة أعوان دفعة واحدة"
     ],
     "x": [
-     "Cochez plusieurs lignes : une barre apparaît en bas pour changer l'affectation, la rotation, le contrat, la fonction, le chef ou le statut de tous.",
-     "Tick several lines: a bar appears at the bottom to change the assignment, rotation, contract, function, leader or status of all of them.",
-     "حدّد عدة أسطر: يظهر شريط في الأسفل لتغيير التعيين أو التناوب أو العقد أو الوظيفة أو الرئيس أو الحالة للجميع."
+     "Cochez plusieurs lignes : une barre apparaît en bas pour changer l'affectation, la rotation, le contrat, la fonction, le responsable ou le statut de tous.",
+     "Tick several lines: a bar appears at the bottom to change the assignment, rotation, contract, function, manager or status of all of them.",
+     "حدّد عدة أسطر: يظهر شريط في الأسفل لتغيير التعيين أو التناوب أو العقد أو الوظيفة أو المسؤول أو الحالة للجميع."
     ]
    },
    {
@@ -573,8 +573,8 @@
      "ترك ملاحظة"
     ],
     "x": [
-     "Un clic sur une case du pointage ouvre une zone de texte : la remarque est marquée d'un repère rouge dans la grille et envoyée par e-mail au chef de groupe. Le prestataire la marque « vu » et peut répondre ; le client voit la réponse.",
-     "A click on an attendance cell opens a text box: the remark is marked with a red corner in the grid and sent by e-mail to the group leader. The provider marks it \"seen\" and can reply; the client sees the reply.",
+     "Un clic sur une case du pointage ouvre une zone de texte : la remarque est marquée d'un repère rouge dans la grille et envoyée par e-mail au responsable d’équipe. Le prestataire la marque « vu » et peut répondre ; le client voit la réponse.",
+     "A click on an attendance cell opens a text box: the remark is marked with a red corner in the grid and sent by e-mail to the team manager. The provider marks it \"seen\" and can reply; the client sees the reply.",
      "النقر على خانة في الحضور يفتح مربع نص: تُعلَّم الملاحظة بعلامة حمراء في الشبكة وتُرسل بالبريد إلى رئيس الفريق. يعلّمها المؤدّي «مقروء» ويمكنه الرد ويرى الزبون الرد."
     ]
    }
@@ -601,8 +601,8 @@
      "نسيت كلمة المرور"
     ],
     "x": [
-     "Sur la page de connexion, cliquez sur « Mot de passe oublié ? », saisissez votre e-mail : un code à 6 chiffres vous est envoyé (valable 30 minutes). Saisissez-le avec votre nouveau mot de passe. Si l'e-mail n'arrive pas, votre chef de groupe ou votre administrateur peut vous envoyer un nouvel accès.",
-     "On the sign-in page, click \"Forgot your password?\" and enter your e-mail: a 6-digit code is sent to you (valid for 30 minutes). Enter it with your new password. If the e-mail does not arrive, your group leader or administrator can send you new access.",
+     "Sur la page de connexion, cliquez sur « Mot de passe oublié ? », saisissez votre e-mail : un code à 6 chiffres vous est envoyé (valable 30 minutes). Saisissez-le avec votre nouveau mot de passe. Si l'e-mail n'arrive pas, votre responsable d’équipe ou votre administrateur peut vous envoyer un nouvel accès.",
+     "On the sign-in page, click \"Forgot your password?\" and enter your e-mail: a 6-digit code is sent to you (valid for 30 minutes). Enter it with your new password. If the e-mail does not arrive, your team manager or administrator can send you new access.",
      "في صفحة الدخول انقر على «نسيت كلمة المرور؟» وأدخل بريدك الإلكتروني: يُرسل إليك رمز من 6 أرقام (صالح 30 دقيقة). أدخله مع كلمة المرور الجديدة. وإن لم يصل البريد فيمكن لرئيس فريقك أو للمسؤول إرسال بيانات دخول جديدة لك."
     ]
    },

@@ -40,7 +40,7 @@ test('setup : prestataire, rotation, contrats ; accès chef accordé par l\'admi
   }));
 });
 
-test('création des agents : par l\'admin et par le chef de groupe', () => {
+test('création des agents : par l\'admin et par le responsable d’équipe', () => {
   const a = T.admin;
   const chef = ok(call(a, 'agentCreate', { nom: 'CHEF UN', email: 'chef@test.local', role: 'chef', fonction: 'Technicien électricien', contrat: 'C1', password: 'chefpw12' }));
   T.chefId = chef.agent.id;
@@ -188,7 +188,7 @@ test('exports : fiche (chef), attachement N°16 et facture de mai (admin)', () =
   assert.match(env.fetches.at(-1), /export\?format=pdf&size=A4&portrait=false/);
   ok(call(T.chef, 'exportFiche', { month: TODAY.slice(0, 7), format: 'xlsx' }));
   assert.match(env.fetches.at(-1), /format=xlsx$/);
-  // le chef de groupe extrait (lecture seule) : attachement, copie de facture ; mais ne valide ni ne facture
+  // le responsable d’équipe extrait (lecture seule) : attachement, copie de facture ; mais ne valide ni ne facture
   fail(call(T.chef, 'exportAttachement', { month: '2026-08', contrat: 'C1', format: 'pdf' }), /non accordé/); // privilège à donner par l'administrateur
   ok(call(T.admin, 'agentUpdate', T.chefId, { acces_exports: true }));
   assert.ok(ok(call(T.chef, 'exportAttachement', { month: '2026-08', contrat: 'C1', format: 'pdf' })).nom.endsWith('pdf'));
@@ -294,10 +294,10 @@ test('véhicules (VH) mis à disposition : pointés comme des agents, bornés pa
   assert.deepStrictEqual([lv.positions, lv.contrat], [2, 1080]);
 });
 
-test('représentant prestataire : responsable de groupe par défaut, sinon autre choix ou vide', () => {
+test('représentant prestataire : responsable d’équipe par défaut, sinon autre choix ou vide', () => {
   const a = T.admin;
   const att = () => ok(call(a, 'attachementPreview', '2026-08', 'C1')).rep_prestataire;
-  assert.strictEqual(att(), 'CHEF UN', 'défaut : le responsable de groupe du contrat');
+  assert.strictEqual(att(), 'CHEF UN', 'défaut : le responsable d’équipe du contrat');
   const set = (v) => { const d = ok(call(a, 'contratsGet')); d.contrats[0].rep_prestataire = v; ok(call(a, 'contratsSave', { contrats: d.contrats, fonctions: d.fonctions })); };
   set('AUTRE PERSONNE'); assert.strictEqual(att(), 'AUTRE PERSONNE');
   set('-'); assert.strictEqual(att(), '', 'aucun : laissé vide');

@@ -3,7 +3,7 @@
 Application web de gestion des pointages du personnel détaché (rotation T / R), **100 % Google** : un classeur Google Sheets sert de base de données, **Google Apps Script** de serveur, et un site statique HTML/JS permet de l'installer sur l'écran d'accueil (PWA).
 
 * **Agents** : situation du jour (en travail / en congé, jours restants), solde, calendrier, demandes (titre de congé, attestation de travail, ATS, fiche d'émoluments, prolongation de congé / de séjour), documents.
-* **Chefs de groupe** : pointage de leur groupe, création des agents, demandes regroupées par thème et envoyées en une seule fois à la direction, dépôt de documents.
+* **Responsables d’équipe** : pointage de leur groupe, création des agents, demandes regroupées par thème et envoyées en une seule fois à la direction, dépôt de documents.
 * **Admin** : paramètres (prestataire, rotation, couleurs, contrats, prix), accès Setup au choix, exports **fiche de pointage / attachement / facture** (Excel et PDF), installation et remise à zéro (coquille vide).
 
 Installation, droits, base de données et tests : voir [`appscript/README.md`](appscript/README.md).

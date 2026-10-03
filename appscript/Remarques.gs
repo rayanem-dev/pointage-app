@@ -1,6 +1,6 @@
 /**
  * Remarques du client sur le pointage : le compte client (consultation) signale un jour d'un agent de son contrat ;
- * le prestataire (chef de groupe, administrateur) les voit dans les grilles, les marque « vu » et peut répondre.
+ * le prestataire (responsable d’équipe, administrateur) les voit dans les grilles, les marque « vu » et peut répondre.
  */
 var Remarques = (function () {
   function all() { return Store.readTable('Remarques'); }
@@ -20,7 +20,7 @@ var Remarques = (function () {
     notify(user, agent, r);
     return enrich(r, visibleIds(user));
   }
-  // Prévient par e-mail celui qui suit l'agent (chef de groupe, sinon les administrateurs).
+  // Prévient par e-mail celui qui suit l'agent (responsable d’équipe, sinon les administrateurs).
   function notify(user, agent, r) {
     try {
       var agents = Agents.list(); var chef = agent.chef_id ? agents.filter(function (a) { return a.id === agent.chef_id && a.actif === '1'; })[0] : null;

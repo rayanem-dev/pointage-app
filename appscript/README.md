@@ -1,11 +1,11 @@
 # Pointage — version Google Apps Script
 
-Application de pointage (agents / chefs de groupe / admin, rotation T-R, prévisions, reliquats, exports), **100 % dans Google** : le classeur Google Sheets est la base de données, Apps Script est le serveur et l'interface est une application Web servie par Google. Aucun hébergement à payer.
+Application de pointage (agents / responsables d’équipe / admin, rotation T-R, prévisions, reliquats, exports), **100 % dans Google** : le classeur Google Sheets est la base de données, Apps Script est le serveur et l'interface est une application Web servie par Google. Aucun hébergement à payer.
 
 ## Ce que voit chaque rôle
 
-* **Agent** — accueil personnel : **est-il aujourd'hui en travail ou en congé** (pointé ou prévu), **combien de jours il lui reste** (aujourd'hui compris) et la date du prochain changement, solde T − CR, cumuls, calendrier coloré. Il fait ses **demandes** : titre de congé, attestation de travail, ATS, fiche d'émoluments, prolongation de congé, prolongation de séjour, et consulte ses **documents** (déposés par son chef de groupe).
-* **Chef de groupe** — pointe ses agents (liste déroulante + date ou période + T / R / ABS), voit la grille de son groupe, **crée les agents de son groupe**, dépose leurs documents. Toutes les demandes de son groupe arrivent chez lui, **regroupées par thème** : il coche ce qu'il transmet et envoie **une seule demande groupée à la direction** (e-mail + suivi dans l'application). Quand la direction répond, il enregistre la réponse en un clic : elle est appliquée à toutes les demandes de l'envoi et visible par chaque agent.
+* **Agent** — accueil personnel : **est-il aujourd'hui en travail ou en congé** (pointé ou prévu), **combien de jours il lui reste** (aujourd'hui compris) et la date du prochain changement, solde T − CR, cumuls, calendrier coloré. Il fait ses **demandes** : titre de congé, attestation de travail, ATS, fiche d'émoluments, prolongation de congé, prolongation de séjour, et consulte ses **documents** (déposés par son responsable d’équipe).
+* **Responsable d’équipe** — pointe ses agents (liste déroulante + date ou période + T / R / ABS), voit la grille de son groupe, **crée les agents de son groupe**, dépose leurs documents. Toutes les demandes de son groupe arrivent chez lui, **regroupées par thème** : il coche ce qu'il transmet et envoie **une seule demande groupée à la direction** (e-mail + suivi dans l'application). Quand la direction répond, il enregistre la réponse en un clic : elle est appliquée à toutes les demandes de l'envoi et visible par chaque agent.
 * **Admin** — tout ce qui précède + rôles, groupes, **accès à l'onglet Setup accordé chef par chef** (case à cocher dans la fiche du chef), exports Attachement / Facture, installation et remise à zéro.
 
 ## Installation (10 minutes)
@@ -86,12 +86,12 @@ L'accueil de l'agent (« en travail / en congé aujourd'hui, N jours restants »
 Tout est lié : **le contrat est la source**.
 
 1. **Déposer le bordereau des prix** (**Setup → Contrat**) : une zone visible « Déposer le bordereau des prix du contrat ici » (glisser-déposer ou *Choisir un fichier* : **PDF scanné, photo, Excel ou CSV**). La lecture est **automatique** (pas de bouton « analyser ») : Google lit le document, l'application détecte *Désignation | Nombre | Tarif journalier | Délai de mobilisation | Montant*, déduit les **postes** (`Montant ÷ (Tarif × Délai)` : 15 120 000 ÷ (14 000 × 540) = 2), **contrôle le total** annoncé et reconnaît le **n° de contrat** (même si l'OCR lit « 1/24 » pour « I/24 »). Vous relisez le tableau (lignes douteuses « ⚠ à vérifier » décochées, texte lu par Google consultable), puis **un seul bouton : « Enregistrer dans le contrat »** — le contrat est créé ou mis à jour (sans doublon, libellés de fiche conservés), sans autre étape. La lecture ne dépend pas de la mise en page rendue par l'OCR : si aucun tableau n'est reconnu, elle cherche dans le texte les groupes de nombres vérifiant `Nombre × Tarif × Délai = Montant` et ignore le bruit. *La lecture d'un scan dépend de sa netteté : relisez toujours.*
-2. **Voir le contrat** (menu **Contrats**, chefs de groupe compris, sans les prix pour eux) : fonctions, nombres, délais, prix et montant contractuel, **effectif affecté / nécessaire** par fonction (avec les noms), quantités **déjà facturées**, liste des attachements (statut, facture).
+2. **Voir le contrat** (menu **Contrats**, responsables d’équipe compris, sans les prix pour eux) : fonctions, nombres, délais, prix et montant contractuel, **effectif affecté / nécessaire** par fonction (avec les noms), quantités **déjà facturées**, liste des attachements (statut, facture).
 3. **Agents et véhicules** : pour un agent ou un VH rattaché au contrat, la fonction se choisit **uniquement parmi les désignations du contrat** (avec l'effectif : `2 postes · 4/4 affectés · complet`). Effectif d'une fonction de personnel = **postes × (travail + repos) ÷ travail** (2 postes en 28/28 = 4 personnes) ; véhicule = quantité. Au-delà, la saisie est refusée (règle désactivable dans Setup). Les personnes se comptent en **Nombre**, les véhicules mis à disposition en **Quantité** (nature *Personne / Véhicule (VH)* ; un VH se pointe comme un agent, sans compte ni prévision de rotation).
 4. **Attachement** (Exports, ou bouton « Préparer l'attachement de … » du contrat) : brouillon calculé d'après le contrat (nombre × jours du mois, modifiable). **« Valider l'attachement »** le **fige** (copie) : modifier ensuite le contrat, les prix ou les agents ne le change plus. Les mois se valident **dans l'ordre** (la quantité précédente reprend le cumul validé). Réouverture possible tant qu'il n'est pas facturé.
 5. **Facture** : disponible **seulement à partir d'un attachement validé** ; elle reprend ses lignes (mêmes quantités et prix), avec le n° et la date de facture que vous saisissez ; l'attachement passe à *Facturé*.
 
-**Représentant prestataire** (attachement) : par défaut le **responsable de groupe** du contrat (suivi automatiquement s'il change) ; sinon un autre responsable, une autre personne (saisie libre), ou **aucun** (laissé vide).
+**Représentant prestataire** (attachement) : par défaut le **responsable d’équipe** du contrat (suivi automatiquement s'il change) ; sinon un autre responsable, une autre personne (saisie libre), ou **aucun** (laissé vide).
 
 ## Commercialiser : la coquille vide
 
@@ -109,7 +109,7 @@ Tout est lié : **le contrat est la source**.
 
 ### Documents des agents : rangement et renommage automatiques
 
-Le chef de groupe (ou l'admin) dépose un fichier dans le compte d'un agent ; l'application **reconnaît le document, le renomme et le range dans Google Drive** : dossier **`Documents`, créé à côté du classeur**, puis **un sous-dossier par agent** (`Documents/Mezroua Abdeldjalil/`).
+Le responsable d’équipe (ou l'admin) dépose un fichier dans le compte d'un agent ; l'application **reconnaît le document, le renomme et le range dans Google Drive** : dossier **`Documents`, créé à côté du classeur**, puis **un sous-dossier par agent** (`Documents/Mezroua Abdeldjalil/`).
 
 | Document reconnu | Nom donné | Exemple |
 |---|---|---|
@@ -123,7 +123,7 @@ Reconnaissance : d'abord le **nom du fichier** (ex. « fiche de paie mars 2026 �
 
 ## Exports
 
-Fiche de pointage (admin et chefs de groupe), Attachement, Facture — en **Excel** et **PDF**. Chaque document est composé dans un classeur Google temporaire (mise en forme, couleurs, formules) puis exporté par Google et mis à la corbeille. Logos : renseignez l'ID de fichier Drive dans le Setup.
+Fiche de pointage (admin et responsables d’équipe), Attachement, Facture — en **Excel** et **PDF**. Chaque document est composé dans un classeur Google temporaire (mise en forme, couleurs, formules) puis exporté par Google et mis à la corbeille. Logos : renseignez l'ID de fichier Drive dans le Setup.
 
 ## Développement et tests
 

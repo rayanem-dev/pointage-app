@@ -71,7 +71,7 @@ pic(s, os.path.join(ROOT, 'brand', 'logo-sijil-complet.png'), 0.9, 1.15, h=5.1, 
 text(s, 5.6, 1.9, 7.2, 1.4, 'Gestion du temps de travail', size=40, color=NAVY, bold=True)
 text(s, 5.6, 3.55, 7.0, 1.2, "La mise à disposition et le personnel de prestation de services, de A à Z : du bordereau des prix jusqu'à l'attachement et à la facture.", size=20, color=INK)
 text(s, 5.6, 5.4, 7, 0.5, 'En français, en arabe et en anglais · sur ordinateur et sur téléphone', size=16, color=BLUE, bold=True)
-text(s, 5.6, 6.6, 7, 0.4, "Version 3.17 · Octobre 2026 · Captures : entreprise fictive", size=11, color=GREY)
+text(s, 5.6, 6.6, 7, 0.4, "Version 3.18 · Octobre 2026 · Captures : entreprise fictive", size=11, color=GREY)
 
 # 2 problème
 s = new(); title(s, "Un personnel en rotation, c'est vite le désordre", "Fichiers Excel, messages, papiers : chacun a sa version")
@@ -79,7 +79,7 @@ card(s, 0.6, 1.9, 3.9, 2.4, 'Des jours oubliés', "On pointe quand on peut. Au m
 card(s, 4.7, 1.9, 3.9, 2.4, 'Des calculs à la main', "Soldes de congé, dates de reprise, quantités de l'attachement : chaque calcul est une occasion d'erreur.")
 card(s, 8.8, 1.9, 3.9, 2.4, 'Des documents perdus', "Fiches de paie, titres de congé, attestations : dans une boîte mail, un dossier, un téléphone…")
 card(s, 0.6, 4.55, 3.9, 2.25, 'Un client dans le flou', "Il demande « qui était présent mardi ? » et attend une réponse par mail.")
-card(s, 4.7, 4.55, 3.9, 2.25, 'Des demandes éparpillées', "Chaque agent écrit à son chef, qui relaie à la direction, sans suivi.")
+card(s, 4.7, 4.55, 3.9, 2.25, 'Des demandes éparpillées', "Chaque agent écrit à son responsable, qui relaie à la direction, sans suivi.")
 card(s, 8.8, 4.55, 3.9, 2.25, 'Des prévisions impossibles', "Qui part en congé le mois prochain ? Qui reprend ? Il faut tout recompter.")
 
 # 3 solution
@@ -100,7 +100,7 @@ text(s, 0.6, 5.7, 12.1, 1.2, ["Un seul outil, une seule saisie : le bordereau de
 
 # 4 profils
 s = new(); title(s, 'Quatre profils, quatre espaces', "Chaque personne retrouve l'essentiel dès l'ouverture")
-for i, (h_, b) in enumerate([("L'agent", ["Sa situation du jour", "Son solde au départ", "Son pointage sur 1 an", "Ses demandes et documents"]), ('Le chef de groupe', ["Pointe son équipe", "Traite les demandes", "Dépose les documents", "Gère ses agents"]), ("L'administrateur", ["Contrats et bordereaux", "Attachements et factures", "Export, import, sauvegarde", "Réglages de l'entreprise"]), ('Le client', ["Consulte le pointage", "Voit contrat et factures", "Laisse des remarques", "Ne modifie rien"])]):
+for i, (h_, b) in enumerate([("L'agent", ["Sa situation du jour", "Son solde au départ", "Son pointage sur 1 an", "Ses demandes et documents"]), ('Le responsable d’équipe', ["Pointe son équipe", "Traite les demandes", "Dépose les documents", "Gère ses agents"]), ("L'administrateur", ["Contrats et bordereaux", "Attachements et factures", "Export, import, sauvegarde", "Réglages de l'entreprise"]), ('Le client', ["Consulte le pointage", "Voit contrat et factures", "Laisse des remarques", "Ne modifie rien"])]):
     card(s, 0.6 + i * 3.1, 1.9, 2.95, 4.6, h_, ['● ' + x for x in b], size=16, hc=[BLUE, NAVY, NAVY, TEAL][i])
 
 # 5 pointage
@@ -143,13 +143,13 @@ bullets(s, 8.3, 1.9, 4.7, ["Fiche de pointage — Excel et PDF du mois", "Attach
 s = new(PAPER); title(s, 'Votre client suit, et vous répond', 'Un compte de consultation créé tout seul, limité à son contrat')
 pic(s, '81-client-remarque.png', 0.6, 1.75, w=5.9); pic(s, '83-remarque-prestataire.png', 6.9, 1.75, w=5.9)
 bullets(s, 0.6, 5.5, 6.1, ["Un clic sur un jour — le client laisse sa remarque", "Il ne modifie rien — lecture seule"], size=15, gap=8)
-bullets(s, 6.9, 5.5, 6.1, ["Repère rouge dans la grille — et e-mail au chef de groupe", "« Vu » et réponse — le client voit la réponse"], size=15, gap=8)
+bullets(s, 6.9, 5.5, 6.1, ["Repère rouge dans la grille — et e-mail au responsable d’équipe", "« Vu » et réponse — le client voit la réponse"], size=15, gap=8)
 
 # 13 notifications
 s = new(); title(s, 'Tout le monde est prévenu au bon moment', 'Pastilles, messages à l\'écran et e-mails')
 card(s, 0.6, 1.9, 3.9, 2.5, 'Nouveau document', "Pastille « Mes documents », message à l'écran et e-mail avec le nom du fichier.")
-card(s, 4.7, 1.9, 3.9, 2.5, 'Nouvelle demande', "Le chef de groupe est prévenu avec les dates et la date de reprise.")
-card(s, 8.8, 1.9, 3.9, 2.5, 'Nouvelle remarque', "Le chef de groupe voit la pastille et reçoit la remarque du client.")
+card(s, 4.7, 1.9, 3.9, 2.5, 'Nouvelle demande', "Le responsable d’équipe est prévenu avec les dates et la date de reprise.")
+card(s, 8.8, 1.9, 3.9, 2.5, 'Nouvelle remarque', "Le responsable d’équipe voit la pastille et reçoit la remarque du client.")
 card(s, 0.6, 4.65, 6.0, 2.1, 'Accès envoyés par e-mail', "À la création d'un agent, ou à tout moment : lien, identifiant et mot de passe provisoire.")
 card(s, 6.8, 4.65, 5.9, 2.1, 'Demandes groupées', "Une seule demande par e-mail à la direction, avec la réponse appliquée à toutes.")
 

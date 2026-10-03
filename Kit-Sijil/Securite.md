@@ -6,8 +6,8 @@ Revue du code de l'application (serveur Apps Script, interface, page d'accueil).
 | Risque | Gravité | Correction |
 |---|---|---|
 | **Injection de formules** : un nom, un message ou une remarque commençant par `=` pouvait devenir une formule du classeur (par exemple `IMPORTDATA` envoyant des cellules, dont les empreintes de mots de passe, vers un site extérieur). | Élevée | Tout texte saisi est neutralisé avant écriture (classeur et exports Excel / PDF). Test automatique ajouté. |
-| **Envois d'e-mails en masse** (demandes, remarques, codes de réinitialisation) pouvant épuiser le quota d'e-mails ou harceler un chef de groupe. | Moyenne | Plafonds par heure et par compte, plafond global pour les codes de réinitialisation. |
-| **Fiche de contrôle** : un chef de groupe pouvait voir les noms d'agents d'autres groupes. | Faible | Limitée aux agents visibles par l'utilisateur. |
+| **Envois d'e-mails en masse** (demandes, remarques, codes de réinitialisation) pouvant épuiser le quota d'e-mails ou harceler un responsable d’équipe. | Moyenne | Plafonds par heure et par compte, plafond global pour les codes de réinitialisation. |
+| **Fiche de contrôle** : un responsable d’équipe pouvait voir les noms d'agents d'autres groupes. | Faible | Limitée aux agents visibles par l'utilisateur. |
 | **Texte libre sans limite** (messages, réponses, notes) | Faible | Longueurs limitées. |
 | **Logo** : seul le type annoncé par le navigateur était vérifié. | Faible | Le contenu du fichier est vérifié (PNG, JPG, GIF réels). |
 

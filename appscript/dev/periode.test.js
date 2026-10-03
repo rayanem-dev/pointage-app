@@ -101,7 +101,7 @@ test('compléter les jours non pointés : dernier statut recopié, jamais de rem
   fail(call(tk, 'pointerCompleter', { tous: true, to: 'bof' }), /Dates invalides/);
 });
 
-test('compléter avec la rotation prévue (option) et droits du chef de groupe', () => {
+test('compléter avec la rotation prévue (option) et droits du responsable d’équipe', () => {
   const tk = ok(call(null, 'login', 'admin@t.fr', 'adminpw12')).token;
   const today = run('Dates.today()'); const j = (n) => run(`Dates.addDays('${today}', ${n})`);
   const a = ok(call(tk, 'agentCreate', { nom: 'ROT AGENT', email: 'rot@t.fr', role: 'agent', password: 'passw0rd12', rotation: '3/3' })).agent;

@@ -33,7 +33,7 @@ var DocData = (function () {
     else if (hors.length) warn.push(hors.length + ' agent(s) hors contrat ne seront pas dans la fiche : ' + hors.slice(0, 5).map(function (a) { return a.nom; }).join(', ') + '.');
     return { mois: key, dans: dans.length, hors: hors.length, avertissements: warn };
   }
-  // Représentant du prestataire : '' = responsable de groupe (par défaut), '-' = aucun (laissé vide), sinon le nom choisi.
+  // Représentant du prestataire : '' = responsable d’équipe (par défaut), '-' = aucun (laissé vide), sinon le nom choisi.
   function repPrestataire(contrat) {
     var v = String(contrat.rep_prestataire || '');
     if (v === '-') return '';

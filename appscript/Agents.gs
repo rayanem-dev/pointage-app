@@ -1,4 +1,4 @@
-/** Agents : le chef de groupe ET l'admin peuvent créer des agents ; seul l'admin gère rôles, groupes et accès au Setup. */
+/** Agents : le responsable d’équipe ET l'admin peuvent créer des agents ; seul l'admin gère rôles, groupes et accès au Setup. */
 var Agents = (function () {
   function list() { return Store.readTable('Agents'); }
   function get(id) { return list().filter(function (a) { return a.id === id; })[0]; }

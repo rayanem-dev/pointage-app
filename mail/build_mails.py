@@ -50,10 +50,10 @@ m1 = page(
  'Votre pointage, simple et à jour', 'Une nouvelle façon de suivre le temps de travail, les demandes et les documents du personnel.',
  f'<p style="margin:0 0 12px">Bonjour,</p><p style="margin:0 0 12px">Nous avons le plaisir de vous présenter <b>Sijil</b>, l’outil qui remplace les fichiers et les messages éparpillés : le <b>pointage</b>, les <b>demandes</b> (titre de congé, attestation…), les <b>documents</b> et le <b>suivi du contrat</b> se trouvent au même endroit, accessibles depuis un <b>téléphone</b> ou un <b>ordinateur</b>, en <b>français, en arabe et en anglais</b>.</p><p style="margin:0">Voici l’essentiel de ce que chacun y trouve :</p>',
  [block('agent.jpg', 'Pour l’agent', 'Sa situation du jour (travail ou congé), les jours qui lui restent, son solde et sa date de reprise. Il consulte son pointage sur 1 mois, 3 mois, 6 mois ou 1 an.'),
-  block('demandes.jpg', 'Les demandes, sans courir après', 'L’agent fait sa demande en deux clics ; le chef de groupe est prévenu, regroupe les demandes par thème et envoie une seule demande à la direction. La date de reprise est calculée automatiquement.', True),
-  block('completer.jpg', 'Pour le chef de groupe', 'Il pointe son équipe en un clic (T, R, ABS) et rattrape les jours oubliés d’un seul bouton. Les prévisions suivent la rotation prévue.'),
+  block('demandes.jpg', 'Les demandes, sans courir après', 'L’agent fait sa demande en deux clics ; le responsable d’équipe est prévenu, regroupe les demandes par thème et envoie une seule demande à la direction. La date de reprise est calculée automatiquement.', True),
+  block('completer.jpg', 'Pour le responsable d’équipe', 'Il pointe son équipe en un clic (T, R, ABS) et rattrape les jours oubliés d’un seul bouton. Les prévisions suivent la rotation prévue.'),
   block('mobile.jpg', 'Partout, sur téléphone', 'L’application s’installe sur le téléphone comme une application. Une pastille signale les nouveaux documents et demandes.', True)],
- f'<tr><td style="padding:10px 24px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>{card("Direction et RH","Une demande groupée par e-mail, la réponse s’applique à toutes les demandes.")}{card("Documents rangés","Fiches de paie, titres de congé, attestations : classés par agent et notifiés.")}{card("Jours fériés","Fêtes nationales et religieuses visibles sur toutes les vues.")}</tr></table></td></tr><tr><td style="padding:8px 24px 0;font:15px/1.6 Arial,Helvetica,sans-serif;color:{INK}"><b style="color:{NAVY}">Vos données sont protégées</b>{ul(["Chacun ne voit que ce qui le concerne (l’agent, son chef de groupe, la direction).","Les mots de passe ne sont jamais stockés en clair ; « Mot de passe oublié ? » envoie un code par e-mail.","Option « Rester connecté » pour ne pas retaper son mot de passe."])}<p style="margin:14px 0 0"><b style="color:'+NAVY+'">Pour vous connecter</b> : cliquez sur « Se connecter à l’application », saisissez l’identifiant et le mot de passe qui vous ont été transmis (par e-mail ou par votre chef de groupe), puis installez l’application sur votre téléphone si vous le souhaitez.</p></td></tr>',
+ f'<tr><td style="padding:10px 24px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>{card("Direction et RH","Une demande groupée par e-mail, la réponse s’applique à toutes les demandes.")}{card("Documents rangés","Fiches de paie, titres de congé, attestations : classés par agent et notifiés.")}{card("Jours fériés","Fêtes nationales et religieuses visibles sur toutes les vues.")}</tr></table></td></tr><tr><td style="padding:8px 24px 0;font:15px/1.6 Arial,Helvetica,sans-serif;color:{INK}"><b style="color:{NAVY}">Vos données sont protégées</b>{ul(["Chacun ne voit que ce qui le concerne (l’agent, son responsable d’équipe, la direction).","Les mots de passe ne sont jamais stockés en clair ; « Mot de passe oublié ? » envoie un code par e-mail.","Option « Rester connecté » pour ne pas retaper son mot de passe."])}<p style="margin:14px 0 0"><b style="color:'+NAVY+'">Pour vous connecter</b> : cliquez sur « Se connecter à l’application », saisissez l’identifiant et le mot de passe qui vous ont été transmis (par e-mail ou par votre responsable d’équipe), puis installez l’application sur votre téléphone si vous le souhaitez.</p></td></tr>',
  [('Se connecter à l’application', APP), ('Découvrir la présentation', PRES, BLUE), ('Ouvrir le document', DOC, BLUE)],
  'Nous restons à votre disposition pour une démonstration ou pour répondre à vos questions.<br><br>Cordialement,<br><b>Rayane M.</b><br><span style="color:'+GREY+'">Sijil — Gestion du temps de travail</span>')
 
@@ -77,13 +77,13 @@ Bonjour,
 Nous avons le plaisir de vous présenter Sijil : le pointage, les demandes (titre de congé, attestation…), les documents et le suivi du contrat au même endroit, sur téléphone comme sur ordinateur, en français, arabe et anglais.
 
 POUR L'AGENT : sa situation du jour, les jours restants, son solde et sa date de reprise ; pointage sur 1 mois, 3, 6 ou 12 mois.
-POUR LE CHEF DE GROUPE : pointage en un clic (T, R, ABS), rattrapage des jours oubliés d'un seul bouton, prévisions de rotation.
+POUR LE RESPONSABLE D’ÉQUIPE : pointage en un clic (T, R, ABS), rattrapage des jours oubliés d'un seul bouton, prévisions de rotation.
 POUR LA DIRECTION : une seule demande groupée par e-mail ; la réponse s'applique à toutes les demandes.
 DOCUMENTS : fiches de paie, titres de congé, attestations rangés par agent, avec notification.
 PROTECTION : chacun ne voit que ce qui le concerne ; mots de passe jamais en clair ; mot de passe oublié par e-mail.
 
 Se connecter à l'application : {APP}
-Identifiant et mot de passe : transmis par e-mail ou par votre chef de groupe.
+Identifiant et mot de passe : transmis par e-mail ou par votre responsable d’équipe.
 
 Présentation : {PRES}
 Document : {DOC}

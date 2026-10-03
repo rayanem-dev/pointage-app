@@ -2,19 +2,23 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.18.0 — 2026-10-03 — Responsable d'équipe
+
+- Le « chef de groupe » devient « responsable d'équipe » partout dans l'application, l'aide et les documents.
+
 ## 3.17.0 — 2026-10-03 — Qui est en ligne ?
 
 - Nouvel onglet « Connexions » pour l'administrateur : qui est en ligne maintenant, la date de la dernière connexion de chacun, le nombre de connexions, et ceux qui ne se sont jamais connectés.
 
-## 3.16.0 — 2026-10-03 — Privilèges du chef de groupe et plusieurs e-mails
+## 3.16.0 — 2026-10-03 — Privilèges du responsable d’équipe et plusieurs e-mails
 
 - L'administrateur choisit, chef par chef, s'il peut extraire l'attachement et la facture (case dans sa fiche), en plus de l'accès au Setup.
 - L'onglet Client accepte jusqu'à 4 e-mails de contact client (Setup → Client) : chacun reçoit son compte de consultation, avec les mêmes droits.
 - L'e-mail de la direction du prestataire accepte aussi 4 adresses.
 
-## 3.15.0 — 2026-10-03 — Exports pour le chef de groupe
+## 3.15.0 — 2026-10-03 — Exports pour le responsable d’équipe
 
-- Le chef de groupe a un nouvel onglet « Exports » : il extrait en Excel ou PDF la fiche de pointage, l'attachement et la facture déjà établie. Il consulte seulement ; la validation reste à l'administrateur.
+- Le responsable d’équipe a un nouvel onglet « Exports » : il extrait en Excel ou PDF la fiche de pointage, l'attachement et la facture déjà établie. Il consulte seulement ; la validation reste à l'administrateur.
 - Dans Setup, les onglets sont dans un nouvel ordre : Prestataire (mon entreprise), Client, Contrat, Rotation.
 
 ## 3.14.0 — 2026-10-03 — Sécurité renforcée et listes triées
@@ -38,7 +42,7 @@
 
 ## 3.11.0 — 2026-10-02 — Aide intégrée
 
-- Nouvel onglet « Aide » : le mode d'emploi de Sijil, expliqué simplement pour chaque profil (agent, chef de groupe, administrateur, client), avec une recherche.
+- Nouvel onglet « Aide » : le mode d'emploi de Sijil, expliqué simplement pour chaque profil (agent, responsable d’équipe, administrateur, client), avec une recherche.
 - L'aide existe en français, en arabe et en anglais.
 
 ## 3.10.0 — 2026-10-02 — Compléter les jours non pointés
@@ -51,7 +55,7 @@
 
 - Le contrat indique maintenant sa date de début, sa durée et sa date de fin. Tout le monde peut les voir.
 - En ajoutant l'e-mail du contact client dans le contrat, son compte de consultation est créé et ses accès peuvent lui être envoyés.
-- Le client peut laisser une remarque sur n'importe quel jour du pointage. Le chef de groupe est prévenu, répond, et le client voit la réponse.
+- Le client peut laisser une remarque sur n'importe quel jour du pointage. Le responsable d’équipe est prévenu, répond, et le client voit la réponse.
 
 ## 3.8.0 — 2026-10-02 — Vues 3 mois, 6 mois, 1 an et jours fériés
 
@@ -71,7 +75,7 @@
 ## 3.5.0 — 2026-10-02 — Pastilles et notifications
 
 - Une pastille sur « Mes documents » indique les nouveaux documents. Un message s'affiche quand un document arrive, et l'agent reçoit aussi un e-mail.
-- Le chef de groupe voit une pastille sur « Demandes » et reçoit un e-mail à chaque nouvelle demande.
+- Le responsable d’équipe voit une pastille sur « Demandes » et reçoit un e-mail à chaque nouvelle demande.
 
 ## 3.3.0 — 2026-10-02 — Trois langues et mode sombre
 
@@ -139,4 +143,4 @@
 
 ## 1.0.0 — 2026-10-01 — Première version
 
-- Espaces agent, chef de groupe et administrateur. Pointage T / R / ABS. Demandes des agents regroupées par thème et envoyées à la direction.
+- Espaces agent, responsable d’équipe et administrateur. Pointage T / R / ABS. Demandes des agents regroupées par thème et envoyées à la direction.

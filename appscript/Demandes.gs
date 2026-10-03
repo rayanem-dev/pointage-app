@@ -1,5 +1,5 @@
 /**
- * Demandes des agents. Toutes arrivent chez le chef de groupe (ou l'admin pour un agent sans chef).
+ * Demandes des agents. Toutes arrivent chez le responsable d’équipe (ou l'admin pour un agent sans chef).
  * Le chef les regroupe par thème et envoie UNE SEULE demande groupée à la direction.
  */
 var Demandes = (function () {
@@ -7,7 +7,7 @@ var Demandes = (function () {
   var T = new Proxy({}, { get: function (t, k) { return CFG.TYPES_DEMANDE[k]; }, ownKeys: function () { return Object.keys(CFG.TYPES_DEMANDE); }, getOwnPropertyDescriptor: function (t, k) { return k in CFG.TYPES_DEMANDE ? { enumerable: true, configurable: true, value: CFG.TYPES_DEMANDE[k] } : undefined; } });
 
   function byId(list) { var m = {}; list.forEach(function (x) { m[x.id] = x; }); return m; }
-  // Qui traite la demande d'un agent : son chef de groupe actif, sinon l'admin.
+  // Qui traite la demande d'un agent : son responsable d’équipe actif, sinon l'admin.
   function handlerId(agent, agentsById) {
     var chef = agent && agent.chef_id && agentsById[agent.chef_id];
     return chef && chef.actif === '1' ? chef.id : 'admin';
@@ -47,7 +47,7 @@ var Demandes = (function () {
     notifyHandler(user, d);
     return d;
   }
-  // Prévient par e-mail celui qui traite la demande (chef de groupe de l'agent, sinon les administrateurs).
+  // Prévient par e-mail celui qui traite la demande (responsable d’équipe de l'agent, sinon les administrateurs).
   function notifyHandler(user, d) {
     try {
       var all = Agents.list(); var byIdx = byId(all); var h = handlerId(user, byIdx);

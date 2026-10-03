@@ -254,7 +254,7 @@ function render() {
   var bar = h('header', { class: 'top' },
     h('span', { class: 'brandwrap' }, h('img', { src: LOGO, alt: '', width: 28, height: 28, class: 'logo' }), h('strong', { class: 'brand' }, S.params.prestataire || 'Sijil')),
     h('nav', null, links.map(function (l) { return h('a', { href: l[0], 'data-path': l[0].slice(1), class: l[0] === '#' + path ? 'on' : '', onclick: navClick(l[0].slice(1)) }, l[1]); })),
-    h('span', { class: 'who' }, S.user.nom, h('small', null, '(' + (role === 'chef' ? 'chef de groupe' : role) + ')'),
+    h('span', { class: 'who' }, S.user.nom, h('small', null, '(' + (role === 'chef' ? 'responsable d’équipe' : role) + ')'),
       h('a', { href: '#/motdepasse', onclick: navClick('/motdepasse') }, 'Mot de passe'),
       h('button', { class: 'link', onclick: logoutNow }, 'Déconnexion')));
   var main = h('main', null);
@@ -379,7 +379,7 @@ function HomePage() {
           a.change && o.soldeChange != null ? h('div', { class: 'days' }, (a.changeStatus === 'R' ? 'Le jour de votre départ' : 'Le jour de votre reprise') + ', votre solde (T − CR) sera de ', h('b', { class: o.soldeChange < 0 ? 'neg' : 'pos' }, signed(o.soldeChange) + ' ' + (Math.abs(o.soldeChange) > 1 ? 'jours' : 'jour')), '.') : null
         ]);
     } else {
-      todayCard = h('section', { class: 'card today' }, h('h3', null, "Aujourd'hui — " + frDate(o.today)), h('div', { class: 'muted' }, 'Aucun pointage enregistré : votre situation sera calculée dès le premier pointage par votre chef de groupe.'));
+      todayCard = h('section', { class: 'card today' }, h('h3', null, "Aujourd'hui — " + frDate(o.today)), h('div', { class: 'muted' }, 'Aucun pointage enregistré : votre situation sera calculée dès le premier pointage par votre responsable d’équipe.'));
     }
     var stat = function (label, value, cls) { return h('div', { class: 'card stat ' + (cls || '') }, h('b', null, value), h('small', null, label)); };
     var pct = c && c.total ? Math.min(100, Math.round(c.run / c.total * 100)) : 0;
@@ -392,7 +392,7 @@ function HomePage() {
         return h('span', { class: 'calday ' + (s ? 'st-' + s : '') + (!d.statut && s ? ' prevu' : '') + (date === o.today ? ' now' : '') }, h('small', null, i + 1), s);
       }));
     return [
-      h('section', { class: 'card' }, h('h2', null, 'Bonjour ' + o.agent.nom), h('p', { class: 'muted' }, [o.agent.fonction, o.agent.affectation, o.agent.contrat && 'Contrat ' + o.agent.contrat, o.chef && 'Chef de groupe : ' + o.chef.nom].filter(Boolean).join(' · ')), o.contrat && (o.contrat.date_debut || o.contrat.duree_mois) ? h('p', null, contratPeriode(o.contrat)) : null),
+      h('section', { class: 'card' }, h('h2', null, 'Bonjour ' + o.agent.nom), h('p', { class: 'muted' }, [o.agent.fonction, o.agent.affectation, o.agent.contrat && 'Contrat ' + o.agent.contrat, o.chef && 'Responsable d’équipe : ' + o.chef.nom].filter(Boolean).join(' · ')), o.contrat && (o.contrat.date_debut || o.contrat.duree_mois) ? h('p', null, contratPeriode(o.contrat)) : null),
       todayCard,
       h('div', { class: 'stats' }, stat('T ce mois', o.mois.T, 'st-T'), stat('CR ce mois', o.mois.R, 'st-R'), stat('ABS ce mois', o.mois.ABS, 'st-ABS'), stat('Total T', o.cumul.T), stat('Total CR', o.cumul.R), stat('Solde (T − CR)', signed(o.cumul.reliquat), o.cumul.reliquat < 0 ? 'neg' : 'pos')),
       c && c.run ? h('section', { class: 'card' }, h('h3', null, 'Cycle en cours'),
@@ -576,7 +576,7 @@ function GridView(o) {
   return { el: box, setMonth: function (m) { month = m; load(); }, reload: load };
 }
 
-// ---------- pointage (formulaire du chef de groupe / admin) ----------
+// ---------- pointage (formulaire du responsable d’équipe / admin) ----------
 function PointerPage() {
   var wrap = h('div', { style: 'display:grid;gap:16px' });
   var gv = GridView({ canEdit: true, completer: true });
@@ -641,7 +641,7 @@ function DemandesPage() {
     var d1 = h('input', { type: 'date' }); var d2 = h('input', { type: 'date' });
     var msg = h('textarea', { rows: 3, maxlength: 500, placeholder: 'Précisions utiles (motif, destination…)' });
     var box = msgBox(); var btn = h('button', { class: 'primary' }, 'Envoyer ma demande');
-    var dest = S.user.chef_id ? 'à votre chef de groupe' : "à l'administration";
+    var dest = S.user.chef_id ? 'à votre responsable d’équipe' : "à l'administration";
     return h('form', { class: 'card', onsubmit: function (ev) {
       ev.preventDefault();
       act(btn, box, function () { return call('demandeCreate', { type: type.value, message: msg.value, date_debut: d1.value, date_fin: d2.value }); }, 'Demande envoyée ' + dest).then(function (r) { if (r) { flash = { text: 'Demande envoyée ' + dest + '.', ok: true }; load(); } });
@@ -811,7 +811,7 @@ function AgentsPage() {
     var nom = bind(h('input', { value: st.nom, required: true, placeholder: vh ? 'ex. 123-456-16 Toyota Hilux' : '' }), 'nom');
     var email = bind(h('input', { type: 'email', value: st.email, required: true }), 'email');
     var aff = bind(h('input', { value: st.affectation, placeholder: 'ex. Hassi Demo' }), 'affectation');
-    var role = h('select', null, ['agent', 'chef', 'admin', 'client'].map(function (r) { return h('option', { value: r }, { agent: 'Agent', chef: 'Chef de groupe', admin: 'Administrateur', client: 'Client (consultation seule)' }[r]); }));
+    var role = h('select', null, ['agent', 'chef', 'admin', 'client'].map(function (r) { return h('option', { value: r }, { agent: 'Agent', chef: 'Responsable d’équipe', admin: 'Administrateur', client: 'Client (consultation seule)' }[r]); }));
     role.value = st.role; role.addEventListener('change', function () { st.role = role.value; });
     var chef = h('select', null, h('option', { value: '' }, '—'), chefs.map(function (c) { return h('option', { value: c.id }, c.nom); }));
     chef.value = st.chef_id; chef.addEventListener('change', function () { st.chef_id = chef.value; });
@@ -840,10 +840,10 @@ function AgentsPage() {
     } }, h('h2', null, editing ? (vh ? 'Modifier le véhicule' : "Modifier l'agent") : (vh ? 'Nouveau véhicule (VH)' : 'Nouvel agent')),
       isAdmin ? null : h('p', { class: 'muted' }, 'Rattaché à votre groupe.'),
       h('div', { class: 'row' }, field('Type', type), field(vh ? 'Immatriculation / identifiant' : 'Nom et prénom', nom, 'grow2'), vh ? null : field('Email (identifiant)', email, 'grow2'), (isAdmin && !vh) ? field('Rôle', role) : null),
-      h('div', { class: 'row' }, field('N° contrat de prestation', contrat), field(vh ? 'Véhicule du contrat' : 'Métier / fonction (prévu au contrat)', h('div', null, fonctionControl())), field('Affectation', aff), vh ? null : field('Rotation', rot.node), isAdmin ? field('Chef de groupe', chef, null, chefs.length ? null : "Aucun chef de groupe : créez d'abord un compte avec le rôle « Chef de groupe »") : null),
+      h('div', { class: 'row' }, field('N° contrat de prestation', contrat), field(vh ? 'Véhicule du contrat' : 'Métier / fonction (prévu au contrat)', h('div', null, fonctionControl())), field('Affectation', aff), vh ? null : field('Rotation', rot.node), isAdmin ? field('Responsable d’équipe', chef, null, chefs.length ? null : "Aucun responsable d’équipe : créez d'abord un compte avec le rôle « Responsable d’équipe »") : null),
       st.role === 'client' && !vh ? h('p', { class: 'msg warn' }, "Compte de consultation du client : il suit le pointage, les contrats, les attachements et les factures validés (PDF), sans rien modifier et sans accès au Setup, aux demandes ni aux documents des agents. Le n° de contrat ci-dessus limite ce qu'il voit (vide = tout).") : null,
-      (isAdmin && !vh) ? h('label', { class: 'inline' }, setup, " Autoriser l'accès à l'onglet Setup (chef de groupe uniquement)") : null,
-      (isAdmin && !vh) ? h('label', { class: 'inline' }, exps, " Autoriser l'extraction de l'attachement et de la facture (chef de groupe uniquement ; la fiche de pointage est toujours permise)") : null,
+      (isAdmin && !vh) ? h('label', { class: 'inline' }, setup, " Autoriser l'accès à l'onglet Setup (responsable d’équipe uniquement)") : null,
+      (isAdmin && !vh) ? h('label', { class: 'inline' }, exps, " Autoriser l'extraction de l'attachement et de la facture (responsable d’équipe uniquement ; la fiche de pointage est toujours permise)") : null,
       (editing || vh) ? null : field('Mot de passe initial', pw),
       (editing || vh) ? null : h('label', { class: 'inline' }, (function () { var c = h('input', { type: 'checkbox', checked: accessSend }); c.onchange = function () { accessSend = c.checked; }; return c; })(), " Envoyer ses accès par e-mail à la création (lien, identifiant, mot de passe provisoire)"),
       lastAccess && !editing ? (function () {
@@ -887,7 +887,7 @@ function AgentsPage() {
       act(go1, box, function () { return call('agentsUpdateMany', ids, data); }, function (r) { return r.modifies + ' agent(s) modifié(s)'; }).then(function (r) { if (r) { flash = r.modifies + ' agent(s) modifié(s)'; picked = {}; load(); } });
     };
     return h('section', { class: 'card compact bulk' }, h('h3', null, 'Modifier ' + n + ' agent' + (n > 1 ? 's' : '') + ' en même temps'),
-      h('div', { class: 'row' }, field('Affectation', aff, 'grow2'), field('Rotation', rot.node), field('Contrat', con), field('Fonction', fon), isAdmin ? field('Chef de groupe', chef) : null, field('Statut', act1)),
+      h('div', { class: 'row' }, field('Affectation', aff, 'grow2'), field('Rotation', rot.node), field('Contrat', con), field('Fonction', fon), isAdmin ? field('Responsable d’équipe', chef) : null, field('Statut', act1)),
       h('div', { class: 'sendbar' }, go1, clear), box);
   }
   function drawList() {
@@ -907,12 +907,12 @@ function AgentsPage() {
       if (sa) sa.onclick = function () { if (window.confirm('Envoyer à ' + a.nom + ' (' + a.email + ') un e-mail avec ses accès ? Un nouveau mot de passe provisoire sera généré : l\'ancien ne fonctionnera plus.')) { sa.disabled = true; call('agentEnvoyerAcces', a.id).then(function (x) { alert('Accès envoyés à ' + x.to); }).catch(function (e) { alert(e.message); }).then(function () { sa.disabled = false; }); } };
       var chefNom = (agents.filter(function (c) { return c.id === a.chef_id; })[0] || {}).nom || '';
       return h('tr', { class: (a.actif !== '1' ? 'off ' : '') + (picked[a.id] ? 'picked' : '') }, h('td', null, pick), h('td', null, h('b', null, a.nom, vh ? h('span', { class: 'badge' }, 'VH') : null), h('small', null, vh ? 'Véhicule' : a.email)),
-        h('td', null, vh ? '—' : { agent: 'Agent', chef: 'Chef de groupe', admin: 'Admin', client: 'Client (lecture)' }[a.role] + (a.role === 'chef' && a.acces_setup === '1' ? ' · accès Setup' : '') + (a.role === 'chef' && a.acces_exports === '1' ? ' · accès exports' : '')), h('td', null, a.fonction), h('td', null, a.affectation), h('td', null, vh ? '' : a.rotation || 'défaut'), h('td', null, a.contrat), h('td', null, chefNom), h('td', { class: 'actions' }, ed, rp, sa, tg));
+        h('td', null, vh ? '—' : { agent: 'Agent', chef: 'Responsable d’équipe', admin: 'Admin', client: 'Client (lecture)' }[a.role] + (a.role === 'chef' && a.acces_setup === '1' ? ' · accès Setup' : '') + (a.role === 'chef' && a.acces_exports === '1' ? ' · accès exports' : '')), h('td', null, a.fonction), h('td', null, a.affectation), h('td', null, vh ? '' : a.rotation || 'défaut'), h('td', null, a.contrat), h('td', null, chefNom), h('td', { class: 'actions' }, ed, rp, sa, tg));
     });
     var actifs = agents.filter(function (a) { return a.actif === '1'; });
     listHost.replaceChildren.apply(listHost, [h('section', { class: 'card' }, h('h2', null, 'Personnel et véhicules (' + actifs.filter(function (a) { return a.type !== 'vehicule'; }).length + ' agents, ' + actifs.filter(function (a) { return a.type === 'vehicule'; }).length + ' véhicules actifs)'),
       h('p', { class: 'muted' }, 'Cochez plusieurs lignes pour modifier leur affectation, rotation, contrat ou statut en une seule fois.'),
-      h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, h('th', null, all), ['Nom', 'Rôle', 'Fonction', 'Affectation', 'Rotation', 'Contrat', 'Chef', ''].map(function (t) { return h('th', null, t); }))), h('tbody', null, rows)))), nPicked ? bulkBar(nPicked) : null].filter(Boolean));
+      h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, h('th', null, all), ['Nom', 'Rôle', 'Fonction', 'Affectation', 'Rotation', 'Contrat', 'Responsable', ''].map(function (t) { return h('th', null, t); }))), h('tbody', null, rows)))), nPicked ? bulkBar(nPicked) : null].filter(Boolean));
   }
   wrap.append(formHost, listHost); load();
   return wrap;
@@ -1290,11 +1290,11 @@ function contratsCard() {
           var bind = function (k, type) { var el = h('input', { type: type || 'text', value: c[k] }); el.oninput = function () { c[k] = el.value; }; return el; };
           // le n° de contrat est la clé des fonctions : on les suit quand il change
           var numero = h('input', { value: c.numero }); numero.oninput = function () { var old = c.numero; c.numero = numero.value; F.forEach(function (f) { if (f.contrat === old) f.contrat = c.numero; }); };
-          // Représentant du prestataire : responsable de groupe par défaut, sinon autre choix, ou aucun
+          // Représentant du prestataire : responsable d’équipe par défaut, sinon autre choix, ou aucun
           var chefDefaut = (chefs.filter(function (x) { return x.contrat === c.numero; })[0] || chefs[0] || {}).nom;
           var rv = c.rep_prestataire || '';
           var mode = rv === '' ? '' : rv === '-' ? '-' : (chefs.some(function (x) { return x.nom === rv; }) ? rv : '__autre');
-          var rsel = h('select', null, h('option', { value: '' }, chefDefaut ? 'Responsable de groupe (par défaut) : ' + chefDefaut : 'Responsable de groupe (par défaut) — aucun pour le moment'),
+          var rsel = h('select', null, h('option', { value: '' }, chefDefaut ? 'Responsable d’équipe (par défaut) : ' + chefDefaut : 'Responsable d’équipe (par défaut) — aucun pour le moment'),
             chefs.map(function (x) { return h('option', { value: x.nom }, x.nom); }), h('option', { value: '__autre' }, 'Autre personne…'), h('option', { value: '-' }, 'Aucun (laisser vide)'));
           var rtxt = h('input', { placeholder: 'Nom du représentant', value: mode === '__autre' ? rv : '' }); rsel.value = mode; rtxt.hidden = mode !== '__autre';
           rsel.onchange = function () { if (rsel.value === '__autre') { rtxt.hidden = false; c.rep_prestataire = rtxt.value; } else { rtxt.hidden = true; c.rep_prestataire = rsel.value; } };
@@ -1530,7 +1530,7 @@ function ContratsPage(opts) {
 // ---------- exports : fiche de pointage, attachement (validation), facture (depuis l'attachement validé) ----------
 // Qui est en ligne et qui s'est déjà connecté (administrateur) ; la liste se rafraîchit toute seule.
 function ConnexionsPage() {
-  var wrap = h('div', { style: 'display:grid;gap:16px' }); var ROLE = { agent: 'Agent', chef: 'Chef de groupe', admin: 'Administrateur', client: 'Client' };
+  var wrap = h('div', { style: 'display:grid;gap:16px' }); var ROLE = { agent: 'Agent', chef: 'Responsable d’équipe', admin: 'Administrateur', client: 'Client' };
   function ago(iso, now) { if (!iso) return ''; var s = Math.max(0, Math.round((new Date(now) - new Date(iso)) / 1000)); return s < 90 ? 'à l\u2019instant' : s < 3600 ? 'il y a ' + Math.round(s / 60) + ' min' : s < 86400 ? 'il y a ' + Math.round(s / 3600) + ' h' : 'il y a ' + Math.round(s / 86400) + ' j'; }
   function draw(d) {
     var on = d.gens.filter(function (g) { return g.en_ligne; }); var jamais = d.gens.filter(function (g) { return !g.derniere && !g.en_ligne; });
@@ -1554,7 +1554,7 @@ function ConnexionsPage() {
   return wrap;
 }
 function ExportsPage() {
-  var ro = S.user.role !== 'admin'; // chef de groupe : extraction en lecture seule (pas de validation, de saisie ni de création de facture)
+  var ro = S.user.role !== 'admin'; // responsable d’équipe : extraction en lecture seule (pas de validation, de saisie ni de création de facture)
   var wrap = h('div', { style: 'display:grid;gap:16px' });
   call('contratsLite').then(function (cfg) {
     var t = S.target; S.target = null; // venant de la page Contrats : mois et contrat déjà choisis
