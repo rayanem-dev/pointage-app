@@ -33,6 +33,8 @@ var VIEWERS = ['chef', 'admin', 'client']; // consultation du pointage et des co
 // Un compte client rattaché à un contrat ne consulte que ce contrat.
 function clientScope_(user, numero) { if (user.role === 'client' && user.contrat && user.contrat !== numero) throw httpErr_('Contrat non autorisé', 'FORBIDDEN'); }
 function inScope_(user, agentId) { return Agents.visibleTo(user).some(function (a) { return a.id === agentId; }); }
+// Le chef de groupe n'extrait l'attachement et la facture que si l'administrateur lui a accordé ce privilège.
+function exportsOk_(user) { if (user.role === 'chef' && user.acces_exports !== '1') throw httpErr_("Accès aux exports non accordé (demandez-le à l'administrateur)", 'FORBIDDEN'); }
 function monthOrNow_(m) { return Dates.isMonthKey(m) ? m : Dates.today().slice(0, 7); }
 
 var HANDLERS = {
@@ -187,11 +189,11 @@ var HANDLERS = {
   attachementRouvrir: { roles: ['admin'], write: true, fn: function (u, a) { var o = a[0] || {}; return DocData.rouvrir(u, o.month, o.contrat); } },
   attachementFacturer: { roles: ['admin'], write: true, fn: function (u, a) { var o = a[0] || {}; return DocData.facturer(u, o.month, o.contrat, o); } },
   contratsSynthese: { roles: VIEWERS, fn: function (u) { return Contrats.synthese(u.role === 'admin', u.role !== 'chef', u.role === 'client' ? u.contrat : ''); } },
-  attachementPreview: { roles: ['admin', 'chef'], fn: function (u, a) { return DocData.attachementData(a[0], a[1]); } },
+  attachementPreview: { roles: ['admin', 'chef'], fn: function (u, a) { exportsOk_(u); return DocData.attachementData(a[0], a[1]); } },
   exportAttachement: {
     roles: ['admin', 'chef', 'client'],
     fn: function (u, a) {
-      var o = a[0] || {}; clientScope_(u, o.contrat);
+      var o = a[0] || {}; clientScope_(u, o.contrat); exportsOk_(u);
       var d = DocData.attachementData(o.month, o.contrat);
       if (u.role === 'client' && !d.verrouille) throw httpErr_("Cet attachement n'est pas encore validé", 'FORBIDDEN'); // le client ne voit que les attachements validés
       return Export.render('attachement', d, o.format, 'Attachement_N' + d.numero + '_' + o.month); }
@@ -200,7 +202,7 @@ var HANDLERS = {
   factureCopie: {
     roles: ['admin', 'chef', 'client'],
     fn: function (u, a) {
-      var o = a[0] || {}; clientScope_(u, o.contrat);
+      var o = a[0] || {}; clientScope_(u, o.contrat); exportsOk_(u);
       if (!DocData.attachementData(o.month, o.contrat).facture_numero) throw httpErr_("Cette facture n'est pas encore établie", 'FORBIDDEN');
       var d = DocData.factureData(o.month, o.contrat);
       return Export.render('facture', d, o.format, 'Facture_' + String(d.facture_numero || o.month).replace(/[^\w-]+/g, '_'));

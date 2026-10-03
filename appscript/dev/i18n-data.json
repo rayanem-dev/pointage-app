@@ -4713,5 +4713,50 @@
 "La facture n’est pas encore établie par l’administrateur.",
 "The invoice has not yet been issued by the administrator.",
 "لم يُصدر المسؤول الفاتورة بعد."
+],
+[
+"Accès aux exports non accordé (demandez-le à l'administrateur)",
+"Export access not granted (ask the administrator)",
+"لم يُمنح الوصول إلى التصدير (اطلبه من المسؤول)"
+],
+[
+"Autoriser l'extraction de l'attachement et de la facture (chef de groupe uniquement ; la fiche de pointage est toujours permise)",
+"Allow extracting the statement and the invoice (group leader only; the attendance sheet is always allowed)",
+"السماح باستخراج المحضر والفاتورة (لرئيس المجموعة فقط؛ ورقة الحضور مسموحة دائمًا)"
+],
+[
+"L'attachement et la facture ne sont pas autorisés pour votre compte : demandez ce privilège à l'administrateur.",
+"The statement and invoice are not enabled for your account: ask the administrator for this privilege.",
+"المحضر والفاتورة غير مفعّلين لحسابك: اطلب هذه الصلاحية من المسؤول."
+],
+[
+"E-mails du contact client (3 au maximum, séparés par une virgule ; un compte de consultation est créé par adresse)",
+"Client contact e-mails (3 maximum, comma-separated; one view-only account is created per address)",
+"عناوين بريد جهة اتصال العميل (3 كحد أقصى، مفصولة بفاصلة؛ يُنشأ حساب اطلاع لكل عنوان)"
+],
+[
+"E-mails de la direction du prestataire (3 au maximum, séparés par une virgule)",
+"Provider management e-mails (3 maximum, comma-separated)",
+"عناوين بريد إدارة المزوّد (3 كحد أقصى، مفصولة بفاصلة)"
+],
+[
+" · accès exports",
+" · exports access",
+" · صلاحية التصدير"
+],
+[
+"E-mails du contact client : adresse invalide",
+"Client contact e-mails: invalid address",
+"عناوين بريد العميل: عنوان غير صالح"
+],
+[
+"E-mails du contact client : 3 adresses au maximum",
+"Client contact e-mails: 3 addresses maximum",
+"عناوين بريد العميل: 3 عناوين كحد أقصى"
+],
+[
+"E-mails de la direction : 3 adresses au maximum",
+"Management e-mails: 3 addresses maximum",
+"عناوين بريد الإدارة: 3 عناوين كحد أقصى"
 ]
 ]

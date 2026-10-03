@@ -189,6 +189,8 @@ test('exports : fiche (chef), attachement N°16 et facture de mai (admin)', () =
   ok(call(T.chef, 'exportFiche', { month: TODAY.slice(0, 7), format: 'xlsx' }));
   assert.match(env.fetches.at(-1), /format=xlsx$/);
   // le chef de groupe extrait (lecture seule) : attachement, copie de facture ; mais ne valide ni ne facture
+  fail(call(T.chef, 'exportAttachement', { month: '2026-08', contrat: 'C1', format: 'pdf' }), /non accordé/); // privilège à donner par l'administrateur
+  ok(call(T.admin, 'agentUpdate', T.chefId, { acces_exports: true }));
   assert.ok(ok(call(T.chef, 'exportAttachement', { month: '2026-08', contrat: 'C1', format: 'pdf' })).nom.endsWith('pdf'));
   ok(call(T.chef, 'attachementPreview', '2026-08', 'C1'));
   fail(call(T.chef, 'attachementValider', { month: '2026-08', contrat: 'C1' }), /refusé/);

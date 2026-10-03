@@ -2,6 +2,12 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.16.0 — 2026-10-03 — Privilèges du chef de groupe et plusieurs e-mails
+
+- L'administrateur choisit, chef par chef, s'il peut extraire l'attachement et la facture (case dans sa fiche), en plus de l'accès au Setup.
+- Le contrat accepte jusqu'à 3 e-mails de contact client : chacun reçoit son compte de consultation, avec les mêmes droits.
+- L'e-mail de la direction du prestataire accepte aussi 3 adresses.
+
 ## 3.15.0 — 2026-10-03 — Exports pour le chef de groupe
 
 - Le chef de groupe a un nouvel onglet « Exports » : il extrait en Excel ou PDF la fiche de pointage, l'attachement et la facture déjà établie. Il consulte seulement ; la validation reste à l'administrateur.

@@ -227,9 +227,9 @@
      "التصدير: الورقة، المحضر، الفاتورة"
     ],
     "x": [
-     "L'onglet « Exports » permet au chef de groupe d'extraire en Excel ou PDF la fiche de pointage, l'attachement du mois et la facture déjà établie. Il consulte seulement : la validation de l'attachement et la création de la facture restent à l'administrateur.",
-     "The \"Exports\" tab lets the group leader extract the attendance sheet, the month's statement and the issued invoice as Excel or PDF. It is read-only: validating the statement and creating the invoice remain with the administrator.",
-     "تتيح علامة «التصدير» لرئيس المجموعة استخراج ورقة الحضور ومحضر الشهر والفاتورة الصادرة بصيغة Excel أو PDF. للاطلاع فقط: اعتماد المحضر وإنشاء الفاتورة يبقيان للمسؤول."
+     "L'onglet « Exports » permet au chef de groupe d'extraire en Excel ou PDF la fiche de pointage. L'attachement du mois et la facture déjà établie ne sont disponibles que si l'administrateur a coché « Autoriser l'extraction de l'attachement et de la facture » dans la fiche du chef. Il consulte seulement : la validation et la facturation restent à l'administrateur.",
+     "The \"Exports\" tab lets the group leader extract the attendance sheet as Excel or PDF. The month's statement and the issued invoice are only available if the administrator ticked \"Allow extracting the statement and the invoice\" in the leader's record. Read-only: validating and invoicing remain with the administrator.",
+     "تتيح علامة «التصدير» لرئيس المجموعة استخراج ورقة الحضور بصيغة Excel أو PDF. لا يتوفر محضر الشهر والفاتورة الصادرة إلا إذا فعّل المسؤول خيار «السماح باستخراج المحضر والفاتورة» في بطاقة الرئيس. للاطلاع فقط: الاعتماد والفوترة يبقيان للمسؤول."
     ]
    }
   ]

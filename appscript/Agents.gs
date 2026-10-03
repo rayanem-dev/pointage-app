@@ -61,7 +61,7 @@ var Agents = (function () {
       id: newId_('A'), nom: nom, fonction: fonction, affectation: String(data.affectation || '').trim(),
       contrat: String(data.contrat || '').trim(), email: email, role: role,
       chef_id: isAdmin ? String(data.chef_id || '') : user.id, actif: '1',
-      acces_setup: isAdmin && role === 'chef' && data.acces_setup ? '1' : '0',
+      acces_setup: isAdmin && role === 'chef' && data.acces_setup ? '1' : '0', acces_exports: isAdmin && role === 'chef' && data.acces_exports ? '1' : '0',
       password_hash: cred.password_hash, salt: cred.salt, date_entree: String(data.date_entree || ''), type: type, rotation: isVh ? '' : normRotation(data.rotation)
     };
     Store.writeTable('Agents', all.concat([agent]));
@@ -113,7 +113,8 @@ var Agents = (function () {
         a.role = data.role;
       }
       if (data.acces_setup !== undefined) a.acces_setup = data.acces_setup === true || data.acces_setup === '1' || data.acces_setup === 1 ? '1' : '0';
-      if (a.role !== 'chef') a.acces_setup = '0';
+      if (data.acces_exports !== undefined) a.acces_exports = data.acces_exports === true || data.acces_exports === '1' || data.acces_exports === 1 ? '1' : '0';
+      if (a.role !== 'chef') { a.acces_setup = '0'; a.acces_exports = '0'; }
     }
     // Contrat / fonction / réactivation modifiés : la fonction doit être prévue au contrat et l'effectif respecté.
     if (a.role !== 'admin' && a.actif === '1' && (a.contrat !== before.contrat || a.fonction !== before.fonction || before.actif !== '1')) a.fonction = Contrats.checkAffectation(a, a.id, all);

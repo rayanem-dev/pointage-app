@@ -66,3 +66,14 @@ test('le client ne voit que les agents de son contrat', () => {
   const noms = ok(call(T.client, 'gridMonth', '2026-10')).rows.map((r) => r.nom);
   assert.ok(noms.includes('AGENT C1')); assert.ok(!noms.includes('AUTRE CONTRAT'));
 });
+
+test('contact client : 3 e-mails au maximum, un compte de consultation par adresse ; direction : 3 e-mails', () => {
+  const base = { date_debut: '2026-01-31', duree_mois: '24' };
+  fail(call(T.admin, 'contratsSave', { contrats: [contrat({ ...base, client_email: 'a@c.dz, b@c.dz, c@c.dz, d@c.dz' })], fonctions: [] }), /3 adresses/);
+  const r = ok(call(T.admin, 'contratsSave', { contrats: [contrat({ ...base, client_email: 'Un@c.dz; deux@c.dz  trois@c.dz' })], fonctions: [] }));
+  assert.strictEqual(r.contrats[0].client_email, 'un@c.dz, deux@c.dz, trois@c.dz');
+  assert.deepStrictEqual(r.comptes.map((c) => c.email).sort(), ['deux@c.dz', 'trois@c.dz', 'un@c.dz']);
+  ok(call(null, 'login', 'deux@c.dz', r.comptes.find((c) => c.email === 'deux@c.dz').password));
+  fail(call(T.admin, 'setupSave', { direction_email: 'a@p.dz,b@p.dz,c@p.dz,d@p.dz' }), /3 adresses/);
+  assert.strictEqual(ok(call(T.admin, 'setupSave', { direction_email: 'A@p.dz; b@p.dz' })).direction_email, 'a@p.dz, b@p.dz');
+});

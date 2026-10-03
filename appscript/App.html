@@ -761,8 +761,8 @@ function AgentsPage() {
   var eff = { contrats: [], strict: true, rotation: {} }; var agents = []; var editing = null; var flash = null; var accessSend = true; var lastAccess = null; // accessSend : envoyer les accès par e-mail à la création ; lastAccess : dernier compte créé
   var st = blank();
   var formHost = h('div'); var listHost = h('div');
-  function blank() { return { type: 'personne', nom: '', email: '', role: 'agent', fonction: '', affectation: '', contrat: S.user.role === 'chef' ? (S.user.contrat || '') : '', chef_id: '', acces_setup: false, password: '', rotation: '' }; }
-  function fromAgent(a) { return { type: a.type === 'vehicule' ? 'vehicule' : 'personne', nom: a.nom, email: a.email, role: a.role, fonction: a.fonction, affectation: a.affectation, contrat: a.contrat, chef_id: a.chef_id, acces_setup: a.acces_setup === '1', password: '', rotation: a.rotation || '' }; }
+  function blank() { return { type: 'personne', nom: '', email: '', role: 'agent', fonction: '', affectation: '', contrat: S.user.role === 'chef' ? (S.user.contrat || '') : '', chef_id: '', acces_setup: false, acces_exports: false, password: '', rotation: '' }; }
+  function fromAgent(a) { return { type: a.type === 'vehicule' ? 'vehicule' : 'personne', nom: a.nom, email: a.email, role: a.role, fonction: a.fonction, affectation: a.affectation, contrat: a.contrat, chef_id: a.chef_id, acces_setup: a.acces_setup === '1', acces_exports: a.acces_exports === '1', password: '', rotation: a.rotation || '' }; }
   function load() {
     Promise.all([call('agentsManage'), call('contratsLite')]).then(function (r) { agents = r[0]; eff = r[1]; drawForm(); drawList(); })
       .catch(function (e) { listHost.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
@@ -804,6 +804,7 @@ function AgentsPage() {
     chef.value = st.chef_id; chef.addEventListener('change', function () { st.chef_id = chef.value; });
     var rot = rotationPicker(st.rotation, true, 'Par défaut (' + eff.rotation.travail + '/' + eff.rotation.repos + ')', function (v) { st.rotation = v; });
     var setup = h('input', { type: 'checkbox', checked: st.acces_setup }); setup.addEventListener('change', function () { st.acces_setup = setup.checked; });
+    var exps = h('input', { type: 'checkbox', checked: st.acces_exports }); exps.addEventListener('change', function () { st.acces_exports = exps.checked; });
     var pw = bind(h('input', { minlength: 6, value: st.password, placeholder: 'généré automatiquement si vide' }), 'password');
     var box = msgBox(); var btn = h('button', { class: 'primary' }, editing ? 'Enregistrer' : (vh ? 'Ajouter le véhicule' : "Créer l'agent"));
     if (flash) { box.show(flash, true); flash = null; }
@@ -811,7 +812,7 @@ function AgentsPage() {
       ev.preventDefault();
       var data = { type: st.type, nom: st.nom, fonction: st.fonction, affectation: st.affectation, contrat: st.contrat, rotation: vh ? '' : st.rotation };
       if (!vh) data.email = st.email;
-      if (isAdmin) { data.chef_id = st.chef_id; if (!vh) { data.role = st.role; data.acces_setup = st.acces_setup; } }
+      if (isAdmin) { data.chef_id = st.chef_id; if (!vh) { data.role = st.role; data.acces_setup = st.acces_setup; data.acces_exports = st.acces_exports; } }
       if (!editing && !vh) data.password = st.password;
       var wantMail = !editing && !vh && accessSend;
       act(btn, box, function () { return editing ? call('agentUpdate', editing.id, data) : call('agentCreate', data); }, function (r) {
@@ -829,6 +830,7 @@ function AgentsPage() {
       h('div', { class: 'row' }, field('N° contrat de prestation', contrat), field(vh ? 'Véhicule du contrat' : 'Métier / fonction (prévu au contrat)', h('div', null, fonctionControl())), field('Affectation', aff), vh ? null : field('Rotation', rot.node), isAdmin ? field('Chef de groupe', chef, null, chefs.length ? null : "Aucun chef de groupe : créez d'abord un compte avec le rôle « Chef de groupe »") : null),
       st.role === 'client' && !vh ? h('p', { class: 'msg warn' }, "Compte de consultation du client : il suit le pointage, les contrats, les attachements et les factures validés (PDF), sans rien modifier et sans accès au Setup, aux demandes ni aux documents des agents. Le n° de contrat ci-dessus limite ce qu'il voit (vide = tout).") : null,
       (isAdmin && !vh) ? h('label', { class: 'inline' }, setup, " Autoriser l'accès à l'onglet Setup (chef de groupe uniquement)") : null,
+      (isAdmin && !vh) ? h('label', { class: 'inline' }, exps, " Autoriser l'extraction de l'attachement et de la facture (chef de groupe uniquement ; la fiche de pointage est toujours permise)") : null,
       (editing || vh) ? null : field('Mot de passe initial', pw),
       (editing || vh) ? null : h('label', { class: 'inline' }, (function () { var c = h('input', { type: 'checkbox', checked: accessSend }); c.onchange = function () { accessSend = c.checked; }; return c; })(), " Envoyer ses accès par e-mail à la création (lien, identifiant, mot de passe provisoire)"),
       lastAccess && !editing ? (function () {
@@ -892,7 +894,7 @@ function AgentsPage() {
       if (sa) sa.onclick = function () { if (window.confirm('Envoyer à ' + a.nom + ' (' + a.email + ') un e-mail avec ses accès ? Un nouveau mot de passe provisoire sera généré : l\'ancien ne fonctionnera plus.')) { sa.disabled = true; call('agentEnvoyerAcces', a.id).then(function (x) { alert('Accès envoyés à ' + x.to); }).catch(function (e) { alert(e.message); }).then(function () { sa.disabled = false; }); } };
       var chefNom = (agents.filter(function (c) { return c.id === a.chef_id; })[0] || {}).nom || '';
       return h('tr', { class: (a.actif !== '1' ? 'off ' : '') + (picked[a.id] ? 'picked' : '') }, h('td', null, pick), h('td', null, h('b', null, a.nom, vh ? h('span', { class: 'badge' }, 'VH') : null), h('small', null, vh ? 'Véhicule' : a.email)),
-        h('td', null, vh ? '—' : { agent: 'Agent', chef: 'Chef de groupe', admin: 'Admin', client: 'Client (lecture)' }[a.role] + (a.role === 'chef' && a.acces_setup === '1' ? ' · accès Setup' : '')), h('td', null, a.fonction), h('td', null, a.affectation), h('td', null, vh ? '' : a.rotation || 'défaut'), h('td', null, a.contrat), h('td', null, chefNom), h('td', { class: 'actions' }, ed, rp, sa, tg));
+        h('td', null, vh ? '—' : { agent: 'Agent', chef: 'Chef de groupe', admin: 'Admin', client: 'Client (lecture)' }[a.role] + (a.role === 'chef' && a.acces_setup === '1' ? ' · accès Setup' : '') + (a.role === 'chef' && a.acces_exports === '1' ? ' · accès exports' : '')), h('td', null, a.fonction), h('td', null, a.affectation), h('td', null, vh ? '' : a.rotation || 'défaut'), h('td', null, a.contrat), h('td', null, chefNom), h('td', { class: 'actions' }, ed, rp, sa, tg));
     });
     var actifs = agents.filter(function (a) { return a.actif === '1'; });
     listHost.replaceChildren.apply(listHost, [h('section', { class: 'card' }, h('h2', null, 'Personnel et véhicules (' + actifs.filter(function (a) { return a.type !== 'vehicule'; }).length + ' agents, ' + actifs.filter(function (a) { return a.type === 'vehicule'; }).length + ' véhicules actifs)'),
@@ -1082,7 +1084,7 @@ function NouveautesPage() {
 var SETUP_TABS = [['prestataire', 'Prestataire (mon entreprise)'], ['client', 'Client'], ['contrat', 'Contrat'], ['rotation', 'Rotation'], ['maintenance', 'Maintenance']];
 var SETUP_INTRO = {
   prestataire: "Le prestataire est la société qui utilise l'application : son nom apparaît dans l'en-tête, les documents et les e-mails. Les champs vides sont remplis automatiquement à la lecture du bordereau.",
-  client: "L'autre partie du contrat : son nom, son en-tête et son adresse de facturation apparaissent sur la fiche de pointage, l'attachement et la facture. Le nom est pré-rempli à la lecture du bordereau.",
+  client: "L'autre partie du contrat : son nom, son en-tête et son adresse de facturation apparaissent sur la fiche de pointage, l'attachement et la facture. Le nom est pré-rempli à la lecture du bordereau. Les e-mails du client (3 au maximum, comptes de consultation) se saisissent dans l'onglet Contrat.",
   rotation: "Dès le premier pointage T ou R, les jours suivants sont prévus automatiquement : T jusqu'au dernier jour du shift, puis R pendant la durée de repos, puis T… (les « ombres »). Un pointage réel n'est jamais remplacé : s'il diffère de la prévision, il devient le nouveau repère et les prévisions repartent de lui."
 };
 function SetupPage() {
@@ -1294,7 +1296,7 @@ function contratsCard() {
           var delC = h('button', { type: 'button', class: 'danger' }, 'Supprimer le contrat'); delC.onclick = function () { if (window.confirm('Supprimer ce contrat et ses fonctions ?')) { F = F.filter(function (f) { return f.contrat !== c.numero; }); C.splice(i, 1); draw(); } };
           return h('fieldset', null, h('legend', null, 'Contrat ' + (c.numero || 'nouveau')),
             h('div', { class: 'row' }, field('N° de contrat', numero), field('Client', bind('client'), 'grow2'), field('Date du contrat', bind('date_contrat'))), field('Objet', bind('objet')),
-            h('div', { class: 'row' }, field('Début du contrat', bind('date_debut', 'date')), field('Durée du contrat (mois)', bind('duree_mois', 'number')), field('E-mail du contact client (compte de consultation créé par défaut)', bind('client_email', 'email'), 'grow2')),
+            h('div', { class: 'row' }, field('Début du contrat', bind('date_debut', 'date')), field('Durée du contrat (mois)', bind('duree_mois', 'number')), field('E-mails du contact client (3 au maximum, séparés par une virgule ; un compte de consultation est créé par adresse)', bind('client_email', 'text'), 'grow2')),
             h('div', { class: 'row' }, field('Mois de référence', bind('ref_mois', 'month')), field("N° d'attachement de ce mois", bind('ref_attachement', 'number')), field('Représentant prestataire', h('div', null, rsel, rtxt)), field('Représentant client', bind('rep_client'))),
             h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Désignation (attachement / facture)', 'Libellé sur la fiche', 'Nature', 'Nombre (postes) / quantité', 'Délai (jours)', 'Prix unitaire HT', 'Qté cumulée avant le mois de réf.', ''].map(function (t) { return h('th', null, t); }))), h('tbody', null, rows))), addF, ' ', delC);
         });
@@ -1559,6 +1561,7 @@ function ExportsPage() {
       host.replaceChildren(
         h('section', { class: 'card' }, h('h2', null, '1. Fiche de pointage ', h('small', null, 'à valider avec le client')), h('label', { class: 'inline' }, chk, ' Inclure les jours prévus'), h('label', { class: 'inline' }, tousChk, ' Inclure tous les agents (ignorer le contrat)'), info, buttons('Fiche', function () { return { prevu: prevu, tous: tousChk.checked }; })),
         h('section', { class: 'card' }, h('h2', null, '2. Attachement'), prev), fsec);
+      if (ro && S.user.acces_exports !== '1') { prev.replaceChildren(h('p', { class: 'muted' }, "L'attachement et la facture ne sont pas autorisés pour votre compte : demandez ce privilège à l'administrateur.")); fsec.replaceChildren(h('h2', null, '3. Facture')); return; }
       if (!contrat) { prev.replaceChildren(h('p', { class: 'muted' }, 'Choisissez un contrat.')); fsec.replaceChildren(h('h2', null, '3. Facture')); return; }
       call('attachementPreview', month, contrat).then(function (p) {
         var st = STATUT_ATT[p.statut] || ['', ''];
