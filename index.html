@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Sijil</title>
+
+  <!-- PWA : installation sur l'écran d'accueil -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#16598D">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Sijil">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Michroma&display=swap');
+    :root { --main: #16598D; --accent: #2FB5B4; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body { display: flex; flex-direction: column; font: 15px/1.45 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #1d2733; background: #F4F1E8; }
+
+    /* Bande d'invitation à installer (masquée par défaut, affichée par le JavaScript) */
+    .install-banner { display: none; align-items: center; gap: 12px; margin: 8px; padding: 10px 12px; border-radius: 14px; color: #fff; background: linear-gradient(135deg, var(--main), var(--accent)); box-shadow: 0 2px 10px rgba(0, 0, 0, .18); }
+    .install-icon { width: 40px; height: 40px; border-radius: 10px; background: #fff; flex: none; }
+    .install-text { display: grid; gap: 1px; flex: 1; min-width: 0; }
+    .install-text strong { font-size: 1rem; }
+    .install-sub, .install-ios { font-size: .85rem; opacity: .95; }
+    .install-ios[hidden] { display: none; }
+    #install-btn { flex: none; padding: 9px 16px; border: 0; border-radius: 10px; background: #fff; color: var(--main); font: inherit; font-weight: 700; cursor: pointer; }
+    #install-btn:hover { background: #f1fafa; }
+    .install-close { flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: #fff; font-size: 1.4rem; line-height: 1; opacity: .75; cursor: pointer; }
+    .install-close:hover { opacity: 1; background: rgba(255, 255, 255, .18); }
+    @media (max-width: 640px) { .install-sub { display: none; } }
+
+    /* Application (Apps Script) affichée en plein écran */
+    #app { flex: 1; width: 100%; border: 0; }
+    #app[hidden] { display: none; }
+
+    /* Première configuration : adresse de l'application */
+    .setup { max-width: 460px; margin: auto; padding: 24px 16px; }
+    .setup[hidden] { display: none; }
+    .setup img { width: 88px; height: 88px; border-radius: 20px; }
+    .tagline { margin: -4px 0 14px; color: #16598D; font-weight: 600; letter-spacing: .02em; }
+    .setup h1 { font: 400 1.7rem 'Michroma', Arial, sans-serif; letter-spacing: .04em; color: #0E4377; margin: 10px 0; }
+    .setup input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #c9d1d9; border-radius: 8px; font: inherit; }
+    .setup button { padding: 10px 16px; border: 0; border-radius: 8px; background: var(--main); color: #fff; font: inherit; cursor: pointer; }
+    .setup .err { color: #b3261e; min-height: 1.4em; }
+    .setup small { display: block; color: #6b7785; }
+    /* préférences discrètes (langue, thème) */
+    .prefs { position: fixed; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 6; display: flex; gap: 6px; align-items: center; direction: ltr; }
+    .prefs[hidden] { display: none; }
+    .prefs label.pf { margin: 0; }
+    .prefs .pf { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 8px; border: 1px solid var(--main); border-radius: 14px; background: var(--card); color: var(--main); font: .78rem system-ui, sans-serif; opacity: .85; }
+    .prefs .pf:hover, .prefs .pf:focus-within { opacity: 1; box-shadow: 0 2px 8px rgba(0,0,0,.18); }
+    .prefs svg { width: 15px; height: 15px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .prefs select { width: auto; border: 0; margin: 0; background: transparent; color: inherit; padding: 0 2px; font: inherit; cursor: pointer; appearance: none; -webkit-appearance: none; }
+    .prefs select option { color: #1d2733; background: #fff; }
+    .prefs button.pf { padding: 0 6px; cursor: pointer; width: 46px; justify-content: space-between; position: relative; }
+    .prefs button.pf .knob { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--main); transition: transform .18s; }
+    .prefs button.pf[aria-pressed="true"] .knob { transform: translateX(18px); }
+    .prefs button.pf svg { position: relative; z-index: 1; width: 13px; height: 13px; }
+    .prefs button.pf .sun { color: #fff; } .prefs button.pf .moon { color: var(--main); }
+    .prefs button.pf[aria-pressed="true"] .sun { color: var(--main); } .prefs button.pf[aria-pressed="true"] .moon { color: #06222A; }
+    /* thème sombre */
+    :root { --card: #fff; }
+    :root[data-theme="dark"] { color-scheme: dark; --card: #13283B; --main: #2FB5B4; }
+    :root[data-theme="dark"] body { background: #0C1A28; color: #E8EEF3; }
+    :root[data-theme="dark"] .setup h1 { color: #5FD0CF; } :root[data-theme="dark"] .tagline { color: #5FD0CF; }
+    :root[data-theme="dark"] .setup input, :root[data-theme="dark"] .setup select, :root[data-theme="dark"] .extra input, :root[data-theme="dark"] .extra textarea { background: #13283B; color: #E8EEF3; border-color: #27415A; }
+    :root[data-theme="dark"] .extra details { border-color: #27415A; }
+    :root[data-theme="dark"] .setup button, :root[data-theme="dark"] .extra button { color: #06222A; }
+    :root[data-theme="dark"] .setup small, :root[data-theme="dark"] .extra small, :root[data-theme="dark"] .setup .err { color: #9DB0C2; }
+    :root[data-theme="dark"] .setup .err, :root[data-theme="dark"] .extra .err { color: #F07A72; } :root[data-theme="dark"] .extra .ok { color: #4CC38A; }
+    :root[data-theme="dark"] a { color: #5FD0CF; }
+    :root[data-theme="dark"] .prefs button.pf .moon { color: #06222A; } :root[data-theme="dark"] .prefs button.pf .sun { color: #06222A; }
+    :root[data-theme="dark"] .prefs button.pf[aria-pressed="true"] .sun { color: #2FB5B4; } :root[data-theme="dark"] .prefs button.pf[aria-pressed="true"] .moon { color: #06222A; }
+    @media print { .prefs { display: none; } }
+    .extra { max-width: 460px; margin: 0 auto; padding: 0 16px 28px; }
+    .extra[hidden], .extra [hidden] { display: none; }
+    .extra h2 { font-size: 1rem; margin: 18px 0 8px; }
+    .extra details { margin-top: 14px; border: 1px solid #c9d1d9; border-radius: 10px; padding: 10px 12px; }
+    .extra summary { cursor: pointer; font-weight: 600; color: var(--main); }
+    .extra input, .extra textarea, .setup select { width: 100%; padding: 9px; margin: 5px 0; border: 1px solid #c9d1d9; border-radius: 8px; font: inherit; }
+    .extra button { padding: 10px 16px; border: 0; border-radius: 8px; background: var(--main); color: #fff; font: inherit; cursor: pointer; }
+    .extra .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+    .extra .ok { color: #1c6b2a; } .extra .err { color: #b3261e; }
+  </style>
+</head>
+<body>
+
+  <!-- Préférences discrètes : langue et thème clair / sombre -->
+  <div class="prefs" id="prefs">
+    <label class="pf"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg><select id="lang-sel" aria-label="Langue" title="Langue"><option value="fr">Français</option><option value="ar">العربية</option><option value="en">English</option></select></label>
+    <button type="button" id="pf-theme" class="pf" role="switch" aria-pressed="false" aria-label="Mode sombre" title="Mode clair / sombre"><span class="knob"></span><svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button>
+  </div>
+
+  <!-- Bande « Installer l'application » -->
+  <div id="install-banner" class="install-banner" role="region" aria-label="Installer l'application">
+    <img class="install-icon" src="icon-192.png" alt="">
+    <div class="install-text">
+      <strong>Installer Sijil</strong>
+      <span class="install-sub">Accès direct depuis votre écran d'accueil, en plein écran.</span>
+      <span class="install-ios" hidden>Touchez <b>Partager</b> <span aria-hidden="true">⬆️</span> puis <b>« Sur l'écran d'accueil »</b>.</span>
+    </div>
+    <button id="install-btn" type="button">Installer</button>
+    <button id="install-close" class="install-close" type="button" aria-label="Fermer">&times;</button>
+  </div>
+
+  <!-- Dans le navigateur : accueil avec l'invitation à installer l'application (dans l'application installée, l'ouverture est directe) -->
+  <section id="launcher" class="setup" hidden>
+    <img src="icon-192.png" alt="">
+    <h1>Sijil</h1>
+    <p class="tagline">Gestion du temps de travail</p>
+    <p id="launcher-msg"></p>
+    <p><button id="launcher-open" type="button">Ouvrir l'application</button></p>
+    <p id="launcher-diag"><small></small> <button id="launcher-clear" type="button" hidden style="background:none;color:#b3261e;text-decoration:underline;padding:0">Effacer l'adresse personnalisée</button></p>
+    <p><small>Pour l'installer sur votre appareil : bouton « Installer » ci-dessus, ou menu du navigateur → « Installer Sijil » / « Ajouter à l'écran d'accueil » (iPhone : Partager → Sur l'écran d'accueil).</small></p>
+    <p><button id="launcher-change" type="button" style="background:none;color:#6b7785;text-decoration:underline;padding:0">Changer d'entreprise</button></p>
+    <small>© 2026 Rayane M. — Tous droits réservés · <a href="confidentialite.html">Confidentialité</a></small>
+  </section>
+
+  <!-- Première visite : adresse de l'application Apps Script -->
+  <section id="setup" class="setup" hidden>
+    <img src="icon-192.png" alt="">
+    <h1>Sijil</h1>
+    <p class="tagline">Gestion du temps de travail</p>
+    <p>Entrez le code de votre entreprise (communiqué par votre administrateur).</p>
+    <form id="setup-form">
+      <select id="setup-pick" hidden aria-label="Choisir une entreprise"></select>
+      <input id="setup-code" type="text" placeholder="Code entreprise, ex. HORIZON" autocomplete="off" autocapitalize="characters" spellcheck="false" style="text-transform:uppercase">
+      <details>
+        <summary>Adresse personnalisée de l'application</summary>
+        <p>Seulement si votre éditeur vous l'a demandé : adresse du déploiement Apps Script (se termine par <code>/exec</code>).</p>
+        <input id="setup-url" type="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
+      </details>
+      <div id="setup-err" class="err" role="alert"></div>
+      <button type="submit">Ouvrir l'application</button>
+      <small>Le code est mémorisé sur cet appareil. Un lien d'invitation (?c=CODE) l'enregistre automatiquement.</small>
+    </form>
+    <small>© 2026 Rayane M. — Tous droits réservés · <a href="confidentialite.html">Confidentialité</a></small>
+  </section>
+
+  <!-- Vitrine commerciale : entreprises qui nous font confiance + demande d'essai (visible sur l'accueil et la saisie du code) -->
+  <section id="extra" class="extra" hidden>
+    <details id="trial">
+      <summary>Demander un essai gratuit</summary>
+      <form id="trial-form" autocomplete="on">
+        <input id="t-societe" type="text" placeholder="Société *" maxlength="80" required>
+        <input id="t-nom" type="text" placeholder="Votre nom" maxlength="80">
+        <input id="t-email" type="email" placeholder="E-mail *" maxlength="120" required>
+        <input id="t-tel" type="tel" placeholder="Téléphone" maxlength="30">
+        <textarea id="t-msg" rows="3" placeholder="Votre besoin (nombre d'agents, sites…)" maxlength="1000"></textarea>
+        <div class="hp" aria-hidden="true"><input id="t-site" type="text" tabindex="-1" autocomplete="off" placeholder="Ne pas remplir"></div>
+        <div id="trial-msg" role="status"></div>
+        <button type="submit">Envoyer ma demande</button>
+        <small style="display:block;color:#6b7785;margin-top:6px">Ces informations servent uniquement à vous recontacter (voir la <a href="confidentialite.html">charte de confidentialité</a>).</small>
+      </form>
+    </details>
+  </section>
+
+  <p id="launching" class="center" hidden style="font:1rem system-ui,sans-serif;text-align:center;padding:40px">Ouverture de l'application…</p>
+
+  <iframe id="app" title="Sijil" hidden allow="clipboard-write; fullscreen"></iframe>
+
+  <script>
+  // ---------- Langue de la page d'accueil (français, arabe, anglais) ----------
+  var I18N = [["Mode sombre","Dark mode","الوضع الداكن"],["Mode clair / sombre","Light / dark mode","الوضع الفاتح / الداكن"],["Gestion du temps de travail","Working time management","إدارة وقت العمل"],["Accès direct depuis votre écran d'accueil, en plein écran.", "Direct access from your home screen, full screen.", "وصول مباشر من شاشتك الرئيسية، بملء الشاشة."], ["Installer Sijil", "Install Sijil", "تثبيت Sijil"], ["Installer", "Install", "تثبيت"], ["Touchez", "Tap", "المس"], ["Partager", "Share", "مشاركة"], ["puis", "then", "ثم"], ["« Sur l'écran d'accueil »", "\"Add to Home Screen\"", "«إضافة إلى الشاشة الرئيسية»"], ["Fermer", "Close", "إغلاق"], ["Langue", "Language", "اللغة"], ["Bienvenue.", "Welcome.", "مرحبًا."], ["Entreprise : ", "Company: ", "المؤسسة: "], ["Ouvrir l'application", "Open the application", "فتح التطبيق"], ["Effacer l'adresse personnalisée", "Clear the custom address", "مسح العنوان المخصّص"], ["Pour l'installer sur votre appareil : bouton « Installer » ci-dessus, ou menu du navigateur → « Installer Sijil » / « Ajouter à l'écran d'accueil » (iPhone : Partager → Sur l'écran d'accueil).", "To install it on your device: use the \"Install\" button above, or the browser menu → \"Install Sijil\" / \"Add to Home Screen\" (iPhone: Share → Add to Home Screen).", "لتثبيته على جهازك: زر «تثبيت» أعلاه، أو قائمة المتصفح ← «تثبيت Sijil» / «إضافة إلى الشاشة الرئيسية» (آيفون: مشاركة ← إضافة إلى الشاشة الرئيسية)."], ["Changer d'entreprise", "Change company", "تغيير المؤسسة"], ["© 2026 Rayane M. — Tous droits réservés · ", "© 2026 Rayane M. — All rights reserved · ", "© 2026 Rayane M. — جميع الحقوق محفوظة · "], ["Confidentialité", "Privacy", "الخصوصية"], ["Entrez le code de votre entreprise (communiqué par votre administrateur).", "Enter your company code (given by your administrator).", "أدخل رمز مؤسستك (يسلّمه لك مسؤولك)."], ["Code entreprise, ex. HORIZON", "Company code, e.g. HORIZON", "رمز المؤسسة، مثال: HORIZON"], ["Adresse personnalisée de l'application", "Custom application address", "عنوان مخصّص للتطبيق"], ["Seulement si votre éditeur vous l'a demandé : adresse du déploiement Apps Script (se termine par ", "Only if your publisher asked you to: Apps Script deployment address (ends with ", "فقط إذا طلب منك الناشر ذلك: عنوان نشر Apps Script (ينتهي بـ "], ["Le code est mémorisé sur cet appareil. Un lien d'invitation (?c=CODE) l'enregistre automatiquement.", "The code is remembered on this device. An invitation link (?c=CODE) saves it automatically.", "يُحفظ الرمز على هذا الجهاز. رابط الدعوة (?c=CODE) يحفظه تلقائيًا."], ["— Choisir votre entreprise —", "— Choose your company —", "— اختر مؤسستك —"], ["Autre entreprise (saisir le code)", "Other company (enter the code)", "مؤسسة أخرى (أدخل الرمز)"], ["Choisir une entreprise", "Choose a company", "اختيار مؤسسة"], ["Ouverture de l'application…", "Opening the application…", "جارٍ فتح التطبيق…"], ["Demander un essai gratuit", "Request a free trial", "طلب تجربة مجانية"], ["Société *", "Company *", "الشركة *"], ["Votre nom", "Your name", "اسمك"], ["E-mail *", "E-mail *", "البريد الإلكتروني *"], ["Téléphone", "Phone", "الهاتف"], ["Votre besoin (nombre d'agents, sites…)", "Your needs (number of agents, sites…)", "احتياجك (عدد الأعوان، المواقع…)"], ["Ne pas remplir", "Do not fill in", "لا تملأ هذا الحقل"], ["Envoyer ma demande", "Send my request", "إرسال طلبي"], ["Ces informations servent uniquement à vous recontacter (voir la ", "This information is only used to contact you back (see the ", "تُستخدم هذه المعلومات فقط للتواصل معك (انظر "], ["charte de confidentialité", "privacy policy", "سياسة الخصوصية"], ["Entreprise", "Company", "المؤسسة"], ["⚙ Entreprise", "⚙ Company", "⚙ المؤسسة"], ["Changer de code entreprise ou d'adresse de l'application", "Change company code or application address", "تغيير رمز المؤسسة أو عنوان التطبيق"], ["Adresse de l'application manquante : saisissez-la ci-dessous (déploiement Apps Script, se termine par /exec).", "Application address missing: enter it below (Apps Script deployment, ends with /exec).", "عنوان التطبيق مفقود: أدخله أدناه (نشر Apps Script، ينتهي بـ /exec)."], ["Adresse utilisée : …", "Address used: …", "العنوان المستعمل: …"], ["adresse personnalisée saisie sur cet appareil", "custom address entered on this device", "عنوان مخصّص مُدخل على هذا الجهاز"], ["exec.json publié par l'application", "exec.json published by the application", "exec.json المنشور من التطبيق"], ["adresse de secours", "fallback address", "عنوان احتياطي"], ["Code non valide : 2 à 20 caractères (lettres, chiffres, - ou _).", "Invalid code: 2 to 20 characters (letters, digits, - or _).", "رمز غير صالح: من 2 إلى 20 حرفًا (حروف أو أرقام أو - أو _)."], ["Adresse non reconnue : elle doit commencer par https://script.google.com/macros/s/ et finir par /exec.", "Address not recognised: it must start with https://script.google.com/macros/s/ and end with /exec.", "عنوان غير معروف: يجب أن يبدأ بـ https://script.google.com/macros/s/ وينتهي بـ /exec."], ["Entrez le code de votre entreprise.", "Enter your company code.", "أدخل رمز مؤسستك."], ["Indiquez le nom de votre société.", "Enter your company name.", "أدخل اسم شركتك."], ["Envoi impossible, réessayez.", "Could not send, try again.", "تعذّر الإرسال، أعد المحاولة."], ["Merci ! Votre demande est bien reçue, nous vous recontactons très vite.", "Thank you! Your request has been received, we will get back to you very soon.", "شكرًا! تم استلام طلبك وسنتواصل معك قريبًا جدًا."], ["Envoyer ma demande", "Send my request", "إرسال طلبي"], ["Envoi impossible pour le moment, réessayez plus tard.", "Cannot send right now, try again later.", "تعذّر الإرسال حاليًا، أعد المحاولة لاحقًا."], ["Trop de demandes pour le moment, réessayez plus tard", "Too many requests right now, try again later", "طلبات كثيرة حاليًا، أعد المحاولة لاحقًا"], ["Adresse e-mail invalide", "Invalid e-mail address", "عنوان بريد إلكتروني غير صالح"], ["Indiquez le nom de votre société", "Enter your company name", "أدخل اسم شركتك"]];
+  var LANG = 'fr'; var THEME = 'light';
+  var TRM = { en: {}, ar: {} };
+  I18N.forEach(function (r) { TRM.en[r[0]] = r[1]; TRM.ar[r[0]] = r[2]; });
+  function T(s) { if (LANG === 'fr' || !s) return s; var m = TRM[LANG]; if (m[s] !== undefined) return m[s]; var c = String(s).trim(); return c && m[c] !== undefined ? String(s).replace(c, m[c]) : s; }
+  (function () {
+    var ATTRS = ['placeholder', 'title', 'aria-label', 'alt'];
+    function walk(node, fn) { var w = document.createTreeWalker(node, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, { acceptNode: function (n) { return n.nodeType === 1 && /^(SCRIPT|STYLE)$/.test(n.tagName) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; } }); var n; while ((n = w.nextNode())) fn(n); }
+    // Chaque texte garde sa version française d'origine : on retraduit depuis elle à chaque changement de langue.
+    window.translatePage = function () {
+      walk(document.body, function (n) {
+        if (n.nodeType === 3) { if (n._fr === undefined) n._fr = n.nodeValue; if (n._fr.trim()) n.nodeValue = T(n._fr); }
+        else ATTRS.forEach(function (a) { if (n.hasAttribute(a)) { var k = '_fr_' + a; if (n[k] === undefined) n[k] = n.getAttribute(a); n.setAttribute(a, T(n[k])); } });
+      });
+    };
+    window.setLang = function (l, fromApp) {
+      if (!/^(fr|ar|en)$/.test(l)) l = 'fr';
+      LANG = l; try { localStorage.setItem('lang', l); } catch (e) { /* ignore */ }
+      var d = document.documentElement; d.lang = l; d.dir = l === 'ar' ? 'rtl' : 'ltr';
+      window.translatePage();
+      var ls = document.getElementById('lang-sel'); if (ls) ls.value = l;
+      if (window.onLangChange) window.onLangChange(fromApp);
+    };
+    var themeSaved = ''; try { themeSaved = localStorage.getItem('theme') || ''; } catch (e) { /* ignore */ }
+    window.setTheme = function (t, fromApp, noSave) {
+      THEME = t === 'dark' ? 'dark' : 'light'; if (!noSave) { try { localStorage.setItem('theme', THEME); } catch (e) { /* ignore */ } }
+      document.documentElement.setAttribute('data-theme', THEME);
+      var b = document.getElementById('pf-theme'); if (b) b.setAttribute('aria-pressed', String(THEME === 'dark'));
+    };
+    var saved = ''; try { saved = localStorage.getItem('lang') || ''; } catch (e) { /* ignore */ }
+    var nav = (navigator.language || 'fr').slice(0, 2);
+    document.addEventListener('DOMContentLoaded', function () {
+      document.getElementById('lang-sel').addEventListener('change', function () { window.setLang(this.value); });
+      document.getElementById('pf-theme').addEventListener('click', function () { window.setTheme(THEME === 'dark' ? 'light' : 'dark'); });
+      window.setTheme(themeSaved || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'), true);
+      window.setLang(saved || (/^(ar|en)$/.test(nav) ? nav : 'fr'));
+    });
+    // Langue choisie dans l'application (cadre) : la page d'accueil la retient.
+    window.addEventListener('message', function (e) { if (!e.data) return; if (/^(fr|ar|en)$/.test(e.data.sijilLang)) window.setLang(e.data.sijilLang, true); if (/^(light|dark)$/.test(e.data.sijilTheme)) window.setTheme(e.data.sijilTheme, true); });
+  })();
+  </script>
+  <script>
+  // ---------- Application : code entreprise + adresse du déploiement Apps Script ----------
+  (function () {
+    // Adresse /exec du déploiement commun à tous les clients (une seule mise à jour pour tout le monde).
+    // Adresse /exec du déploiement commun à tous les clients : l'utilisateur ne tape que son code entreprise (l'annuaire du classeur principal fait la correspondance code → classeur).
+    // Si vous créez un nouveau déploiement, changez l'adresse ici (une seule fois, pour tout le monde).
+    var APP_URL = 'https://script.google.com/macros/s/AKfycbzAQRlfWJ9LJ8I0bJwqTAb-fbYymiyTedEjwb8WRd-cBkXMLPHGxRGNf1KcyT-DVfuF/exec'; // secours si exec.json est illisible (même adresse que exec.json)
+    var URL_RE = /^https:\/\/script\.google\.com\/(a\/macros\/[\w.-]+|macros)\/s\/[\w-]+\/(exec|dev)$/;
+    var CODE_RE = /^[A-Z0-9][A-Z0-9_-]{1,19}$/;
+    var store = { get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } }, del: function (k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } } };
+    store.del('app-url'); // ancienne mémorisation d'adresse : elle devenait fausse à chaque nouveau déploiement
+    if (/[?&]reset\b/.test(location.search)) { store.del('app-url-custom'); store.del('app-code'); }
+    var q = (/[?&]c=([\w-]+)/.exec(location.search) || [])[1]; // lien d'invitation ?c=CODE
+    if (q && CODE_RE.test(q.toUpperCase())) store.set('app-code', q.toUpperCase());
+    var frame = document.getElementById('app');
+    var setup = document.getElementById('setup');
+    // Adresse du déploiement : saisie manuelle (« Adresse personnalisée ») > exec.json publié par l'application > adresse de secours.
+    function target(remote) {
+      var url = store.get('app-url-custom') || remote || APP_URL; var code = store.get('app-code') || '';
+      return { url: URL_RE.test(url) ? url : '', code: code };
+    }
+    function remoteUrl() {
+      return new Promise(function (resolve) {
+        var done = false; var t = setTimeout(function () { if (!done) { done = true; resolve(''); } }, 3000);
+        fetch('exec.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : {}; })
+          .then(function (j) { if (!done) { done = true; clearTimeout(t); resolve(j && j.url || ''); } }).catch(function () { if (!done) { done = true; clearTimeout(t); resolve(''); } });
+      });
+    }
+    // L'application s'affiche dans un cadre plein écran : l'application installée reste dans sa fenêtre (pas de bascule vers un autre site).
+    // (Les anciennes erreurs « Impossible d'ouvrir le fichier » venaient d'un paramètre ?c= lu côté serveur, pas du cadre.)
+    // ?direct ouvre l'adresse /exec en navigation directe à la place.
+    var inFrame = !/[?&]direct\b/.test(location.search);
+    function open() {
+      document.getElementById('launching').hidden = false; setup.hidden = true;
+      remoteUrl().then(go);
+    }
+    function go(remote) {
+      var cands = [];
+      [store.get('app-url-custom'), remote, APP_URL].forEach(function (u) { if (u && URL_RE.test(u) && cands.indexOf(u) < 0) cands.push(u); });
+      if (!cands.length) { document.getElementById('launching').hidden = true; showSetup(T('Adresse de l\'application manquante : saisissez-la ci-dessous (déploiement Apps Script, se termine par /exec).')); return; }
+      resolveAndLaunch(cands[0]); // pas de sonde bloquante : un démarrage à froid d'Apps Script (plusieurs secondes) la faisait échouer à tort
+    }
+    // Annuaire : un client « dédié » a sa propre adresse /exec (colonne exec_url du classeur principal) ; sinon on reste sur le déploiement commun.
+    function resolveAndLaunch(base) {
+      var code = store.get('app-code');
+      if (!code) { launch(base); return; }
+      var done = false; var t = setTimeout(function () { if (!done) { done = true; launch(base); } }, 4000);
+      fetch(base + '?resolve=' + encodeURIComponent(code), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
+        if (done) return; done = true; clearTimeout(t);
+        launch(j && j.ok && j.exec_url && URL_RE.test(j.exec_url) ? j.exec_url : base);
+      }).catch(function () { if (!done) { done = true; clearTimeout(t); launch(base); } });
+    }
+    function launch(url) {
+      var t = { url: URL_RE.test(url) ? url : '', code: store.get('app-code') || '' };
+      if (!t.url) { document.getElementById('launching').hidden = true; showSetup(T('Adresse de l\'application manquante : saisissez-la ci-dessous (déploiement Apps Script, se termine par /exec).')); return; }
+      var dest = t.url + '#' + (t.code ? 'c=' + encodeURIComponent(t.code) + '&' : '') + 'l=' + LANG + '&t=' + THEME; // fragment : jamais envoyé à Google (un paramètre de requête faisait échouer l'ouverture)
+      if (!inFrame) { setup.hidden = true; launcher.hidden = true; document.getElementById('launching').hidden = false; location.replace(dest); return; }
+      document.getElementById('launching').hidden = true; launcher.hidden = true; setup.hidden = true; frame.src = dest; frame.hidden = false; // un seul écran : l'accueil disparaît quand l'application s'affiche
+    }
+    function showSetup(msg) {
+      setup.hidden = false; launcher.hidden = true; frame.hidden = true;
+      document.getElementById('setup-code').value = store.get('app-code') || '';
+      document.getElementById('setup-url').value = store.get('app-url-custom') || '';
+      if (msg) { document.getElementById('setup-err').textContent = msg; document.getElementById('setup-url').closest('details').open = true; }
+    }
+    // Premier lancement : sans code ni adresse mémorisés, on demande le code ; un ancien utilisateur (adresse mémorisée) entre directement.
+    var change = /[?&]change\b/.test(location.search); // lien « Changer d'entreprise » de l'application
+    var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+    var launcher = document.getElementById('launcher');
+    // Dans un onglet du navigateur : écran d'accueil (c'est là que le navigateur propose d'installer) ; installée : ouverture directe.
+    function showLauncher() {
+      var c = store.get('app-code');
+      document.getElementById('launcher-msg').textContent = c ? T('Entreprise : ') + c : T('Bienvenue.');
+      setup.hidden = true; launcher.hidden = false;
+      // Diagnostic : quelle adresse /exec sera ouverte, et d'où elle vient (adresse personnalisée, exec.json publié par l'application, ou secours).
+      remoteUrl().then(function (remote) {
+        var custom = store.get('app-url-custom'); var t = target(remote);
+        var src = custom ? T('adresse personnalisée saisie sur cet appareil') : remote ? T('exec.json publié par l\'application') : T('adresse de secours');
+        document.querySelector('#launcher-diag small').textContent = T('Adresse utilisée : …') + (t.url.match(/\/s\/([\w-]+)\//) || [, ''])[1].slice(-8) + ' (' + src + ')';
+        document.getElementById('launcher-clear').hidden = !custom;
+      });
+    }
+    document.getElementById('launcher-clear').addEventListener('click', function () { store.del('app-url-custom'); showLauncher(); });
+    document.getElementById('launcher-open').addEventListener('click', function () { launcher.hidden = true; open(); });
+    document.getElementById('launcher-change').addEventListener('click', function () { launcher.hidden = true; showSetup(); });
+    window.onLangChange = function (fromApp) { if (!launcher.hidden) showLauncher(); if (window.paintVitrine) window.paintVitrine(); };
+    new MutationObserver(function () { document.getElementById('prefs').hidden = !frame.hidden; }).observe(frame, { attributes: true, attributeFilter: ['hidden'] });
+    var known = store.get('app-code') || store.get('app-url-custom');
+    if (change) showSetup(); else if (known && (standalone || /[?&]go\b/.test(location.search))) open(); else if (known) showLauncher(); else setup.hidden = false;
+    
+    document.getElementById('setup-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var err = document.getElementById('setup-err'); err.textContent = '';
+      var code = document.getElementById('setup-code').value.trim().toUpperCase().replace(/\s+/g, '');
+      var v = document.getElementById('setup-url').value.trim().replace(/[?#].*$/, '');
+      if (code && !CODE_RE.test(code)) { err.textContent = T('Code non valide : 2 à 20 caractères (lettres, chiffres, - ou _).'); return; }
+      if (v && !URL_RE.test(v)) { err.textContent = T('Adresse non reconnue : elle doit commencer par https://script.google.com/macros/s/ et finir par /exec.'); return; }
+      if (!code && !v && !store.get('app-url-custom')) { err.textContent = T('Entrez le code de votre entreprise.'); return; }
+      if (code) store.set('app-code', code); else store.del('app-code');
+      if (v) store.set('app-url-custom', v); else store.del('app-url-custom');
+      if (standalone) open(); else { setup.hidden = true; showLauncher(); }
+    });
+  })();
+
+  // ---------- Vitrine : liste des entreprises (annuaire public) + demande d'essai ----------
+  (function () {
+    var APP_URL = 'https://script.google.com/macros/s/AKfycbzAQRlfWJ9LJ8I0bJwqTAb-fbYymiyTedEjwb8WRd-cBkXMLPHGxRGNf1KcyT-DVfuF/exec';
+    var URL_RE = /^https:\/\/script\.google\.com\/(a\/macros\/[\w.-]+|macros)\/s\/[\w-]+\/(exec|dev)$/;
+    var $ = function (id) { return document.getElementById(id); };
+    var extra = $('extra'), setup = $('setup'), launcher = $('launcher');
+    function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+    function sync() { extra.hidden = setup.hidden && launcher.hidden; }
+    new MutationObserver(sync).observe(setup, { attributes: true, attributeFilter: ['hidden'] });
+    new MutationObserver(sync).observe(launcher, { attributes: true, attributeFilter: ['hidden'] });
+    sync();
+    function base() {
+      return fetch('exec.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
+        var c = [ls('app-url-custom'), j && j.url, APP_URL].filter(function (u) { return u && URL_RE.test(u); }); return c[0];
+      }).catch(function () { return APP_URL; });
+    }
+    function paint(list) {
+      var pick = $('setup-pick');
+      if (!list || !list.length) { pick.hidden = true; return; }
+      pick.replaceChildren.apply(pick, [new Option(T('— Choisir votre entreprise —'), '')].concat(list.map(function (e) { return new Option(e.nom, e.code); }), [new Option(T('Autre entreprise (saisir le code)'), '*')]));
+      pick.hidden = false;
+    }
+    try { paint(JSON.parse(ls('vitrine') || '[]')); } catch (e) { /* ignore */ }
+    window.paintVitrine = function () { try { paint(JSON.parse(ls('vitrine') || '[]')); } catch (e) { /* ignore */ } };
+    base().then(function (b) {
+      return fetch(b + '?entreprises', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) { if (j && j.ok) { ls('vitrine', JSON.stringify(j.entreprises)); paint(j.entreprises); } });
+    }).catch(function () { /* hors ligne : on garde la dernière liste */ });
+    $('setup-pick').addEventListener('change', function () {
+      var v = this.value, code = $('setup-code');
+      if (v && v !== '*') { code.value = v; } else if (v === '*') { code.value = ''; code.focus(); }
+    });
+    // Demande d'essai : envoi en GET « sans réponse lisible » (script.google.com ne répond pas aux requêtes entre sites avec CORS) ;
+    // on vérifie ensuite côté serveur en lisant la réponse si possible, sinon on confirme l'envoi.
+    function b64url(str) { return btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+    $('trial-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var msg = $('trial-msg'); msg.className = ''; msg.textContent = '';
+      var d = { societe: $('t-societe').value, nom: $('t-nom').value, email: $('t-email').value, tel: $('t-tel').value, message: $('t-msg').value, site: $('t-site').value };
+      if (d.societe.trim().length < 2) { msg.className = 'err'; msg.textContent = T('Indiquez le nom de votre société.'); return; }
+      var btn = e.target.querySelector('button'); btn.disabled = true;
+      base().then(function (b) {
+        var url = b + '?prospect=' + b64url(JSON.stringify(d));
+        return fetch(url, { cache: 'no-store' }).then(function (r) { return r.json(); }).catch(function () { return fetch(url, { mode: 'no-cors', cache: 'no-store' }).then(function () { return { ok: true }; }); });
+      }).then(function (j) {
+        if (j && j.ok === false) { msg.className = 'err'; msg.textContent = T(j.error || 'Envoi impossible, réessayez.'); return; }
+        msg.className = 'ok'; msg.textContent = T('Merci ! Votre demande est bien reçue, nous vous recontactons très vite.'); e.target.reset();
+      }).catch(function () { msg.className = 'err'; msg.textContent = T('Envoi impossible pour le moment, réessayez plus tard.'); }).then(function () { btn.disabled = false; });
+    });
+  })();
+
+  // ---------- PWA : service worker + bande d'installation ----------
+  (function () {
+    var banner = document.getElementById('install-banner');
+    var btn = document.getElementById('install-btn');
+    var close = document.getElementById('install-close');
+    var iosHint = banner.querySelector('.install-ios');
+    var KEY = 'pwa-install-dismissed';
+    var SNOOZE_MS = 7 * 24 * 3600 * 1000; // la bande ne revient qu'après 7 jours si on la ferme
+    var deferred = null;
+
+    function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+    function set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } }
+    function snoozed() { var t = Number(get(KEY)); return t && Date.now() - t < SNOOZE_MS; }
+    function show() { if (!snoozed()) banner.style.display = 'flex'; }
+    function hide() { banner.style.display = 'none'; }
+    var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+    var ua = navigator.userAgent;
+    var iOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var safari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+
+    // 1. Service worker (nécessaire pour l'installation sous Chrome / Edge)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () { /* HTTPS requis */ }); });
+    }
+    if (standalone) return; // déjà installée : pas de bande
+
+    // 2. Chrome / Edge / Android : événement d'installation natif
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      deferred = e;
+      btn.hidden = false; iosHint.hidden = true;
+      show();
+    });
+    btn.addEventListener('click', function () {
+      if (!deferred) return;
+      deferred.prompt();
+      Promise.resolve(deferred.userChoice).then(function () { deferred = null; hide(); });
+    });
+    window.addEventListener('appinstalled', function () { deferred = null; hide(); });
+
+    // 3. iPhone / iPad : pas d'événement ni de bouton natif → instruction (Safari uniquement)
+    if (iOS) {
+      btn.hidden = true;
+      if (safari) { iosHint.hidden = false; banner.querySelector('.install-sub').style.display = 'none'; show(); }
+    }
+
+    // 4. Fermer la bande
+    close.addEventListener('click', function () { set(KEY, String(Date.now())); hide(); });
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+dev/**
+README.md
+files.json
+
+deploy.ps1
+deploy.sh

@@ -1,0 +1,7 @@
+KIT SIJIL
+=========
+Contenu : manuel d'utilisation (PDF et Word), présentation PowerPoint, revue de sécurité.
+Les captures viennent d'une entreprise fictive (aucune donnée réelle).
+
+Où le placer : déposez ce dossier dans Google Drive, à côté du classeur Google Sheets
+(même dossier que le classeur « Sijil / Pointage »), pour le retrouver avec l'application.

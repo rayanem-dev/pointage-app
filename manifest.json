@@ -1,0 +1,33 @@
+{
+  "id": "./",
+  "name": "Sijil",
+  "short_name": "Sijil",
+  "description": "Sijil : mise à disposition de personnel et prestation de services, du bordereau des prix à l'attachement et à la facture.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F4F1E8",
+  "theme_color": "#16598D",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

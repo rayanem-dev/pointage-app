@@ -1,0 +1,1599 @@
+<script>
+(function () {
+'use strict';
+var S = { code: (function () { try { return localStorage.getItem('pt-code') || ''; } catch (e) { return ''; } })(), rotations: ['28/28'], token: null, user: null, params: null, canSetup: false, info: null };
+try { S.token = sessionStorage.getItem('tk'); } catch (e) { /* stockage indisponible */ }
+
+// ---------- utilitaires ----------
+function h(tag, props) {
+  var e = document.createElement(tag);
+  var kids = Array.prototype.slice.call(arguments, 2);
+  var value;
+  Object.keys(props || {}).forEach(function (k) {
+    var v = props[k];
+    if (v == null || v === false) return;
+    if (k === 'class') e.className = v;
+    else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), v);
+    else if (k === 'value') value = v;
+    else if (k === 'checked' || k === 'disabled' || k === 'selected') e[k] = !!v;
+    else e.setAttribute(k, v === true ? '' : (k === 'placeholder' || k === 'title' || k === 'alt' || k === 'aria-label') ? tr(v) : v);
+  });
+  kids.flat(Infinity).forEach(function (c) { if (c == null || c === false) return; e.append(c.nodeType ? c : document.createTextNode(tr(String(c)))); });
+  if (value !== undefined) e.value = value;
+  return e;
+}
+['confirm', 'prompt', 'alert'].forEach(function (n) { var o = window[n]; if (o) window[n] = function (m, d) { return o.call(window, tr(m), d); }; });
+var $app = function () { return document.getElementById('app'); };
+var MOIS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+var WEEK = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+window.langHook = function (l, mois, jours) { MOIS.splice.apply(MOIS, [0, 12].concat(mois)); WEEK.splice.apply(WEEK, [0, 7].concat(jours)); };
+var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+var todayStr = function () { var d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+var thisMonth = function () { return todayStr().slice(0, 7); };
+var addDays = function (s, n) { var d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+var shiftMonth = function (k, n) { var y = +k.slice(0, 4); var m = +k.slice(5, 7); var t = y * 12 + m - 1 + n; return Math.floor(t / 12) + '-' + pad((t % 12) + 1); };
+var monthLabel = function (k) { return MOIS[+k.slice(5, 7) - 1] + ' ' + k.slice(0, 4); };
+var frDate = function (s) { return s ? s.slice(8, 10) + '/' + s.slice(5, 7) + '/' + s.slice(0, 4) : ''; };
+var frDateTime = function (s) { return s ? new Date(s).toLocaleString(LOCALE_I18N[LANG], { dateStyle: 'short', timeStyle: 'short' }) : ''; };
+var signed = function (n) { return n > 0 ? '+' + n : String(n); };
+var plural = function (n, w) { return n + ' ' + tr(w) + (n > 1 && LANG !== 'ar' ? 's' : ''); };
+var STATUS_LABEL = { T: 'En travail', R: 'En congé (repos)', ABS: 'Absent' };
+var STATUT_LABEL = { en_attente: 'En attente', envoyee: 'Envoyée à la direction', acceptee: 'Acceptée', refusee: 'Refusée', traitee: 'Traitée' };
+
+function call(name) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  return new Promise(function (resolve, reject) {
+    google.script.run
+      .withSuccessHandler(function (r) {
+        if (r && r.ok) return resolve(r.data);
+        if (r && r.code === 'SESSION') sessionEnd();
+        if (r && r.code === 'SUSPENDU') { S.flash = r.error; sessionEnd(); }
+        return reject(new Error(tr((r && r.error) || 'Erreur')));
+      })
+      .withFailureHandler(function (e) { reject(new Error(tr((e && e.message) || String(e)))); })
+      .rpc(S.token, name, args);
+  });
+}
+// Déconnexion volontaire : le jeton « Rester connecté » de cet appareil est aussi oublié.
+function logoutNow() {
+  var rm = ''; try { rm = localStorage.getItem('pt-rm') || ''; localStorage.removeItem('pt-rm'); } catch (e) { /* ignore */ }
+  Promise.all([call('logout').catch(function () {}), rm ? call('forget', rm).catch(function () {}) : null]).then(sessionEnd);
+}
+function sessionEnd() { S.token = null; S.user = null; S.path = null; S.owner = false; S.back = null; try { sessionStorage.removeItem('tk'); } catch (e) { /* ignore */ } boot(); } // boot relit l'état (annuaire, code entreprise)
+function saveFile(r) {
+  var bin = atob(r.base64); var bytes = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+  var a = h('a', { href: URL.createObjectURL(new Blob([bytes], { type: r.mime })), download: r.nom });
+  document.body.append(a); a.click(); a.remove();
+}
+function fileToBase64(file) {
+  return new Promise(function (resolve, reject) {
+    var fr = new FileReader();
+    fr.onload = function () { resolve(String(fr.result).split(',')[1]); };
+    fr.onerror = function () { reject(new Error('Lecture du fichier impossible')); };
+    fr.readAsDataURL(file);
+  });
+}
+function msgBox() { var m = h('p', { class: 'msg', hidden: true, role: 'status' }); m.show = function (text, ok) { m.hidden = false; m.className = 'msg ' + (ok === 'warn' ? 'warn' : ok ? 'ok' : 'err'); m.textContent = tr(text); }; m.hide = function () { m.hidden = true; }; return m; }
+// Exécute une action async depuis un bouton : désactive, affiche le résultat.
+function act(btn, box, fn, okText) {
+  btn.disabled = true; box.hide();
+  return fn().then(function (r) { if (okText) box.show(typeof okText === 'function' ? okText(r) : okText, true); return r; })
+    .catch(function (e) { box.show(e.message, false); })
+    .then(function (r) { btn.disabled = false; return r; });
+}
+function field(label, input, cls, hint) { return h('label', { class: cls || '' }, label, input, hint ? h('small', null, hint) : null); }
+
+// Choix d'une rotation « jours de travail/jours de repos » : liste proposée + valeur personnalisée.
+// withDefault : ajoute « par défaut » (valeur vide). onChange reçoit la valeur ('' = défaut).
+function rotationPicker(value, withDefault, defLabel, onChange, keepOption) {
+  var list = S.rotations.slice();
+  var sel = h('select', null, keepOption ? h('option', { value: '__keep' }, '— ne pas modifier —') : null, withDefault ? h('option', { value: '' }, defLabel) : null,
+    list.map(function (r) { return h('option', { value: r }, r.replace('/', ' j travail / ') + ' j repos'); }), h('option', { value: '__autre' }, 'Autre rotation…'));
+  var txt = h('input', { placeholder: 'ex. 10/5', pattern: '\\d+/\\d+', style: 'margin-top:6px' });
+  var inList = list.indexOf(value) >= 0;
+  sel.value = value === '__keep' ? '__keep' : (!value ? (withDefault ? '' : list[0]) : inList ? value : '__autre');
+  if (value && !inList && value !== '__keep') txt.value = value;
+  txt.hidden = sel.value !== '__autre';
+  function out() { return sel.value === '__autre' ? txt.value.trim() : sel.value; }
+  sel.onchange = function () { txt.hidden = sel.value !== '__autre'; onChange(out()); };
+  txt.oninput = function () { onChange(out()); };
+  return { node: h('div', null, sel, txt), set: function (v) { var l = list.indexOf(v) >= 0; sel.value = l ? v : '__autre'; txt.hidden = l; if (!l) txt.value = v; } };
+}
+
+function opts(list, valueKey, labelFn) { return list.map(function (x) { return h('option', { value: valueKey ? x[valueKey] : x }, labelFn ? labelFn(x) : x); }); }
+function chip(s, prevu) { return h('span', { class: 'chip st-' + s + (prevu ? ' prevu' : '') }, s); }
+function loading() { return h('p', { class: 'muted' }, 'Chargement…'); }
+
+// Page asynchrone : affiche « Chargement… » puis le contenu (ou l'erreur).
+function asyncBlock(promiseFn) {
+  var box = h('div', null, loading());
+  promiseFn().then(function (node) { box.replaceChildren(node); }).catch(function (e) { box.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  return box;
+}
+
+var LOGO = 'data:image/png;base64,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'; // symbole Sijil (96 px)
+// Préférences discrètes en bas à droite : langue (français, arabe, anglais) et thème clair / sombre.
+var ICON_GLOBE = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>';
+var ICON_SUN = '<svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+var ICON_MOON = '<svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>';
+function themeStored() { try { return localStorage.getItem('pt-theme') || ''; } catch (e) { return ''; } }
+function themeEffective() { return themeStored() || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
+function applyTheme() { document.documentElement.setAttribute('data-theme', themeEffective()); var b = document.getElementById('pf-theme'); if (b) b.setAttribute('aria-pressed', String(themeEffective() === 'dark')); }
+function mountPrefs() {
+  var old = document.getElementById('prefs'); if (old) old.remove();
+  var sel = h('select', { 'aria-label': 'Langue', title: 'Langue' }, LANGS.map(function (l) { return h('option', { value: l[0] }, l[1]); })); sel.value = LANG;
+  sel.onchange = function () { langSave(sel.value); applyLang(sel.value); render(); mountPrefs(); };
+  var lang = h('label', { class: 'pf' }); lang.insertAdjacentHTML('afterbegin', ICON_GLOBE); lang.append(sel);
+  var th = h('button', { type: 'button', id: 'pf-theme', class: 'pf', role: 'switch', 'aria-label': 'Mode sombre', title: 'Mode clair / sombre' });
+  th.insertAdjacentHTML('afterbegin', '<span class="knob"></span>' + ICON_SUN + ICON_MOON);
+  th.onclick = function () { var n = themeEffective() === 'dark' ? 'light' : 'dark'; try { localStorage.setItem('pt-theme', n); } catch (e) { /* ignore */ } try { window.parent.postMessage({ sijilTheme: n }, '*'); } catch (e) { /* ignore */ } applyTheme(); };
+  document.body.append(h('div', { id: 'prefs', class: 'prefs' }, lang, th));
+  applyTheme();
+}
+// ---------- connexion ----------
+function loginView() {
+  if (S.loginMode === 'forgot') return forgotView();
+  var email = h('input', { type: 'email', required: true, autocomplete: 'username' });
+  var pw = h('input', { type: 'password', required: true, autocomplete: 'current-password' });
+  var box = msgBox();
+  var btn = h('button', { class: 'primary' }, 'Se connecter');
+  var remember = h('input', { type: 'checkbox', checked: true });
+  var info = S.info || {};
+  // Plusieurs clients sur ce déploiement : le code entreprise (lien d'invitation, QR code ou saisie) désigne le bon classeur.
+  var code = h('input', { value: S.code, required: true, autocomplete: 'organization', placeholder: 'ex. HORIZON', style: 'text-transform:uppercase' });
+  var titre = h('h1', null, info.prestataire || 'Sijil');
+  code.addEventListener('change', function () { call('appInfo', code.value).then(function (i) { titre.textContent = i.prestataire || 'Sijil'; }).catch(function () { titre.textContent = 'Sijil'; }); });
+  var form = h('form', { class: 'card', onsubmit: function (ev) {
+    ev.preventDefault();
+    act(btn, box, function () { return call('login', email.value, pw.value, (info.multi || code.value.trim().toUpperCase() === 'ADMIN') ? code.value : '', remember.checked); }).then(function (r) {
+      if (!r) return;
+      S.flash = null;
+      if (info.multi) { S.code = code.value.trim().toUpperCase(); if (S.code !== 'ADMIN') { try { localStorage.setItem('pt-code', S.code); } catch (e) { /* ignore */ } } } // le code réservé de l'éditeur n'est pas mémorisé
+      S.token = r.token; try { sessionStorage.setItem('tk', r.token); } catch (e) { /* ignore */ }
+      try { if (r.remember) localStorage.setItem('pt-rm', r.remember); else localStorage.removeItem('pt-rm'); } catch (e) { /* ignore */ }
+      S.notice = null; boot();
+    });
+  } },
+    h('img', { src: LOGO, alt: 'Sijil', width: 72, height: 72, style: 'display:block;margin:0 auto 6px' }), titre, h('p', { style: 'text-align:center;margin:-4px 0 4px;color:var(--accent);font-weight:600' }, 'Gestion du temps de travail'), h('p', { class: 'muted' }, 'Connectez-vous à votre espace'),
+    S.flash ? h('p', { class: 'msg err' }, S.flash) : null, S.notice ? h('p', { class: 'msg ok' }, S.notice) : null,
+    h('small', { style: 'text-align:center' }, 'Version ' + (info.version || '?')),
+    info.installed === false ? h('p', { class: 'msg warn' }, "Application non installée : le propriétaire du classeur doit lancer le menu « Sijil → Installer / mettre à jour la structure ».") : null,
+    info.multi ? field('Code entreprise', code) : null, field('Email', email), field('Mot de passe', pw),
+    h('div', { class: 'loginopts' }, h('label', { class: 'inline' }, remember, ' Rester connecté'), h('a', { href: '#', onclick: function (ev) { ev.preventDefault(); S.loginMode = 'forgot'; S.forgotStep = 1; S.forgotEmail = email.value; S.forgotCode = code.value; render(); } }, 'Mot de passe oublié ?')), box, btn);
+  return h('div', { class: 'login' }, form, h('p', { class: 'copyright' }, info.copyright || '', ' · ', h('a', { href: '#/confidentialite', onclick: function (ev) { ev.preventDefault(); S.charte = true; render(); } }, 'Confidentialité'),
+    info.multi && info.shell ? [' · ', h('a', { href: info.shell + '?change', target: '_top', rel: 'noopener' }, "Changer d'entreprise")] : null));
+}
+
+// Mot de passe oublié : (1) l'adresse e-mail → un code à 6 chiffres arrive par e-mail ; (2) le code et le nouveau mot de passe.
+function forgotView() {
+  var info = S.info || {}; var box = msgBox(); var step = S.forgotStep || 1;
+  var email = h('input', { type: 'email', required: true, autocomplete: 'username', value: S.forgotEmail || '' });
+  var code = h('input', { value: S.forgotCode || S.code || '', required: true, placeholder: 'ex. HORIZON', style: 'text-transform:uppercase' });
+  var secret = h('input', { inputmode: 'numeric', autocomplete: 'one-time-code', maxlength: 6, required: true, placeholder: '000000' });
+  var pw1 = h('input', { type: 'password', required: true, autocomplete: 'new-password' }); var pw2 = h('input', { type: 'password', required: true, autocomplete: 'new-password' });
+  var back = h('a', { href: '#', onclick: function (ev) { ev.preventDefault(); S.loginMode = null; render(); } }, 'Retour à la connexion');
+  var btn = h('button', { class: 'primary' }, step === 1 ? 'Envoyer le code' : 'Changer le mot de passe');
+  var useCode = function () { return (info.multi || code.value.trim().toUpperCase() === 'ADMIN') ? code.value : ''; };
+  var form = h('form', { class: 'card', onsubmit: function (ev) {
+    ev.preventDefault();
+    if (step === 1) {
+      act(btn, box, function () { return call('passwordForgot', email.value, useCode()); }).then(function (r) { if (r) { S.forgotEmail = email.value; S.forgotCode = code.value; S.forgotStep = 2; render(); } });
+    } else {
+      if (pw1.value !== pw2.value) { box.show('Les deux mots de passe sont différents', false); return; }
+      act(btn, box, function () { return call('passwordReset', S.forgotEmail, secret.value, pw1.value, useCode()); }).then(function (r) { if (r) { S.loginMode = null; S.notice = 'Mot de passe modifié : connectez-vous avec le nouveau.'; render(); } });
+    }
+  } }, h('img', { src: LOGO, alt: 'Sijil', width: 72, height: 72, style: 'display:block;margin:0 auto 6px' }), h('h1', null, 'Mot de passe oublié'),
+    step === 1 ? h('p', { class: 'muted' }, "Saisissez votre adresse e-mail : un code à 6 chiffres vous est envoyé, valable 30 minutes.") : h('p', { class: 'msg ok' }, "Si cette adresse correspond à un compte, un e-mail avec un code vient d'être envoyé. Vérifiez aussi vos courriers indésirables."),
+    step === 1 ? [info.multi ? field('Code entreprise', code) : null, field('Email', email)] : [field('Code reçu par e-mail', secret), field('Nouveau mot de passe (6 caractères min.)', pw1), field('Confirmer le mot de passe', pw2)], box, btn, h('p', { style: 'text-align:center;margin-top:10px' }, back));
+  return h('div', { class: 'login' }, form);
+}
+// ---------- structure ----------
+var NAV = {
+  agent: [['#/', 'Accueil'], ['#/groupe', 'Mon pointage'], ['#/demandes', 'Mes demandes'], ['#/documents', 'Mes documents'], ['#/aide', 'Aide']],
+  chef: [['#/', 'Mon espace'], ['#/pointer', 'Pointer'], ['#/groupe', 'Mon groupe'], ['#/contrats', 'Contrat'], ['#/agents', 'Agents'], ['#/demandes', 'Demandes'], ['#/documents', 'Documents'], ['#/aide', 'Aide']],
+  client: [['#/groupe', 'Pointage'], ['#/contrats', 'Contrat et attachements'], ['#/aide', 'Aide']],
+  admin: [['#/pointer', 'Pointer'], ['#/groupe', 'Pointage global'], ['#/agents', 'Agents'], ['#/demandes', 'Demandes'], ['#/documents', 'Documents'], ['#/exports', 'Exports'], ['#/apropos', 'À propos'], ['#/aide', 'Aide']]
+};
+// ---------- aide ----------
+function HelpPage() {
+  var li = { fr: 0, en: 1, ar: 2 }[LANG] || 0; var role = S.user.role;
+  var q = h('input', { type: 'search', placeholder: "Rechercher dans l'aide", 'aria-label': "Rechercher dans l'aide" });
+  var host = h('div', { style: 'display:grid;gap:12px' });
+  function draw() {
+    var needle = q.value.trim().toLowerCase();
+    var mine = HELP.filter(function (s) { return s.roles.indexOf(role) >= 0; }); var others = HELP.filter(function (s) { return s.roles.indexOf(role) < 0; });
+    function block(s, open) {
+      var items = s.items.filter(function (it) { return !needle || (it.t[li] + ' ' + it.x[li]).toLowerCase().indexOf(needle) >= 0; });
+      if (!items.length) return null;
+      return h('details', { class: 'card helpsec', open: open || !!needle }, h('summary', null, h('b', null, s.t[li])), items.map(function (it) { return h('div', { class: 'helpitem' }, h('h3', null, it.t[li]), h('p', null, it.x[li])); }));
+    }
+    var a1 = mine.map(function (s) { return block(s, true); }).filter(Boolean); var a2 = others.map(function (s) { return block(s, false); }).filter(Boolean);
+    host.replaceChildren.apply(host, [].concat(a1, a2.length ? [h('h2', { style: 'margin-top:10px' }, 'Pour les autres rôles')] : [], a2, !a1.length && !a2.length ? [h('p', { class: 'muted' }, 'Aucun résultat.')] : []));
+  }
+  q.oninput = draw; draw();
+  return h('div', { style: 'display:grid;gap:12px;max-width:900px;margin:0 auto' }, h('h2', null, 'Aide'), h('p', { class: 'muted' }, "Les sections de votre rôle sont ouvertes ; les autres sont en dessous. Le manuel complet avec captures d'écran est disponible auprès de votre administrateur."), q, host);
+}
+function applyColors() { Object.keys(S.params.colors).forEach(function (k) { document.documentElement.style.setProperty('--c-' + k, S.params.colors[k]); }); }
+var ROUTES = {
+  '/': function () { return S.user.role === 'admin' ? PointerPage() : S.user.role === 'client' ? GroupePage() : HomePage(); },
+  '/demandes': function () { return DemandesPage(); }, '/documents': function () { return DocumentsPage(); },
+  '/pointer': function () { return PointerPage(); }, '/groupe': function () { return GroupePage(); },
+  '/agents': function () { return AgentsPage(); }, '/setup': function () { return SetupPage(); },
+  '/exports': function () { return ExportsPage(); }, '/contrats': function () { return ContratsPage(); }, '/motdepasse': function () { return PasswordPage(); }, '/nouveautes': function () { return NouveautesPage(); }, '/confidentialite': function () { return CharteBlock(); }, '/clients': function () { return ClientsPage(); }, '/prospects': function () { return ProspectsPage(); }, '/apropos': function () { return AProposPage(); }, '/aide': function () { return HelpPage(); }
+};
+// Navigation interne : on ne laisse pas le navigateur suivre les liens (dans le cadre isolé d'Apps Script,
+// un lien « #/page » ouvrirait la fenêtre entière sur une page blanche).
+function go(path) { S.path = path; try { history.replaceState(null, '', '#' + path); } catch (e) { /* cadre isolé : sans importance */ } render(); }
+function navClick(path) { return function (ev) { ev.preventDefault(); go(path); }; }
+function render() {
+  var root = $app();
+  if (!S.user) { root.replaceChildren(S.charte ? h('div', { class: 'login', style: 'max-width:760px' }, CharteBlock(function () { S.charte = false; render(); })) : loginView()); return; }
+  var role = S.user.role;
+  // Compte de l'éditeur : son espace normal + onglets « Clients » et « Prospects ». Espace d'un client : l'application seule.
+  var links = NAV[role].filter(function (l) { return !(S.canSetup && l[0] === '#/contrats'); }); // le contrat est dans Setup pour qui y a accès
+  if (S.canSetup) links.push(['#/setup', 'Setup']);
+  if (S.owner) links.push(['#/clients', 'Clients'], ['#/prospects', 'Prospects']); // compte unique de l'éditeur : sa société + la console
+  var path = S.path || (location.hash.replace(/^#/, '') || '/');
+  var allowed = links.map(function (l) { return l[0].replace('#', ''); }).concat(['/motdepasse', '/nouveautes', '/confidentialite']);
+  if (allowed.indexOf(path) < 0) path = role === 'admin' ? '/pointer' : role === 'client' ? '/groupe' : '/';
+  S.path = path;
+  var bar = h('header', { class: 'top' },
+    h('span', { class: 'brandwrap' }, h('img', { src: LOGO, alt: '', width: 28, height: 28, class: 'logo' }), h('strong', { class: 'brand' }, S.params.prestataire || 'Sijil')),
+    h('nav', null, links.map(function (l) { return h('a', { href: l[0], 'data-path': l[0].slice(1), class: l[0] === '#' + path ? 'on' : '', onclick: navClick(l[0].slice(1)) }, l[1]); })),
+    h('span', { class: 'who' }, S.user.nom, h('small', null, '(' + (role === 'chef' ? 'chef de groupe' : role) + ')'),
+      h('a', { href: '#/motdepasse', onclick: navClick('/motdepasse') }, 'Mot de passe'),
+      h('button', { class: 'link', onclick: logoutNow }, 'Déconnexion')));
+  var main = h('main', null);
+  var back = S.back ? h('div', { class: 'msg warn', style: 'margin:0;border-radius:0;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap' }, 'Mode support : vous êtes dans l\'espace de « ' + S.back.societe + ' » (essai).',
+    h('button', { type: 'button', class: 'primary', onclick: function () { call('logout').catch(function () {}).then(function () { S.token = S.back.token; S.back = null; S.path = null; try { sessionStorage.setItem('tk', S.token); } catch (e) { /* ignore */ } boot(); }); } }, "‹ Retour à l'administration")) : null;
+  root.replaceChildren.apply(root, [back, bar, main, h('footer', { class: 'muted', style: 'text-align:center;padding:14px;font-size:.8rem' }, 'Sijil · ', h('a', { href: '#/nouveautes', onclick: navClick('/nouveautes') }, 'version ' + ((S.info && S.info.version) || '?') + ' (nouveautés)'), h('br'), (S.info && S.info.copyright) || '', ' · ', h('a', { href: '#/confidentialite', onclick: navClick('/confidentialite') }, 'Confidentialité'))].filter(Boolean));
+  if (path === '/documents') markDocsSeen();
+  setTimeout(refreshBadges, 0);
+  main.append(ROUTES[path]());
+  paintBadges();
+  window.scrollTo(0, 0);
+}
+// ---------- pastilles du menu et notifications ----------
+// Documents : le navigateur retient la date de la dernière visite de « Mes documents » ; ce qui est plus récent est « nouveau ».
+function docsSeenKey() { return 'pt-docs-seen-' + (S.user ? S.user.id : ''); }
+function docsSeen() { try { return localStorage.getItem(docsSeenKey()) || ''; } catch (e) { return ''; } }
+function docsUnread() { var seen = docsSeen(); return (S.badges ? S.badges.documents : []).filter(function (d) { return seen && d.date > seen; }); }
+function markDocsSeen() {
+  S.docsPrev = docsSeen();
+  var now = (S.badges && S.badges.now) || new Date().toISOString();
+  try { localStorage.setItem(docsSeenKey(), now); } catch (e) { /* ignore */ }
+  if (S.badges) S.badges.documents = S.badges.documents.filter(function (d) { return d.date > now; });
+}
+function paintBadges() {
+  if (!S.user) return;
+  var counts = { '/documents': docsUnread().length, '/demandes': S.badges ? S.badges.demandes : 0, '/groupe': S.badges ? S.badges.remarques : 0 };
+  var names = docsUnread().map(function (d) { return d.nom; }).join(' · ');
+  document.querySelectorAll('header.top nav a[data-path]').forEach(function (a) {
+    var old = a.querySelector('.bubble'); if (old) old.remove();
+    var n = counts[a.getAttribute('data-path')];
+    if (n > 0) { var b = h('span', { class: 'bubble', title: a.getAttribute('data-path') === '/documents' ? tr('Nouveau : ') + names : a.getAttribute('data-path') === '/groupe' ? tr('Remarques du client') : '' }, pad(n)); a.append(b); }
+  });
+}
+function toast(text) {
+  var t = h('div', { class: 'toast', role: 'status', onclick: function () { t.remove(); } }, text); document.body.append(t); setTimeout(function () { t.remove(); }, 9000);
+}
+function refreshBadges(force) {
+  if (!S.user || !S.token) return;
+  if (force !== true && Date.now() - (S.badgesAt || 0) < 25000) return; // au plus un appel toutes les 25 s (la navigation ne le relance pas à chaque page)
+  S.badgesAt = Date.now();
+  call('badges').then(function (b) {
+    if (!S.user) return;
+    var first = !S.badges; S.badges = b;
+    if (!docsSeen() && !S.docsPrev) { try { localStorage.setItem(docsSeenKey(), b.now); } catch (e) { /* ignore */ } } // première visite : rien n'est « nouveau »
+    if (S.path === '/documents') markDocsSeen();
+    // Notification des documents arrivés depuis la dernière vérification (application ouverte)
+    var announced = S.announced = S.announced || {};
+    docsUnread().forEach(function (d) { var k = d.date + d.nom; if (!announced[k]) { announced[k] = 1; if (!first) toast(tr('Nouveau document : ') + d.nom); } });
+    paintBadges();
+  }).catch(function () { /* hors ligne : on réessaie à la prochaine vérification */ });
+}
+setInterval(function () { refreshBadges(true); }, 60000);
+
+// Code entreprise du lien : #c=CODE (ou ?c=CODE) de l'adresse de la page, lu côté navigateur (Apps Script ne passe rien au serveur).
+function readLocationCode(cb) { // cb(code, langue)
+  var clean = function (c) { return String(c || '').toUpperCase().replace(/[^A-Z0-9_-]/g, ''); };
+  if (window.__CODE !== undefined) { cb(clean(window.__CODE), window.__LANG || ''); return; } // serveur de développement
+  try {
+    google.script.url.getLocation(function (loc) {
+      var c = '', l = '';
+      try { c = (loc.parameter && loc.parameter.c) || ''; if (!c && loc.hash) { var m = /(?:^|[&#])c=([\w-]+)/i.exec(loc.hash); c = m ? m[1] : ''; } } catch (e) { c = ''; }
+      try { var ml = /(?:^|[&#])l=(fr|ar|en)\b/i.exec(loc.hash || ''); l = ml ? ml[1].toLowerCase() : ''; } catch (e) { l = ''; }
+      try { var mt = /(?:^|[&#])t=(light|dark)\b/i.exec(loc.hash || ''); if (mt) localStorage.setItem('pt-theme', mt[1].toLowerCase()); } catch (e) { /* ignore */ }
+      cb(clean(c), l);
+    });
+  } catch (e) { cb('', ''); }
+}
+function boot() {
+  readLocationCode(function (c, l) { if (c) { S.code = c; } if (l) { try { localStorage.setItem('pt-lang', l); } catch (e) { /* ignore */ } } applyLang(l || langStored() || 'fr'); mountPrefs(); bootInfo(); });
+}
+function bootInfo() {
+  // Session perdue (fermeture de l'onglet, 6 heures écoulées) : reconnexion automatique si l'appareil est « resté connecté ».
+  var rm = ''; try { rm = localStorage.getItem('pt-rm') || ''; } catch (e) { rm = ''; }
+  if (!S.token && rm) {
+    call('resume', rm).then(function (r) {
+      S.token = r.token; try { sessionStorage.setItem('tk', r.token); if (r.remember) localStorage.setItem('pt-rm', r.remember); } catch (e) { /* ignore */ }
+    }).catch(function () { try { localStorage.removeItem('pt-rm'); } catch (e) { /* ignore */ } }).then(bootInfo2);
+    return;
+  }
+  bootInfo2();
+}
+function bootInfo2() {
+  // Informations de l'application et profil de l'utilisateur demandés en parallèle (deux appels au serveur en même temps au lieu de l'un après l'autre).
+  var infoP = call('appInfo', S.code).catch(function () { return call('appInfo', ''); }).catch(function () { return {}; });
+  var meP = S.token ? call('me').catch(function () { return null; }) : Promise.resolve(null);
+  Promise.all([infoP, meP]).then(function (r) {
+    S.info = r[0];
+    var me = r[1];
+    if (me) { S.user = me.user; S.canSetup = me.canSetup; S.owner = me.owner; S.params = me.params; S.rotations = me.rotations || ['28/28']; applyColors(); }
+    render();
+  });
+}
+window.addEventListener('hashchange', function () { if (!S.user) return; var p = location.hash.replace(/^#/, '') || '/'; if (p !== S.path) { S.path = p; render(); } });
+
+// « Début du contrat : 01/01/2026 · Durée : 24 mois · Fin : 31/12/2027 » (visible de tous).
+function contratPeriode(c) {
+  var parts = [];
+  if (c.date_debut) parts.push(h('span', null, 'Début du contrat : ', h('b', null, frDate(c.date_debut))));
+  if (c.duree_mois) parts.push(h('span', null, 'Durée : ', h('b', null, c.duree_mois + ' mois')));
+  if (c.date_fin) parts.push(h('span', null, 'Fin : ', h('b', null, frDate(c.date_fin))));
+  return parts.map(function (p, i) { return i ? [' · ', p] : p; });
+}
+// ---------- accueil de l'agent ----------
+function HomePage() {
+  var month = thisMonth();
+  var wrap = h('div', { style: 'display:grid;gap:16px' });
+  function load() {
+    wrap.replaceChildren(loading());
+    call('overview', month).then(function (o) { wrap.replaceChildren.apply(wrap, homeView(o)); }).catch(function (e) { wrap.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  }
+  function homeView(o) {
+    var a = o.aujourdhui; var c = o.cycle;
+    var todayCard;
+    if (a) {
+      var last = a.change ? addDays(a.change, -1) : null;
+      todayCard = h('section', { class: 'card today s-' + a.status },
+        h('h3', null, "Aujourd'hui — " + frDate(o.today)),
+        h('div', { class: 'big' }, STATUS_LABEL[a.status] + (a.prevu ? ' (prévu)' : '')),
+        a.status === 'ABS' ? h('div', { class: 'muted' }, 'Absence pointée.') : [
+          h('div', { class: 'days' }, 'Il vous reste ', h('b', null, plural(a.remaining, 'jour')), a.status === 'T' ? ' de travail' : ' de congé', " (aujourd'hui compris)" + (last ? ', jusqu\'au ' + frDate(last) : '') + '.'),
+          a.change ? h('div', { class: 'muted' }, (a.changeStatus === 'R' ? 'Départ en congé le ' : 'Reprise du travail le ') + frDate(a.change) + ' (rotation ' + o.rotation.travail + ' T / ' + o.rotation.repos + ' R).') : null,
+          a.change && o.soldeChange != null ? h('div', { class: 'days' }, (a.changeStatus === 'R' ? 'Le jour de votre départ' : 'Le jour de votre reprise') + ', votre solde (T − CR) sera de ', h('b', { class: o.soldeChange < 0 ? 'neg' : 'pos' }, signed(o.soldeChange) + ' ' + (Math.abs(o.soldeChange) > 1 ? 'jours' : 'jour')), '.') : null
+        ]);
+    } else {
+      todayCard = h('section', { class: 'card today' }, h('h3', null, "Aujourd'hui — " + frDate(o.today)), h('div', { class: 'muted' }, 'Aucun pointage enregistré : votre situation sera calculée dès le premier pointage par votre chef de groupe.'));
+    }
+    var stat = function (label, value, cls) { return h('div', { class: 'card stat ' + (cls || '') }, h('b', null, value), h('small', null, label)); };
+    var pct = c && c.total ? Math.min(100, Math.round(c.run / c.total * 100)) : 0;
+    var y = +month.slice(0, 4); var m = +month.slice(5, 7);
+    var offset = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7;
+    var cal = h('div', { class: 'cal' }, ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map(function (n) { return h('b', { class: 'calh' }, n); }),
+      Array.from({ length: offset }, function () { return h('span'); }),
+      o.grid.days.map(function (d, i) {
+        var s = d.statut || d.prevu; var date = month + '-' + pad(i + 1);
+        return h('span', { class: 'calday ' + (s ? 'st-' + s : '') + (!d.statut && s ? ' prevu' : '') + (date === o.today ? ' now' : '') }, h('small', null, i + 1), s);
+      }));
+    return [
+      h('section', { class: 'card' }, h('h2', null, 'Bonjour ' + o.agent.nom), h('p', { class: 'muted' }, [o.agent.fonction, o.agent.affectation, o.agent.contrat && 'Contrat ' + o.agent.contrat, o.chef && 'Chef de groupe : ' + o.chef.nom].filter(Boolean).join(' · ')), o.contrat && (o.contrat.date_debut || o.contrat.duree_mois) ? h('p', null, contratPeriode(o.contrat)) : null),
+      todayCard,
+      h('div', { class: 'stats' }, stat('T ce mois', o.mois.T, 'st-T'), stat('CR ce mois', o.mois.R, 'st-R'), stat('ABS ce mois', o.mois.ABS, 'st-ABS'), stat('Total T', o.cumul.T), stat('Total CR', o.cumul.R), stat('Solde (T − CR)', signed(o.cumul.reliquat), o.cumul.reliquat < 0 ? 'neg' : 'pos')),
+      c && c.run ? h('section', { class: 'card' }, h('h3', null, 'Cycle en cours'),
+        h('p', null, chip(c.status), ' jour ', h('b', null, c.run), ' sur ' + c.total + (c.remaining > 0 ? ' — encore ' + plural(c.remaining, 'jour') : ' — cycle terminé')),
+        h('div', { class: 'bar' }, h('div', { class: 'st-' + c.status, style: 'width:' + pct + '%' })),
+        h('p', { class: 'muted' }, 'Prochain changement : ', h('b', null, frDate(c.next)), ' → ', chip(c.nextStatus, true))) : null,
+      h('section', { class: 'card' }, h('div', { class: 'toolbar' }, h('h3', null, o.label), monthNav(month, function (mk) { month = mk; load(); })), cal,
+        h('p', { class: 'legend' }, chip('T'), ' travail ', chip('R'), ' congé / repos ', chip('ABS'), ' absence ', chip('T', true), chip('R', true), ' prévus')),
+      h('div', { class: 'stats' },
+        h('a', { class: 'card tile', href: '#/demandes', onclick: navClick('/demandes') }, h('b', null, o.demandes.en_attente), ' demande(s) en cours', h('small', null, o.demandes.total + ' au total · faire une demande')),
+        h('a', { class: 'card tile', href: '#/documents', onclick: navClick('/documents') }, h('b', null, o.documents), ' document(s)', h('small', null, "Fiches d'émoluments, attestations, ATS…")))
+    ];
+  }
+  load();
+  return wrap;
+}
+function monthNav(month, onChange) {
+  var input = h('input', { type: 'month', value: month, onchange: function () { if (input.value) onChange(input.value); } });
+  return h('div', { class: 'monthnav' }, h('button', { type: 'button', 'aria-label': 'Mois précédent', onclick: function () { onChange(shiftMonth(input.value || month, -1)); } }, '‹'), input,
+    h('button', { type: 'button', 'aria-label': 'Mois suivant', onclick: function () { onChange(shiftMonth(input.value || month, 1)); } }, '›'));
+}
+
+// Jours fériés (fêtes nationales et religieuses algériennes) repérés dans les grilles.
+function feriesMap(list) { var m = {}; (list || []).forEach(function (f) { (m[f.date] = m[f.date] || []).push(f); }); return m; }
+function ferClass(arr) { return arr ? ' fer fer-' + arr[0].type.charAt(0) : ''; }
+function ferTitle(arr) { return arr ? arr.map(function (f) { return tr(f.nom); }).join(' · ') : ''; }
+function feriesLegend(list) {
+  if (!list || !list.length) return h('span');
+  return h('div', { class: 'feries' }, h('b', null, 'Jours fériés : '), list.map(function (f) {
+    return h('span', { class: 'ferchip fer-' + f.type.charAt(0), title: f.type === 'religieuse' ? 'Date estimée (selon la lune, ±1 jour)' : '' }, frDate(f.date).slice(0, 5), ' ', f.nom);
+  }));
+}
+// ---------- grille mensuelle ----------
+function GridView(o) {
+  var month = o.month || thisMonth(); var prevu = true; var tous = false; var contrat = o.contrat || ''; var span = 1; // span : 1, 3, 6 ou 12 mois (vues de synthèse)
+  var box = h('section', { class: 'card' });
+  var menu = null;
+  function closeMenu() { if (menu) { menu.remove(); menu = null; } }
+  document.addEventListener('click', closeMenu);
+  var msg = msgBox();
+  // Compléter les jours non pointés (discret, dans la barre) : agents cochés à gauche des noms.
+  var chosen = {}; var rowsNow = []; var dFrom = h('input', { type: 'date', title: 'À partir du (vide : le lendemain du dernier pointage de chaque agent)' }); var dTo = h('input', { type: 'date', value: todayStr(), title: "Jusqu'au (aujourd'hui par défaut)" });
+  var rotOpt = h('input', { type: 'checkbox', title: 'Suivre la rotation prévue au lieu de répéter le dernier statut' }); var cbtn = h('button', { type: 'button', class: 'mini', title: "Recopie le dernier statut (T, R ou ABS) des agents cochés jusqu'à la date de fin ; un jour déjà pointé n'est jamais remplacé" }, 'Copier le dernier pointage');
+  var isOn = function (id) { return chosen[id] !== false; };
+  function pickBox(r) { var c = h('input', { type: 'checkbox', checked: isOn(r.id), 'aria-label': 'Sélectionner ' + r.nom }); c.onchange = function () { chosen[r.id] = c.checked; var all = document.getElementById('pick-all'); if (all) all.checked = rowsNow.every(function (x) { return isOn(x.id); }); }; return c; }
+  function pickAll() { var c = h('input', { type: 'checkbox', id: 'pick-all', checked: rowsNow.every(function (x) { return isOn(x.id); }), title: 'Tous les agents', 'aria-label': 'Tous les agents' }); c.onchange = function () { rowsNow.forEach(function (x) { chosen[x.id] = c.checked; }); box.querySelectorAll('td.name input[type=checkbox]').forEach(function (e) { e.checked = c.checked; }); }; return c; }
+  function payload(apercu) { return { agent_ids: rowsNow.filter(function (x) { return isOn(x.id); }).map(function (x) { return x.id; }), from: dFrom.value || '', to: dTo.value || '', mode: rotOpt.checked ? 'rotation' : 'meme', apercu: apercu }; }
+  cbtn.onclick = function () {
+    act(cbtn, msg, function () {
+      return call('pointerCompleter', payload(true)).then(function (r) {
+        if (!r.total) { msg.show("Rien à copier : les agents cochés sont à jour jusqu'au " + frDate(r.to) + '.', 'warn'); return null; }
+        var resume = r.total + ' jour(s) à pointer pour ' + r.agents.length + ' agent(s), jusqu\'au ' + frDate(r.to) + (r.ignores.length ? ' (' + r.ignores.length + ' ignoré(s) : à jour ou sans pointage)' : '') + '.\n\n' +
+          r.agents.slice(0, 12).map(function (x) { return x.nom + ' : ' + frDate(x.du) + ' → ' + frDate(x.au) + ' (' + x.statut + ', ' + x.jours + ' j)'; }).join('\n') + (r.agents.length > 12 ? '\n…' : '') + '\n\nConfirmer ?';
+        if (!window.confirm(resume)) return null;
+        return call('pointerCompleter', payload(false));
+      });
+    }, function (r) { return r ? r.total + ' jour(s) pointés pour ' + r.agents.length + ' agent(s).' : ''; }).then(function (r) { if (r && r.applique) load(); });
+  };
+  function completerBar() {
+    if (!o.completer) return null;
+    return h('span', { class: 'completer' }, h('small', null, 'Compléter du'), dFrom, h('small', null, 'au'), dTo, h('label', { class: 'inline', title: 'Suivre la rotation prévue au lieu de répéter le dernier statut' }, rotOpt, h('small', null, 'rotation')), cbtn);
+  }
+  var rm = {}; // remarques du client : « agent|date » -> liste
+  function setRemarks(list) { rm = {}; (list || []).forEach(function (r) { (rm[r.agent_id + '|' + r.date] = rm[r.agent_id + '|' + r.date] || []).push(r); }); }
+  function remClass(id, date) { return rm[id + '|' + date] ? ' rem' : ''; }
+  function remTitle(id, date) { var l = rm[id + '|' + date]; return l ? l.map(function (r) { return r.auteur_nom + ' : ' + r.texte; }).join(' | ') : ''; }
+  // Le compte client laisse une remarque sur un jour d'un agent (visible du prestataire).
+  function openRemark(ev, agent, date) {
+    ev.stopPropagation(); closeMenu();
+    var txt = h('textarea', { rows: 3, maxlength: 600, placeholder: 'Votre remarque (visible par le prestataire)', style: 'min-width:240px' }); var m = msgBox(); var b = h('button', { class: 'primary', type: 'button' }, 'Envoyer la remarque');
+    var prev = (rm[agent.id + '|' + date] || []).map(function (r) { return h('div', { class: 'reply' }, h('b', null, frDate(r.date_creation.slice(0, 10))), ' ', r.texte, r.reponse ? h('div', { class: 'muted' }, 'Réponse : ' + r.reponse) : null); });
+    b.onclick = function () { act(b, m, function () { return call('remarqueAdd', { agent_id: agent.id, date: date, texte: txt.value }); }, 'Remarque envoyée').then(function (r) { if (r) { closeMenu(); load(); } }); };
+    menu = h('div', { class: 'popmenu', style: 'left:' + Math.max(8, Math.min(ev.clientX, window.innerWidth - 300)) + 'px;top:' + Math.min(ev.clientY, window.innerHeight - 260) + 'px;max-width:290px', onclick: function (e) { e.stopPropagation(); } },
+      h('small', null, agent.nom + ' — ' + frDate(date)), prev, txt, m, b);
+    document.body.append(menu); txt.focus();
+  }
+  // Liste des remarques de la période ; le prestataire peut les marquer « vu » et répondre.
+  function remarquesCard(list) {
+    if (!list || !list.length) return h('span');
+    var staff = S.user.role === 'admin' || S.user.role === 'chef';
+    return h('section', { class: 'theme' }, h('h3', null, 'Remarques du client (' + list.length + ')'), list.map(function (r) {
+      var buttons = staff ? [h('button', { type: 'button', onclick: function () { call('remarqueTraiter', r.id, {}).then(load).catch(function (e) { msg.show(e.message, false); }); } }, 'Marquer vu'),
+        h('button', { type: 'button', onclick: function () { var t = window.prompt('Votre réponse au client :', r.reponse || ''); if (t !== null) call('remarqueTraiter', r.id, { reponse: t }).then(load).catch(function (e) { msg.show(e.message, false); }); } }, 'Répondre')] : null;
+      return h('div', { class: 'item' }, h('b', null, frDate(r.date) + ' · ' + r.agent_nom), ' ', h('span', { class: 'badge ' + (r.statut === 'nouveau' ? 'en_attente' : 'traitee') }, r.statut === 'nouveau' ? 'Nouveau' : 'Vu'),
+        h('p', null, r.texte), h('small', null, r.auteur_nom + ' · ' + frDateTime(r.date_creation)), r.reponse ? h('div', { class: 'reply' }, 'Réponse : ' + r.reponse) : null, buttons ? h('div', { class: 'sendbar' }, buttons) : null);
+    }));
+  }
+  function setCell(agent, day, statut) {
+    closeMenu();
+    call('pointer', { agent_id: agent.id, date: month + '-' + pad(day), statut: statut }).then(load).catch(function (e) { msg.show(e.message, false); });
+  }
+  function openMenu(ev, agent, day) {
+    ev.stopPropagation(); closeMenu();
+    menu = h('div', { class: 'popmenu', style: 'left:' + Math.min(ev.clientX, window.innerWidth - 190) + 'px;top:' + ev.clientY + 'px', onclick: function (e) { e.stopPropagation(); } },
+      h('small', null, agent.nom + ' — ' + day + '/' + month.slice(5)),
+      h('div', null, ['T', 'R', 'ABS'].map(function (s) { return h('button', { class: 'chip st-' + s, onclick: function () { setCell(agent, day, s); } }, s); }), h('button', { onclick: function () { setCell(agent, day, ''); } }, '✕')));
+    document.body.append(menu);
+  }
+  function exp(format, btn) {
+    act(btn, msg, function () {
+      var go1 = S.user.role === 'client' ? Promise.resolve(null) : call('ficheApercu', { month: month, contrat: tous ? '' : contrat });
+      return go1.then(function (a) {
+        if (a && a.avertissements.length) msg.show('Attention : ' + a.avertissements.join(' '), false);
+        return call('exportFiche', { month: month, format: format, contrat: contrat, prevu: prevu, tous: tous });
+      }).then(saveFile);
+    }, 'Document généré');
+  }
+  // Sélecteur de vue : mois détaillé, ou synthèse sur 3 mois, 6 mois, 1 an (se terminant au mois choisi).
+  function vues() {
+    if (!o.periods) return null;
+    return h('div', { class: 'vues', role: 'group', 'aria-label': 'Vue' }, [[1, 'Mois'], [3, '3 mois'], [6, '6 mois'], [12, '1 an']].map(function (v) {
+      return h('button', { type: 'button', class: span === v[0] ? 'on' : '', 'aria-pressed': String(span === v[0]), onclick: function () { span = v[0]; load(); } }, v[1]);
+    }));
+  }
+  // Vue étalée sur 3 mois, 6 mois ou 1 an à partir du mois choisi : mêmes couleurs que le mois, un jour par colonne, jours fériés et jour courant repérés.
+  function loadPeriod() {
+    call('gridPeriod', month, span, contrat, prevu).then(function (g) {
+      var fm = feriesMap(g.feries); setRemarks(g.remarques); var dates = []; var cw = span === 3 ? 17 : span === 6 ? 9 : 5;
+      var thMonths = g.months.map(function (m) { for (var d = 1; d <= m.nd; d += 1) dates.push(m.key + '-' + pad(d)); return h('th', { class: 'mh', colspan: m.nd, title: m.label }, span === 12 ? m.label.slice(0, 3) : m.label); });
+      var thDays = dates.map(function (date) {
+        var day = +date.slice(8); var wd = new Date(date + 'T00:00:00Z').getUTCDay();
+        var show = span === 3 || (span === 6 && (day === 1 || day % 5 === 0));
+        return h('th', { class: 'dn' + (wd === 5 ? ' fri' : '') + ferClass(fm[date]) + (date === g.today ? ' today' : ''), title: frDate(date) + (fm[date] ? ' — ' + ferTitle(fm[date]) : '') }, show ? String(day) : '', span === 3 ? h('small', null, WEEK[wd]) : null);
+      });
+      rowsNow = g.rows;
+      var thead = [h('tr', null, h('th', { class: 'sticky', rowspan: 2 }, h('div', { class: 'namecell' }, o.completer ? pickAll() : null, 'Nom et prénom')), thMonths, h('th', { class: 'num first', rowspan: 2 }, 'T'), h('th', { class: 'num', rowspan: 2 }, 'CR'), h('th', { class: 'num', rowspan: 2 }, 'ABS'), h('th', { class: 'num', rowspan: 2, title: 'Cumul T − CR depuis le début' }, 'Solde')), h('tr', null, thDays)];
+      var body = g.rows.map(function (r) {
+        var tds = dates.map(function (date, i) {
+          var ch = r.d.charAt(i); var real = ch === 'T' || ch === 'R' || ch === 'A'; var st = ch === 'A' ? 'ABS' : ch.toUpperCase();
+          var cls = 'd' + (ch !== '.' ? ' st-' + st : '') + (ch !== '.' && !real ? ' prevu' : '') + ferClass(fm[date]) + remClass(r.id, date) + (o.canRemark ? ' edit' : '') + (date === g.today ? ' today' : '');
+          var tdd = h('td', { class: cls, title: [ch === '.' ? '' : st + ' · ' + frDate(date) + (real ? '' : ' (prévu)'), remTitle(r.id, date)].filter(Boolean).join(' — ') }, span === 3 && ch !== '.' ? (ch === 'A' ? 'A' : st) : '');
+          if (o.canRemark) tdd.addEventListener('click', function (ev) { openRemark(ev, r, date); });
+          return tdd;
+        });
+        return h('tr', null, h('td', { class: 'sticky name' }, h('div', { class: 'namecell' }, o.completer ? pickBox(r) : null, h('div', null, h('b', null, r.nom, r.type === 'vehicule' ? h('span', { class: 'badge' }, 'VH') : null), h('small', null, r.fonction)))), tds,
+          h('td', { class: 'num first' }, r.total.T), h('td', { class: 'num' }, r.total.R), h('td', { class: 'num' }, r.total.ABS), h('td', { class: 'num ' + (r.cumul.reliquat < 0 ? 'neg' : 'pos') }, signed(r.cumul.reliquat)));
+      });
+      var chk = h('input', { type: 'checkbox', checked: prevu, onchange: function () { prevu = chk.checked; load(); } });
+      var wrap = h('div', { class: 'gridwrap' }, h('table', { class: 'grid tl', style: '--cw:' + cw + 'px' }, h('thead', null, thead), h('tbody', null, body.length ? body : h('tr', null, h('td', { class: 'muted', colspan: dates.length + 5 }, 'Aucun agent.')))));
+      box.replaceChildren(
+        h('div', { class: 'toolbar' }, vues(), monthNav(month, function (mk) { month = mk; load(); }), h('label', { class: 'inline' }, chk, ' Afficher les jours prévus'), completerBar(), h('span', { class: 'muted' }, 'Du ', frDate(g.from), ' au ', frDate(g.to))),
+        msg, wrap,
+        h('p', { class: 'legend' }, chip('T'), ' travail ', chip('R'), ' congé / repos ', chip('ABS'), ' absence ', chip('T', true), chip('R', true), ' prévus · T / CR / ABS / Solde : jours pointés sur la période et cumul depuis le début'),
+        feriesLegend(g.feries), remarquesCard(g.remarques));
+      var td = wrap.querySelector('th.today'); if (td) wrap.scrollLeft = Math.max(0, td.offsetLeft - 260); // se place sur aujourd'hui
+    }).catch(function (e) { box.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  }
+  function load() {
+    box.replaceChildren(loading());
+    if (span > 1) { loadPeriod(); return; }
+    call('gridMonth', month, contrat).then(function (g) {
+      var xl = h('button', null, 'Excel'); var pdf = h('button', null, 'PDF');
+      xl.onclick = function () { exp('xlsx', xl); }; pdf.onclick = function () { exp('pdf', pdf); };
+      var chk = h('input', { type: 'checkbox', checked: prevu, onchange: function () { prevu = chk.checked; load(); } });
+      var fm = feriesMap(g.feries); setRemarks(g.remarques);
+      rowsNow = g.rows;
+      var thead = h('tr', null, h('th', { class: 'sticky' }, h('div', { class: 'namecell' }, o.completer ? pickAll() : null, 'Nom et prénom')),
+        Array.from({ length: g.nd }, function (_, i) { var wd = new Date(Date.UTC(+month.slice(0, 4), +month.slice(5, 7) - 1, i + 1)).getUTCDay(); var dt = month + '-' + pad(i + 1); return h('th', { class: (wd === 5 ? 'fri' : '') + ferClass(fm[dt]) + (dt === g.today ? ' today' : ''), title: fm[dt] ? ferTitle(fm[dt]) : '' }, i + 1, h('small', null, WEEK[wd])); }),
+        h('th', null, 'T'), h('th', null, 'CR'), h('th', null, 'ABS'), h('th', { title: 'Cumul T − CR depuis le début' }, 'Solde'));
+      var body = g.rows.map(function (r) {
+        var pv = r.prevision || {}; var note = prevu && pv.etat === 'aucun' ? 'Aucun pointage : les prévisions démarrent au premier pointage (T ou R)' : null;
+        return h('tr', null, h('td', { class: 'sticky name' }, h('div', { class: 'namecell' }, o.completer ? pickBox(r) : null, h('div', null, h('b', null, r.nom, r.type === 'vehicule' ? h('span', { class: 'badge' }, 'VH') : null), h('small', null, r.fonction), note ? h('small', { class: 'prevnote', title: "Les jours prévus se calculent seuls dès le premier pointage T ou R" }, note) : null))),
+          r.days.map(function (d, i) {
+            var s = d.statut || (prevu ? d.prevu : '');
+            var dts = month + '-' + pad(i + 1);
+            var td = h('td', { class: 'day ' + (s ? 'st-' + s : '') + (!d.statut && s ? ' prevu' : '') + (o.canEdit || o.canRemark ? ' edit' : '') + ferClass(fm[dts]) + remClass(r.id, dts), title: [ferTitle(fm[dts]), remTitle(r.id, dts)].filter(Boolean).join(' — ') }, s);
+            if (o.canEdit) td.addEventListener('click', function (ev) { openMenu(ev, r, i + 1); });
+            else if (o.canRemark) td.addEventListener('click', function (ev) { openRemark(ev, r, dts); });
+            return td;
+          }),
+          h('td', { class: 'num' }, r.mois.T), h('td', { class: 'num' }, r.mois.R), h('td', { class: 'num' }, r.mois.ABS), h('td', { class: 'num ' + (r.cumul.reliquat < 0 ? 'neg' : 'pos') }, signed(r.cumul.reliquat)));
+      });
+      box.replaceChildren(
+        h('div', { class: 'toolbar' }, vues(), monthNav(month, function (mk) { month = mk; load(); }), h('label', { class: 'inline' }, chk, ' Afficher les jours prévus'), completerBar(), o.exportable ? h('span', { class: 'grow right' }, xl, ' ', pdf) : null),
+        msg,
+        h('div', { class: 'gridwrap' }, h('table', { class: 'grid' }, h('thead', null, thead), h('tbody', null, body.length ? body : h('tr', null, h('td', { class: 'muted', colspan: g.nd + 5 }, 'Aucun agent.'))))),
+        h('p', { class: 'legend' }, chip('T'), ' travail ', chip('R'), ' congé / repos ', chip('ABS'), ' absence ', chip('T', true), chip('R', true), ' prévus' + (o.canEdit ? ' · cliquez sur une case pour la modifier' : o.canRemark ? ' · cliquez sur une case pour laisser une remarque' : '')), feriesLegend(g.feries), remarquesCard(g.remarques));
+    }).catch(function (e) { box.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  }
+  load();
+  return { el: box, setMonth: function (m) { month = m; load(); }, reload: load };
+}
+
+// ---------- pointage (formulaire du chef de groupe / admin) ----------
+function PointerPage() {
+  var wrap = h('div', { style: 'display:grid;gap:16px' });
+  var gv = GridView({ canEdit: true, completer: true });
+  var box = msgBox();
+  var sel = h('select');
+  var date = h('input', { type: 'date', value: todayStr(), required: true });
+  var fin = h('input', { type: 'date' });
+  var statut = 'T';
+  var seg = h('div', { class: 'seg', role: 'radiogroup' });
+  [['T', 'T — Travail'], ['R', 'R — Repos / congé'], ['ABS', 'ABS — Absence'], ['', 'Effacer']].forEach(function (p) {
+    var r = h('input', { type: 'radio', name: 'statut', checked: p[0] === 'T', onchange: function () { statut = p[0]; seg.querySelectorAll('.segopt').forEach(function (x) { x.classList.remove('on'); }); lab.classList.add('on'); } });
+    var lab = h('label', { class: 'segopt ' + (p[0] ? 'st-' + p[0] : '') + (p[0] === 'T' ? ' on' : '') }, r, p[1]);
+    seg.append(lab);
+  });
+  var btn = h('button', { class: 'primary' }, 'Valider le pointage');
+  var form = h('form', { class: 'card', onsubmit: function (ev) {
+    ev.preventDefault();
+    act(btn, box, function () { return call('pointer', { agent_id: sel.value, date: date.value, date_fin: fin.value || '', statut: statut }); }, function (r) { return plural(r.jours, 'jour') + ' pointé' + (r.jours > 1 ? 's' : ''); })
+      .then(function (r) { if (r) gv.setMonth(date.value.slice(0, 7)); });
+  } }, h('h2', null, 'Pointer un agent'),
+    h('div', { class: 'row' }, field('Agent', sel, 'grow2'), field('Date', date), field("Jusqu'au (facultatif)", fin)), seg, box, btn);
+  wrap.append(form, gv.el);
+  call('agentsVisible').then(function (list) { sel.replaceChildren.apply(sel, list.map(function (a) { return h('option', { value: a.id }, (a.type === 'vehicule' ? '[VH] ' : '') + a.nom + (a.fonction ? ' — ' + a.fonction : '')); })); });
+  return wrap;
+}
+function GroupePage() { var staff = S.user.role === 'admin' || S.user.role === 'chef'; return GridView({ canEdit: staff, canRemark: S.user.role === 'client', exportable: S.user.role !== 'agent', periods: true }).el; } // l'agent consulte son propre pointage (lecture seule)
+
+// ---------- demandes ----------
+function DemandesPage() {
+  var wrap = h('div', { style: 'display:grid;gap:16px' });
+  var staff = S.user.role !== 'agent'; var isAdmin = S.user.role === 'admin';
+  var flash = null; // message de confirmation conservé après rechargement de la page
+  function flashNode(f) { return h('div', null, h('p', { class: 'msg ' + (f.ok === 'warn' ? 'warn' : 'ok'), role: 'status' }, f.text), f.pre ? h('pre', { class: 'card', style: 'white-space:pre-wrap' }, f.pre) : null); }
+  function load() {
+    call('demandesList').then(function (L) { var nodes = view(L); if (flash) { nodes.unshift(flashNode(flash)); flash = null; } wrap.replaceChildren.apply(wrap, nodes); }).catch(function (e) { wrap.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  }
+  function demandeCard(d, mine) {
+    var periode = d.date_debut ? ' · du ' + frDate(d.date_debut) + (d.date_fin ? ' au ' + frDate(d.date_fin) : '') + (d.reprise ? ' · reprise prévue le ' + frDate(d.reprise) : '') : '';
+    var transmise = d.statut === 'envoyee' ? h('p', { class: 'muted' }, 'Traitée : demande transmise à la direction (' + (S.params.prestataire || 'prestataire') + ')') : null;
+    var mod = d.statut === 'en_attente' ? h('button', { type: 'button', onclick: function () { editor(d, card); } }, 'Modifier') : null;
+    var card = h('article', { class: 'item' }, h('div', null, h('b', null, d.type_label), h('span', { class: 'badge ' + d.statut }, STATUT_LABEL[d.statut]), ' ', mod),
+      h('small', null, (mine ? '' : d.agent_nom + ' · ') + frDateTime(d.date_creation) + periode),
+      transmise, d.message ? h('p', null, d.message) : null, d.reponse ? h('p', { class: 'reply' }, 'Réponse' + (d.traite_par ? ' (' + d.traite_par + ')' : '') + ' : ' + d.reponse) : null);
+    return card;
+  }
+  // Correction d'une demande encore en attente (oubli, mauvaise date…) par l'agent ou son chef.
+  function editor(d, anchor) {
+    var types = CFG_TYPES();
+    var type = h('select', null, Object.keys(types).map(function (k) { return h('option', { value: k }, types[k]); })); type.value = d.type;
+    var d1 = h('input', { type: 'date', value: d.date_debut || '' }); var d2 = h('input', { type: 'date', value: d.date_fin || '' });
+    var msg = h('textarea', { rows: 3, maxlength: 500 }); msg.value = d.message || '';
+    var box = msgBox(); var ok = h('button', { class: 'primary', type: 'submit' }, 'Enregistrer'); var no = h('button', { type: 'button' }, 'Annuler');
+    var form = h('form', { class: 'card', onsubmit: function (ev) {
+      ev.preventDefault();
+      act(ok, box, function () { return call('demandeModifier', d.id, { type: type.value, date_debut: d1.value, date_fin: d2.value, message: msg.value }); }, 'Demande modifiée').then(function (r) { if (r) { flash = { text: 'Demande modifiée.', ok: true }; load(); } });
+    } }, h('div', { class: 'row' }, field('Type de demande', type, 'grow2'), field('Du', d1), field('Au', d2)), field('Message', msg), box, h('div', { class: 'sendbar' }, ok, no));
+    no.onclick = function () { form.remove(); };
+    anchor.after(form);
+  }
+  function newForm() {
+    var type = h('select', null, opts(Object.keys(CFG_TYPES()), null, function (k) { return CFG_TYPES()[k]; }).map(function (o, i) { o.value = Object.keys(CFG_TYPES())[i]; return o; }));
+    var d1 = h('input', { type: 'date' }); var d2 = h('input', { type: 'date' });
+    var msg = h('textarea', { rows: 3, maxlength: 500, placeholder: 'Précisions utiles (motif, destination…)' });
+    var box = msgBox(); var btn = h('button', { class: 'primary' }, 'Envoyer ma demande');
+    var dest = S.user.chef_id ? 'à votre chef de groupe' : "à l'administration";
+    return h('form', { class: 'card', onsubmit: function (ev) {
+      ev.preventDefault();
+      act(btn, box, function () { return call('demandeCreate', { type: type.value, message: msg.value, date_debut: d1.value, date_fin: d2.value }); }, 'Demande envoyée ' + dest).then(function (r) { if (r) { flash = { text: 'Demande envoyée ' + dest + '.', ok: true }; load(); } });
+    } }, h('h2', null, 'Nouvelle demande'), h('p', { class: 'muted' }, 'Elle sera transmise ' + dest + '.'),
+      h('div', { class: 'row' }, field('Type de demande', type, 'grow2'), field('Du (facultatif)', d1), field('Au (facultatif)', d2)), field('Message', msg), box, btn);
+  }
+  function CFG_TYPES() { return { titre_conge: 'Titre de congé', attestation_travail: 'Attestation de travail', ats: 'ATS', fiche_emolument: "Fiche d'émoluments", prolongation_conge: 'Prolongation de congé', prolongation_sejour: 'Prolongation de séjour' }; }
+
+  // Boîte du chef : demandes en attente regroupées par thème, une seule demande envoyée à la direction.
+  function inbox(L) {
+    var pending = L.toHandle.filter(function (d) { return d.statut === 'en_attente'; });
+    var box = msgBox(); var checks = [];
+    var note = h('input', { placeholder: 'Note pour la direction (facultative)' });
+    var send = h('button', { class: 'primary' }, 'Envoyer à la direction');
+    function updateCount() { var n = checks.filter(function (c) { return c.el.checked; }).length; send.textContent = tr(n ? 'Envoyer à la direction (' + n + ')' : 'Envoyer à la direction'); send.disabled = !n; }
+    var themes = Object.keys(L.types).map(function (t) {
+      var items = pending.filter(function (d) { return d.type === t; });
+      if (!items.length) return null;
+      var all = h('input', { type: 'checkbox', checked: true, 'aria-label': 'Tout sélectionner : ' + L.types[t], onchange: function () { items.forEach(function (d) { checks.filter(function (c) { return c.id === d.id; }).forEach(function (c) { c.el.checked = all.checked; }); }); updateCount(); } });
+      return h('div', { class: 'theme' }, h('h3', null, all, L.types[t], h('span', { class: 'badge' }, items.length)),
+        items.map(function (d) {
+          var c = h('input', { type: 'checkbox', checked: true, onchange: updateCount }); checks.push({ id: d.id, el: c });
+          var rb = h('button', { type: 'button', class: 'danger' }, 'Refuser'); var ab = h('button', { type: 'button' }, 'Accepter');
+          var decide = function (st, b) { var rep = window.prompt(st === 'refusee' ? 'Motif du refus (facultatif) :' : 'Réponse à l’agent (facultatif) :', ''); if (rep === null) return; act(b, box, function () { return call('demandeRepondre', d.id, st, rep); }, 'Réponse enregistrée').then(function (r) { if (r) { flash = { text: 'Réponse enregistrée', ok: true }; load(); } }); };
+          rb.onclick = function () { decide('refusee', rb); }; ab.onclick = function () { decide('acceptee', ab); };
+          return h('div', { class: 'pick' }, c, h('div', null, h('b', null, d.agent_nom), d.agent_fonction ? ' · ' + d.agent_fonction : '', h('small', null, frDateTime(d.date_creation) + (d.date_debut ? ' · du ' + frDate(d.date_debut) + (d.date_fin ? ' au ' + frDate(d.date_fin) : '') + (d.reprise ? ' · reprise prévue le ' + frDate(d.reprise) : '') : '')), d.message ? h('div', null, d.message) : null), h('span', null, ab, rb));
+        }));
+    }).filter(Boolean);
+    send.onclick = function () {
+      var ids = checks.filter(function (c) { return c.el.checked; }).map(function (c) { return c.id; });
+      act(send, box, function () { return call('demandesEnvoyer', ids, note.value); }).then(function (r) {
+        if (!r) return;
+        flash = { ok: r.mail ? true : 'warn', text: 'Demande groupée envoyée (' + r.envoi.nb + ' demandes : ' + r.envoi.themes + ').' + (r.mail ? ' E-mail transmis à la direction.' : ' E-mail non envoyé : renseignez l’adresse de la direction dans Setup, ou copiez le texte ci-dessous.'), pre: r.mail ? null : r.texte };
+        load();
+      });
+    };
+    updateCount();
+    return h('section', { class: 'card' }, h('h2', null, 'Demandes à traiter' + (pending.length ? ' (' + pending.length + ')' : '')),
+      h('p', { class: 'muted' }, "Les demandes de votre groupe arrivent ici, regroupées par thème. Cochez celles à transmettre : une seule demande groupée part à la direction."),
+      themes.length ? themes : h('p', { class: 'muted' }, 'Aucune demande en attente.'), box,
+      themes.length ? h('div', { class: 'sendbar' }, note, send) : null);
+  }
+  function envoisView(L) {
+    return h('section', { class: 'card' }, h('h2', null, 'Envois à la direction'),
+      L.envois.length ? L.envois.map(function (e) {
+        var box = msgBox();
+        var res = h('select', null, h('option', { value: 'acceptee' }, 'Acceptées'), h('option', { value: 'refusee' }, 'Refusées'), h('option', { value: 'traitee' }, 'Traitées'));
+        var rep = h('input', { placeholder: 'Réponse de la direction (facultative)' }); var btn = h('button', { class: 'primary' }, 'Enregistrer la réponse');
+        btn.onclick = function () { act(btn, box, function () { return call('envoiTraiter', e.id, res.value, rep.value); }, 'Réponse appliquée à toutes les demandes').then(function (r) { if (r) { flash = { text: 'Réponse de la direction appliquée à toutes les demandes de l’envoi.', ok: true }; load(); } }); };
+        return h('article', { class: 'item' }, h('div', null, h('b', null, 'Envoi du ' + frDateTime(e.date_envoi)), h('span', { class: 'badge ' + (e.statut === 'envoye' ? 'envoyee' : 'traitee') }, e.statut === 'envoye' ? 'En attente de la direction' : 'Réponse reçue')),
+          h('small', null, plural(+e.nb, 'demande') + ' · par ' + e.chef_nom + (e.note ? ' · ' + e.note : '')),
+          e.groupes.map(function (g) { return h('p', null, h('b', null, g.label + ' (' + g.items.length + ') : '), g.items.map(function (d) { return d.agent_nom; }).join(', ')); }),
+          e.statut === 'envoye' ? h('div', { class: 'sendbar' }, res, rep, btn) : (e.reponse ? h('p', { class: 'reply' }, 'Réponse : ' + e.reponse) : null), box);
+      }) : h('p', { class: 'muted' }, 'Aucun envoi pour le moment.'));
+  }
+  function view(L) {
+    var out = [];
+    if (!isAdmin) out.push(newForm());
+    if (staff) {
+      out.push(inbox(L), envoisView(L));
+      var done = L.toHandle.filter(function (d) { return d.statut !== 'en_attente'; }).slice(0, 25);
+      if (done.length) out.push(h('section', { class: 'card' }, h('h2', null, 'Dernières demandes traitées'), done.map(function (d) { return demandeCard(d, false); })));
+    }
+    if (!isAdmin) out.push(h('section', { class: 'card' }, h('h2', null, 'Mes demandes'), L.mine.length ? L.mine.map(function (d) { return demandeCard(d, true); }) : h('p', { class: 'muted' }, "Vous n'avez fait aucune demande.")));
+    return out;
+  }
+  wrap.append(loading()); load();
+  return wrap;
+}
+
+// ---------- documents ----------
+var DOC_TYPES = { fiche_emolument: "Fiche d'émoluments (FDP)", titre_conge: 'Titre de congé (TC)', attestation_travail: 'Attestation de travail (AT)', ats: 'ATS', autre: 'Autre (DOC)' };
+var DOC_SOURCE = { nom: 'd’après le nom du fichier', contenu: 'd’après le contenu du document', choix: 'type choisi par vous', defaut: 'non reconnu' };
+function DocumentsPage() {
+  var staff = S.user.role !== 'agent';
+  var wrap = h('div', { style: 'display:grid;gap:16px' });
+  var list = h('section', { class: 'card' }, loading());
+  var sel = h('select'); var box = msgBox();
+  function target() { return staff ? sel.value : S.user.id; }
+  function loadList() {
+    if (!target()) { list.replaceChildren(h('h2', null, 'Documents'), h('p', { class: 'muted' }, 'Aucun agent.')); return; }
+    call('documentsList', target()).then(function (docs) {
+      list.replaceChildren(h('h2', null, staff ? "Documents de l'agent" : 'Mes documents'),
+        docs.length ? h('ul', { class: 'docs' }, docs.map(function (d) {
+          var dl = h('button', null, 'Télécharger'); dl.onclick = function () { act(dl, box, function () { return call('documentDownload', d.id).then(saveFile); }); };
+          var del = staff ? h('button', { class: 'danger' }, 'Supprimer') : null;
+          if (del) del.onclick = function () { if (window.confirm('Supprimer « ' + (d.nom_original || d.titre) + ' » ?')) act(del, box, function () { return call('documentDelete', d.id); }).then(loadList); };
+          // correction après coup : type et période → le fichier est renommé dans Drive
+          var tsel = h('select', null, Object.keys(DOC_TYPES).map(function (k) { return h('option', { value: k }, DOC_TYPES[k]); })); tsel.value = d.type;
+          var per = h('input', { value: d.periode || '', placeholder: 'mars 2026  ou  15/03/2026' });
+          var ok = h('button', { class: 'primary' }, 'Enregistrer'); var cancel = h('button', { type: 'button' }, 'Annuler');
+          var editor = h('div', { class: 'handle', hidden: true }, tsel, per, ok, cancel);
+          ok.onclick = function () { act(ok, box, function () { return call('documentUpdate', { id: d.id, type: tsel.value, periode: per.value }); }, 'Document reclassé et renommé').then(function (r) { if (r) loadList(); }); };
+          cancel.onclick = function () { editor.hidden = true; };
+          var fix = staff ? h('button', null, 'Corriger') : null; if (fix) fix.onclick = function () { editor.hidden = !editor.hidden; };
+          return h('li', null, h('div', null, h('b', null, d.nom_original || d.titre), (!staff && S.docsPrev && d.date > S.docsPrev) ? h('span', { class: 'badge', style: 'background:var(--neg);color:#fff' }, 'Nouveau') : null, h('small', null, (DOC_TYPES[d.type] || d.type) + (d.periode ? ' · ' + d.periode : '') + ' · déposé par ' + d.depose_par + ' le ' + frDateTime(d.date) + (d.dossier ? ' · Drive : ' + d.dossier : '')), editor), h('span', null, dl, fix, del));
+        })) : h('p', { class: 'muted' }, 'Aucun document.'), box);
+    }).catch(function (e) { list.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  }
+  if (staff) {
+    var type = h('select', null, h('option', { value: 'auto' }, 'Détection automatique (recommandé)'), Object.keys(DOC_TYPES).map(function (k) { return h('option', { value: k }, DOC_TYPES[k]); }));
+    var file = h('input', { type: 'file', required: true });
+    var up = msgBox(); var btn = h('button', { class: 'primary' }, 'Déposer');
+    var form = h('form', { class: 'card', onsubmit: function (ev) {
+      ev.preventDefault();
+      var f = file.files[0]; if (!f) return;
+      up.show('⏳ Lecture et classement du document en cours…', 'warn');
+      act(btn, up, function () { return fileToBase64(f).then(function (b64) { return call('documentUpload', { agent_id: sel.value, type: type.value, nom: f.name, mime: f.type, base64: b64 }); }); }).then(function (r) {
+        if (!r) return;
+        var det = r.detecte || {};
+        up.show('✓ Classé : ' + r.nom_original + ' — ' + (DOC_TYPES[r.type] || r.type) + (DOC_SOURCE[det.source] ? ' (' + DOC_SOURCE[det.source] + ')' : '') + ' · ' + r.dossier + (det.avertissement ? '  ⚠ ' + det.avertissement : '') + '  Utilisez « Corriger » si besoin.', det.avertissement ? 'warn' : true);
+        file.value = ''; type.value = 'auto'; loadList(); // on garde l'agent choisi : seul le fichier est vidé
+      });
+    } }, h('h2', null, 'Déposer un document dans le compte d’un agent'),
+      h('p', { class: 'muted' }, "Le document est reconnu (fiche de paie, titre de congé, attestation, ATS…), renommé — ex. TC_Mahdi_01.03.2026, FDP_Mahdi_mars2026 — et rangé dans Google Drive : « Documents / nom de l'agent » (à côté du classeur)."),
+      h('div', { class: 'row' }, field('Agent', sel, 'grow2'), field('Type', type)), field('Fichier (6 Mo maximum)', file), up, btn);
+    sel.onchange = loadList;
+    wrap.append(form);
+    call('agentsVisible', true).then(function (agents) { sel.replaceChildren.apply(sel, agents.map(function (a) { return h('option', { value: a.id }, a.nom); })); loadList(); });
+  } else loadList();
+  wrap.append(list);
+  return wrap;
+}
+
+// ---------- agents et véhicules ----------
+function noAcc(s) { return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+function AgentsPage() {
+  var isAdmin = S.user.role === 'admin';
+  var wrap = h('div', { style: 'display:grid;gap:16px' });
+  var eff = { contrats: [], strict: true, rotation: {} }; var agents = []; var editing = null; var flash = null; var accessSend = true; var lastAccess = null; // accessSend : envoyer les accès par e-mail à la création ; lastAccess : dernier compte créé
+  var st = blank();
+  var formHost = h('div'); var listHost = h('div');
+  function blank() { return { type: 'personne', nom: '', email: '', role: 'agent', fonction: '', affectation: '', contrat: S.user.role === 'chef' ? (S.user.contrat || '') : '', chef_id: '', acces_setup: false, password: '', rotation: '' }; }
+  function fromAgent(a) { return { type: a.type === 'vehicule' ? 'vehicule' : 'personne', nom: a.nom, email: a.email, role: a.role, fonction: a.fonction, affectation: a.affectation, contrat: a.contrat, chef_id: a.chef_id, acces_setup: a.acces_setup === '1', password: '', rotation: a.rotation || '' }; }
+  function load() {
+    Promise.all([call('agentsManage'), call('contratsLite')]).then(function (r) { agents = r[0]; eff = r[1]; drawForm(); drawList(); })
+      .catch(function (e) { listHost.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  }
+  function contratInfo() { return eff.contrats.filter(function (c) { return c.numero === st.contrat; })[0]; }
+  function bind(el, key) { el.addEventListener('input', function () { st[key] = el.value; }); return el; }
+
+  // Fonction : uniquement celles prévues au contrat (avec postes, effectif nécessaire et personnes déjà affectées).
+  function fonctionControl() {
+    var c = contratInfo(); var vh = st.type === 'vehicule';
+    var list = c ? c.fonctions.filter(function (f) { return (f.nature === 'vehicule') === vh; }) : [];
+    if (!list.length) {
+      var inp = bind(h('input', { value: st.fonction, placeholder: vh ? 'ex. Pick-up 4x4' : '' }), 'fonction');
+      return [inp, c && c.fonctions.length ? h('small', null, 'Ce contrat ne prévoit aucun ' + (vh ? 'véhicule' : 'poste de personnel') + '.') : h('small', null, 'Choisissez un contrat pour limiter la saisie à ce qui est prévu.')];
+    }
+    var sel = h('select', null, h('option', { value: '' }, '— choisir dans le contrat —'), list.map(function (f) {
+      var own = editing && editing.contrat === c.numero && editing.actif === '1' && (editing.type === 'vehicule') === vh && noAcc(editing.fonction) === noAcc(f.libelle) ? 1 : 0;
+      var used = f.affectes - own; var full = eff.strict && used >= f.besoin;
+      return h('option', { value: f.libelle, disabled: full && noAcc(st.fonction) !== noAcc(f.libelle) }, f.libelle + ' — ' + f.positions + (vh ? ' véhicule(s)' : ' poste(s)') + ' · ' + used + '/' + f.besoin + ' affecté(s)' + (full ? ' · complet' : ''));
+    }));
+    if (st.fonction && !list.some(function (f) { return noAcc(f.libelle) === noAcc(st.fonction); })) sel.append(h('option', { value: st.fonction }, st.fonction + ' (hors contrat)'));
+    sel.value = st.fonction; sel.addEventListener('change', function () { st.fonction = sel.value; });
+    return [sel, h('small', null, vh ? 'Seuls les véhicules prévus au contrat sont proposés.' : 'Seules les fonctions prévues au contrat sont proposées (effectif = postes × rotation ' + eff.rotation.travail + '/' + eff.rotation.repos + ').')];
+  }
+
+  function drawForm() {
+    var vh = st.type === 'vehicule';
+    var chefs = agents.filter(function (x) { return x.role === 'chef' && x.actif === '1'; });
+    var type = h('select', { disabled: !!editing }, h('option', { value: 'personne' }, 'Agent (personne)'), h('option', { value: 'vehicule' }, 'Véhicule mis à disposition (VH)'));
+    type.value = st.type; type.addEventListener('change', function () { st.type = type.value; st.fonction = ''; drawForm(); });
+    var contrat = h('select', null, h('option', { value: '' }, '—'), eff.contrats.map(function (c) { return h('option', { value: c.numero }, c.numero + (c.client ? ' — ' + c.client : '')); }));
+    contrat.value = st.contrat; contrat.addEventListener('change', function () { st.contrat = contrat.value; st.fonction = ''; drawForm(); });
+    var nom = bind(h('input', { value: st.nom, required: true, placeholder: vh ? 'ex. 123-456-16 Toyota Hilux' : '' }), 'nom');
+    var email = bind(h('input', { type: 'email', value: st.email, required: true }), 'email');
+    var aff = bind(h('input', { value: st.affectation, placeholder: 'ex. Hassi Demo' }), 'affectation');
+    var role = h('select', null, ['agent', 'chef', 'admin', 'client'].map(function (r) { return h('option', { value: r }, { agent: 'Agent', chef: 'Chef de groupe', admin: 'Administrateur', client: 'Client (consultation seule)' }[r]); }));
+    role.value = st.role; role.addEventListener('change', function () { st.role = role.value; });
+    var chef = h('select', null, h('option', { value: '' }, '—'), chefs.map(function (c) { return h('option', { value: c.id }, c.nom); }));
+    chef.value = st.chef_id; chef.addEventListener('change', function () { st.chef_id = chef.value; });
+    var rot = rotationPicker(st.rotation, true, 'Par défaut (' + eff.rotation.travail + '/' + eff.rotation.repos + ')', function (v) { st.rotation = v; });
+    var setup = h('input', { type: 'checkbox', checked: st.acces_setup }); setup.addEventListener('change', function () { st.acces_setup = setup.checked; });
+    var pw = bind(h('input', { minlength: 6, value: st.password, placeholder: 'généré automatiquement si vide' }), 'password');
+    var box = msgBox(); var btn = h('button', { class: 'primary' }, editing ? 'Enregistrer' : (vh ? 'Ajouter le véhicule' : "Créer l'agent"));
+    if (flash) { box.show(flash, true); flash = null; }
+    var form = h('form', { class: 'card compact', onsubmit: function (ev) {
+      ev.preventDefault();
+      var data = { type: st.type, nom: st.nom, fonction: st.fonction, affectation: st.affectation, contrat: st.contrat, rotation: vh ? '' : st.rotation };
+      if (!vh) data.email = st.email;
+      if (isAdmin) { data.chef_id = st.chef_id; if (!vh) { data.role = st.role; data.acces_setup = st.acces_setup; } }
+      if (!editing && !vh) data.password = st.password;
+      var wantMail = !editing && !vh && accessSend;
+      act(btn, box, function () { return editing ? call('agentUpdate', editing.id, data) : call('agentCreate', data); }, function (r) {
+        return editing ? 'Modifié' : (vh ? 'Véhicule ajouté : ' + r.agent.nom : 'Compte créé : ' + r.agent.email + ' — mot de passe : ' + r.password + ' (à communiquer à l’agent)');
+      }).then(function (r) {
+        if (!r) return;
+        flash = editing ? 'Modifié' : (vh ? 'Véhicule ajouté : ' + r.agent.nom : 'Compte créé : ' + r.agent.email + ' — mot de passe : ' + r.password + ' (à communiquer à l’agent)');
+        if (!editing && !vh) lastAccess = { id: r.agent.id, nom: r.agent.nom, email: r.agent.email, password: r.password, sent: false };
+        var after = function () { editing = null; st = blank(); load(); };
+        if (wantMail && lastAccess) { call('agentEnvoyerAcces', lastAccess.id, lastAccess.password).then(function (x) { lastAccess.sent = true; flash += ' · e-mail envoyé à ' + x.to; }).catch(function (e) { flash += ' · e-mail non envoyé : ' + e.message; }).then(after); } else after();
+      });
+    } }, h('h2', null, editing ? (vh ? 'Modifier le véhicule' : "Modifier l'agent") : (vh ? 'Nouveau véhicule (VH)' : 'Nouvel agent')),
+      isAdmin ? null : h('p', { class: 'muted' }, 'Rattaché à votre groupe.'),
+      h('div', { class: 'row' }, field('Type', type), field(vh ? 'Immatriculation / identifiant' : 'Nom et prénom', nom, 'grow2'), vh ? null : field('Email (identifiant)', email, 'grow2'), (isAdmin && !vh) ? field('Rôle', role) : null),
+      h('div', { class: 'row' }, field('N° contrat de prestation', contrat), field(vh ? 'Véhicule du contrat' : 'Métier / fonction (prévu au contrat)', h('div', null, fonctionControl())), field('Affectation', aff), vh ? null : field('Rotation', rot.node), isAdmin ? field('Chef de groupe', chef, null, chefs.length ? null : "Aucun chef de groupe : créez d'abord un compte avec le rôle « Chef de groupe »") : null),
+      st.role === 'client' && !vh ? h('p', { class: 'msg warn' }, "Compte de consultation du client : il suit le pointage, les contrats, les attachements et les factures validés (PDF), sans rien modifier et sans accès au Setup, aux demandes ni aux documents des agents. Le n° de contrat ci-dessus limite ce qu'il voit (vide = tout).") : null,
+      (isAdmin && !vh) ? h('label', { class: 'inline' }, setup, " Autoriser l'accès à l'onglet Setup (chef de groupe uniquement)") : null,
+      (editing || vh) ? null : field('Mot de passe initial', pw),
+      (editing || vh) ? null : h('label', { class: 'inline' }, (function () { var c = h('input', { type: 'checkbox', checked: accessSend }); c.onchange = function () { accessSend = c.checked; }; return c; })(), " Envoyer ses accès par e-mail à la création (lien, identifiant, mot de passe provisoire)"),
+      lastAccess && !editing ? (function () {
+        var m = msgBox(); var b = h('button', { type: 'button', class: lastAccess.sent ? '' : 'primary' }, lastAccess.sent ? 'Renvoyer par e-mail' : 'Envoyer par e-mail');
+        b.onclick = function () { act(b, m, function () { return call('agentEnvoyerAcces', lastAccess.id, lastAccess.password); }).then(function (x) { if (x) { lastAccess.sent = true; m.show('✓ Accès envoyés à ' + x.to + '.', true); } }); };
+        return h('div', { class: 'card', style: 'margin:8px 0' }, h('b', null, lastAccess.nom + ' — ' + lastAccess.email + ' — mot de passe : ' + lastAccess.password), h('div', { class: 'sendbar' }, b), m);
+      })() : null,
+      box, btn, editing ? h('button', { type: 'button', onclick: function () { editing = null; st = blank(); drawForm(); } }, 'Annuler') : null);
+    formHost.replaceChildren(form);
+  }
+  var picked = {};
+  function bulkBar(n) {
+    var chefs = agents.filter(function (x) { return x.role === 'chef' && x.actif === '1'; });
+    var v = { affectation: '', contrat: '__keep', fonction: '__keep', chef_id: '__keep', rotation: '__keep', actif: '__keep' };
+    var aff = h('input', { placeholder: 'laisser vide = ne pas modifier' }); aff.oninput = function () { v.affectation = aff.value; };
+    var fon = h('select', null);
+    // Fonctions proposées : celles du contrat choisi (sinon celles de tous les contrats) ; le choix est vérifié par contrat à l'enregistrement.
+    function drawFon() {
+      var names = []; eff.contrats.forEach(function (c) { if (v.contrat === '__keep' || v.contrat === c.numero) c.fonctions.forEach(function (f) { if (f.nature !== 'vehicule' && names.indexOf(f.libelle) < 0) names.push(f.libelle); }); });
+      fon.replaceChildren(h('option', { value: '__keep' }, '— ne pas modifier —'), names.map(function (n) { return h('option', { value: n }, n); }));
+      v.fonction = '__keep'; fon.value = '__keep';
+    }
+    fon.onchange = function () { v.fonction = fon.value; };
+    var con = h('select', null, h('option', { value: '__keep' }, '— ne pas modifier —'), h('option', { value: '' }, '(aucun contrat)'), eff.contrats.map(function (c) { return h('option', { value: c.numero }, c.numero); })); con.onchange = function () { v.contrat = con.value; drawFon(); };
+    drawFon();
+    var chef = h('select', null, h('option', { value: '__keep' }, '— ne pas modifier —'), h('option', { value: '' }, '(aucun)'), chefs.map(function (c) { return h('option', { value: c.id }, c.nom); })); chef.onchange = function () { v.chef_id = chef.value; };
+    var rot = rotationPicker('__keep', true, 'Rotation par défaut', function (x) { v.rotation = x; }, true);
+    var act1 = h('select', null, h('option', { value: '__keep' }, '— ne pas modifier —'), h('option', { value: '1' }, 'Actif'), h('option', { value: '0' }, 'Désactivé')); act1.onchange = function () { v.actif = act1.value; };
+    var box = msgBox(); var go1 = h('button', { class: 'primary' }, 'Enregistrer pour ' + n + ' sélectionné' + (n > 1 ? 's' : ''));
+    var clear = h('button', { type: 'button' }, 'Tout désélectionner'); clear.onclick = function () { picked = {}; drawList(); };
+    go1.onclick = function () {
+      var data = {};
+      if (v.affectation.trim()) data.affectation = v.affectation.trim();
+      if (v.contrat !== '__keep') data.contrat = v.contrat;
+      if (v.fonction !== '__keep') data.fonction = v.fonction;
+      if (isAdmin && v.chef_id !== '__keep') data.chef_id = v.chef_id;
+      if (v.rotation !== '__keep') data.rotation = v.rotation;
+      if (v.actif !== '__keep') data.actif = v.actif;
+      var ids = Object.keys(picked).filter(function (k) { return picked[k]; });
+      if (!Object.keys(data).length) { box.show('Choisissez au moins une valeur à appliquer.', false); return; }
+      act(go1, box, function () { return call('agentsUpdateMany', ids, data); }, function (r) { return r.modifies + ' agent(s) modifié(s)'; }).then(function (r) { if (r) { flash = r.modifies + ' agent(s) modifié(s)'; picked = {}; load(); } });
+    };
+    return h('section', { class: 'card compact bulk' }, h('h3', null, 'Modifier ' + n + ' agent' + (n > 1 ? 's' : '') + ' en même temps'),
+      h('div', { class: 'row' }, field('Affectation', aff, 'grow2'), field('Rotation', rot.node), field('Contrat', con), field('Fonction', fon), isAdmin ? field('Chef de groupe', chef) : null, field('Statut', act1)),
+      h('div', { class: 'sendbar' }, go1, clear), box);
+  }
+  function drawList() {
+    var ids = agents.map(function (a) { return a.id; });
+    var nPicked = ids.filter(function (id) { return picked[id]; }).length;
+    var all = h('input', { type: 'checkbox', 'aria-label': 'Tout sélectionner', checked: nPicked > 0 && nPicked === ids.length });
+    all.onchange = function () { ids.forEach(function (id) { picked[id] = all.checked; }); drawList(); };
+    var rows = agents.map(function (a) {
+      var vh = a.type === 'vehicule';
+      var pick = h('input', { type: 'checkbox', 'aria-label': 'Sélectionner ' + a.nom, checked: !!picked[a.id] });
+      pick.onchange = function () { picked[a.id] = pick.checked; drawList(); };
+      var tg = h('button', null, a.actif === '1' ? 'Désactiver' : 'Réactiver');
+      tg.onclick = function () { call('agentUpdate', a.id, { actif: a.actif !== '1' }).then(load).catch(function (e) { alert(e.message); }); };
+      var ed = h('button', null, 'Modifier'); ed.onclick = function () { editing = a; st = fromAgent(a); drawForm(); window.scrollTo(0, 0); };
+      var rp = vh ? null : h('button', null, 'Mot de passe'); if (rp) rp.onclick = function () { var p = window.prompt('Nouveau mot de passe pour ' + a.nom + ' (6 caractères min.)'); if (p) call('agentPassword', a.id, p).then(function () { alert('Mot de passe modifié'); }).catch(function (e) { alert(e.message); }); };
+      var sa = (vh || a.actif !== '1' || !a.email) ? null : h('button', { title: "Envoyer par e-mail le lien, l'identifiant et un nouveau mot de passe provisoire" }, 'Envoyer l\'accès');
+      if (sa) sa.onclick = function () { if (window.confirm('Envoyer à ' + a.nom + ' (' + a.email + ') un e-mail avec ses accès ? Un nouveau mot de passe provisoire sera généré : l\'ancien ne fonctionnera plus.')) { sa.disabled = true; call('agentEnvoyerAcces', a.id).then(function (x) { alert('Accès envoyés à ' + x.to); }).catch(function (e) { alert(e.message); }).then(function () { sa.disabled = false; }); } };
+      var chefNom = (agents.filter(function (c) { return c.id === a.chef_id; })[0] || {}).nom || '';
+      return h('tr', { class: (a.actif !== '1' ? 'off ' : '') + (picked[a.id] ? 'picked' : '') }, h('td', null, pick), h('td', null, h('b', null, a.nom, vh ? h('span', { class: 'badge' }, 'VH') : null), h('small', null, vh ? 'Véhicule' : a.email)),
+        h('td', null, vh ? '—' : { agent: 'Agent', chef: 'Chef de groupe', admin: 'Admin', client: 'Client (lecture)' }[a.role] + (a.role === 'chef' && a.acces_setup === '1' ? ' · accès Setup' : '')), h('td', null, a.fonction), h('td', null, a.affectation), h('td', null, vh ? '' : a.rotation || 'défaut'), h('td', null, a.contrat), h('td', null, chefNom), h('td', { class: 'actions' }, ed, rp, sa, tg));
+    });
+    var actifs = agents.filter(function (a) { return a.actif === '1'; });
+    listHost.replaceChildren.apply(listHost, [h('section', { class: 'card' }, h('h2', null, 'Personnel et véhicules (' + actifs.filter(function (a) { return a.type !== 'vehicule'; }).length + ' agents, ' + actifs.filter(function (a) { return a.type === 'vehicule'; }).length + ' véhicules actifs)'),
+      h('p', { class: 'muted' }, 'Cochez plusieurs lignes pour modifier leur affectation, rotation, contrat ou statut en une seule fois.'),
+      h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, h('th', null, all), ['Nom', 'Rôle', 'Fonction', 'Affectation', 'Rotation', 'Contrat', 'Chef', ''].map(function (t) { return h('th', null, t); }))), h('tbody', null, rows)))), nPicked ? bulkBar(nPicked) : null].filter(Boolean));
+  }
+  wrap.append(formHost, listHost); load();
+  return wrap;
+}
+
+
+// ---------- charte de confidentialité ----------
+function CharteBlock(back) {
+  return asyncBlock(function () {
+    return call('charte').then(function (c) {
+      return h('section', { class: 'card' }, back ? h('p', null, h('button', { type: 'button', onclick: back }, '‹ Retour')) : null, h('h2', null, 'Charte de confidentialité'),
+        c.sections.map(function (s) { return h('article', null, h('h3', null, s.titre), h('p', null, s.texte)); }),
+        h('p', { class: 'muted' }, 'Dernière mise à jour : ' + frDate(c.maj) + ' · ' + c.copyright));
+    });
+  });
+}
+
+// ---------- éditeur : demandes d'essai (prospects) ----------
+function ProspectsPage() {
+  var wrap = h('div', { style: 'display:grid;gap:16px' });
+  var STAT = ['nouveau', 'contacté', 'converti', 'rejeté'];
+  var lastMsg = null;
+  function load() { wrap.replaceChildren(loading()); call('prospects').then(draw).catch(function (e) { wrap.replaceChildren(h('p', { class: 'msg err' }, e.message)); }); }
+  function draw(list) {
+    var rows = list.map(function (p) {
+      var s = h('select', null, STAT.map(function (x) { return h('option', { value: x }, x); })); s.value = p.statut;
+      var note = h('input', { value: p.note || '', placeholder: 'note' }); var m = msgBox();
+      var save = function () { act(s, m, function () { return call('prospectUpdate', p.id, { statut: s.value, note: note.value }); }, 'Enregistré'); };
+      s.onchange = save; note.onchange = save;
+      var cell = h('td', { class: 'actions' });
+      if (p.statut !== 'converti') {
+        var code = h('input', { placeholder: 'code, ex. HORIZON', style: 'width:130px' }); var jours = h('input', { type: 'number', value: 30, style: 'width:70px', title: "durée de l'essai (jours)" });
+        var mail = h('input', { type: 'checkbox', checked: true }); var b = h('button', { type: 'button', class: 'primary' }, "Créer l'essai"); var cm = msgBox();
+        b.onclick = function () {
+          act(b, cm, function () { return call('prospectConvertir', p.id, { code: code.value, jours: Number(jours.value) || 30, envoyer: mail.checked }); }).then(function (r) {
+            if (!r) return; lastMsg = h('div', { class: 'card' }, h('p', { class: 'msg ok' }, 'Essai « ' + r.client.nom + ' » créé' + (r.envoye ? ' et message envoyé à ' + p.email : '') + '.'), h('pre', { style: 'white-space:pre-wrap' }, r.message)); load();
+          });
+        };
+        cell.append(code, ' ', jours, ' j ', h('label', { class: 'inline' }, mail, ' mail'), ' ', b, cm);
+      } else cell.append(p.client ? 'Client : ' + p.client : '');
+      return h('tr', null, h('td', null, String(p.date).slice(0, 10)), h('td', null, h('b', null, p.societe), h('small', null, p.nom + (p.tel ? ' · ' + p.tel : ''))), h('td', null, h('a', { href: 'mailto:' + p.email }, p.email), p.message ? h('small', null, p.message) : null), h('td', null, s, m), h('td', null, note), cell);
+    });
+    wrap.replaceChildren(lastMsg || h('span'), h('section', { class: 'card' }, h('h2', null, "Demandes d'essai (" + list.length + ')'),
+      h('p', { class: 'muted' }, "Reçues depuis le formulaire « Demander un essai » de la page d'accueil. « Créer l'essai » prépare l'espace du prospect (classeur vierge, compte gérant, licence d'essai) et peut lui envoyer ses accès par e-mail."),
+      list.length ? h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Date', 'Société', 'Contact', 'Statut', 'Note', 'Action'].map(function (t) { return h('th', null, t); }))), h('tbody', null, rows))) : h('p', { class: 'muted' }, 'Aucune demande pour le moment.')));
+  }
+  load();
+  return wrap;
+}
+
+// ---------- éditeur : gestion des clients (codes entreprise, licences) ----------
+function ClientsPage() {
+  var wrap = h('div', { style: 'display:grid;gap:16px' });
+  var lastRes = null; // message de bienvenue du dernier client créé (conservé après rechargement de la liste)
+  var open = {}; // clients dont le panneau « Administrateur » est ouvert
+  function copy(text, btn) { try { navigator.clipboard.writeText(text).then(function () { var t = btn.textContent; btn.textContent = tr('Copié ✓'); setTimeout(function () { btn.textContent = t; }, 1500); }); } catch (e) { window.prompt('Copiez :', text); } }
+  function load() { wrap.replaceChildren(loading()); call('clients').then(draw).catch(function (e) { wrap.replaceChildren(h('p', { class: 'msg err' }, e.message)); }); }
+  function draw(data) {
+    var f = { code: '', nom: '', admin_email: '', admin_nom: '', contact: '', fin_licence: '', statut: 'actif', partager_lecture: false };
+    var share = h('input', { type: 'checkbox' }); share.onchange = function () { f.partager_lecture = share.checked; };
+    var bind = function (k, type, ph) { var el = h('input', { type: type || 'text', placeholder: ph || '' }); el.oninput = function () { f[k] = el.value; }; return el; };
+    var st = h('select', null, h('option', { value: 'actif' }, 'Actif'), h('option', { value: 'essai' }, 'Essai')); st.onchange = function () { f.statut = st.value; };
+    var box = msgBox(); var res = h('div'); if (lastRes) res.append(lastRes); var btn = h('button', { class: 'primary' }, 'Créer le client');
+    var form = h('form', { class: 'card compact', onsubmit: function (ev) {
+      ev.preventDefault();
+      act(btn, box, function () { return call('clientCreate', f); }, 'Client créé').then(function (r) {
+        if (!r) return;
+        var cp = h('button', { type: 'button' }, 'Copier le message'); cp.onclick = function () { copy(r.message, cp); };
+        var to = h('input', { type: 'email', value: r.admin.email, style: 'min-width:240px' }); var sm = msgBox(); var sb = h('button', { type: 'button', class: 'primary' }, 'Envoyer par e-mail');
+        sb.onclick = function () { act(sb, sm, function () { return call('clientEnvoyer', to.value, r.message, r.client.nom); }).then(function (x) { if (x) sm.show('✓ Message envoyé à ' + x.to + '.', true); }); };
+        lastRes = h('div', null, h('p', { class: 'msg ok' }, 'Espace « ' + r.client.nom + ' » prêt : classeur vierge créé, compte administrateur ' + r.admin.email + '.'), h('pre', { class: 'card', style: 'white-space:pre-wrap' }, r.message), h('div', { class: 'sendbar' }, cp, ' ', to, sb), sm);
+        load();
+      });
+    } }, h('h2', null, 'Nouveau client'), h('p', { class: 'muted' }, "Crée un classeur vierge pour ce client, son compte administrateur et son code entreprise. Le message de bienvenue (lien, code, mot de passe provisoire) est prêt à envoyer."),
+      h('div', { class: 'row' }, field('Code entreprise', bind('code', 'text', 'ex. HORIZON')), field('Société', bind('nom'), 'grow2'), field('Statut', st)),
+      h('div', { class: 'row' }, field("E-mail de l'administrateur", bind('admin_email', 'email'), 'grow2'), field("Nom de l'administrateur", bind('admin_nom')), field('Contact', bind('contact')), field('Fin de licence', bind('fin_licence', 'date'))),
+      h('label', { class: 'inline' }, share, " Donner à l'administrateur du client un accès en lecture au classeur Google (déconseillé : il contient les empreintes des mots de passe ; l'application n'en a pas besoin)"),
+      box, btn);
+    function adminPanel(c, redraw) {
+      var box = msgBox(); var body = h('div', null, loading());
+      call('clientAdmins', c.code).then(function (list) {
+        if (!list.length) { body.replaceChildren(h('p', { class: 'muted' }, 'Aucun gérant (administrateur) dans ce classeur.')); return; }
+        var cur = list[0]; var sel = h('select', null, list.map(function (a) { return h('option', { value: a.id }, a.nom + ' — ' + a.email); }));
+        var email = h('input', { type: 'email', value: cur.email }); var nom = h('input', { value: cur.nom }); var pw = h('input', { placeholder: 'laisser vide = inchangé' });
+        sel.onchange = function () { cur = list.filter(function (a) { return a.id === sel.value; })[0]; email.value = cur.email; nom.value = cur.nom; pw.value = ''; };
+        var save = h('button', { class: 'primary', type: 'button' }, 'Enregistrer'); var reset = h('button', { type: 'button' }, 'Réinitialiser le mot de passe');
+        var show = function (r) { if (!r) return; cur.email = r.email; cur.nom = r.nom; box.show('✓ Gérant mis à jour : ' + r.email + (r.password ? ' — mot de passe : ' + r.password + ' (à communiquer)' : '') + '.', true); pw.value = ''; };
+        save.onclick = function () { act(save, box, function () { return call('clientAdminUpdate', c.code, { id: cur.id, email: email.value, nom: nom.value, password: pw.value }); }).then(show); };
+        reset.onclick = function () { if (window.confirm('Générer un nouveau mot de passe provisoire pour ' + cur.email + ' ?')) act(reset, box, function () { return call('clientAdminUpdate', c.code, { id: cur.id, reinit: true }); }).then(show); };
+        body.replaceChildren.apply(body, [list.length > 1 ? field('Gérant', sel) : null, h('div', { class: 'row' }, field('E-mail (identifiant de connexion)', email, 'grow2'), field('Nom', nom), field('Nouveau mot de passe', pw)), h('div', { class: 'sendbar' }, save, reset)].filter(Boolean));
+      }).catch(function (e) { body.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+      return h('div', { class: 'compact', style: 'padding:6px 0' }, body, box);
+    }
+    var rows = [];
+    data.clients.forEach(function (c) {
+      var s = h('select', { disabled: c.principal }, ['actif', 'essai', 'suspendu'].map(function (x) { return h('option', { value: x }, { actif: 'Actif', essai: 'Essai', suspendu: 'Suspendu' }[x]); })); s.value = c.statut;
+      var d = h('input', { type: 'date', value: c.fin_licence });
+      var vit = h('input', { type: 'checkbox', checked: !!c.vitrine, title: "Afficher cette entreprise dans la liste « Ils nous font confiance » de la page d'accueil (avec son accord)" });
+      var m = msgBox();
+      var apply = function () { act(s, m, function () { return call('clientUpdate', c.code, { statut: s.value, fin_licence: d.value }); }, 'Enregistré'); };
+      s.onchange = apply; d.onchange = apply;
+      vit.onchange = function () { act(vit, m, function () { return call('clientUpdate', c.code, { vitrine: vit.checked }); }, 'Enregistré'); };
+      var cl = h('button', { type: 'button' }, 'Copier le lien'); cl.onclick = function () { copy(c.lien, cl); };
+      var tst = h('button', { type: 'button' }, 'Tester l\'accès'); var tm = msgBox();
+      tst.onclick = function () { act(tst, tm, function () { return call('clientTest', c.code); }).then(function (r) { if (r) tm.show(r.ok ? '✓ Classeur « ' + r.classeur + ' » ouvert : ' + r.onglets + ' onglets, ' + r.administrateurs + ' administrateur(s), ' + r.agents + ' agent(s). Adresse : ' + r.adresse + '.' : r.detail, r.ok); }); };
+      var adm = h('button', { type: 'button', title: "Changer l'e-mail et le mot de passe du gérant de cette entreprise" }, 'Gérant : e-mail / mot de passe'); adm.onclick = function () { open[c.code] = !open[c.code]; draw(data); };
+      var enter = h('button', { type: 'button', class: c.statut === 'essai' ? 'primary' : '', disabled: c.statut !== 'essai', title: c.statut === 'essai' ? "Ouvrir l'espace de ce client en essai (sans mot de passe)" : "Réservé aux clients en essai" }, 'Entrer (essai)'); var enm = msgBox();
+      enter.onclick = function () {
+        act(enter, enm, function () { return call('clientAcces', c.code); }).then(function (r) {
+          if (!r) return;
+          S.back = { token: S.token, societe: r.societe }; S.token = r.token; S.owner = false; S.path = null; try { sessionStorage.setItem('tk', r.token); } catch (e) { /* ignore */ }
+          boot();
+        });
+      };
+      var del = h('button', { type: 'button', class: 'danger', disabled: c.principal, title: c.principal ? 'Le classeur principal ne se supprime pas' : '' }, 'Supprimer');
+      var dm = msgBox();
+      del.onclick = function () {
+        var t = window.prompt('Supprimer le client « ' + c.nom + ' » ? Son classeur part à la corbeille Drive et son accès est coupé.\nTapez son code (' + c.code + ') pour confirmer :');
+        if (t === null) return;
+        act(del, dm, function () { return call('clientDelete', c.code, t); }).then(function (r) { if (r) { lastRes = h('p', { class: 'msg ok' }, 'Client ' + r.supprime + ' supprimé (classeur à la corbeille de Drive, récupérable 30 jours).'); load(); } });
+      };
+      var ex = h('input', { value: c.exec_url || '', placeholder: 'Hébergé (déploiement commun)' }); var em = msgBox();
+      ex.onchange = function () { act(ex, em, function () { return call('clientUpdate', c.code, { exec_url: ex.value }); }, 'Enregistré'); };
+      rows.push(h('tr', { class: c.statut === 'suspendu' ? 'off' : '' }, h('td', null, h('b', null, c.code), c.principal ? h('small', null, 'classeur principal') : null), h('td', null, c.nom, c.contact ? h('small', null, c.contact) : null), h('td', null, s), h('td', null, d, m), h('td', { style: 'text-align:center' }, vit), h('td', null, ex, em), h('td', { class: 'actions' }, cl, ' ', tst, ' ', enter, ' ', adm, ' ', del, c.classeur ? h('a', { href: c.classeur, target: '_blank', rel: 'noopener', style: 'margin-left:8px' }, 'Classeur') : null, tm, dm, enm)));
+      if (open[c.code]) rows.push(h('tr', null, h('td', { colspan: 7 }, adminPanel(c))));
+    });
+    // Contact de l'éditeur : affiché aux clients (onglet « À propos »)
+    var cbox = msgBox(); var cardContact = h('section', { class: 'card compact' }, h('h2', null, 'Mon contact (affiché à mes clients)'), loading());
+    call('editeurContact').then(function (k) {
+      var nom = h('input', { value: k.nom }); var mail = h('input', { type: 'email', value: k.email, placeholder: 'reçoit les commentaires des clients' }); var tel = h('input', { value: k.tel });
+      var sv = h('button', { class: 'primary', type: 'button' }, 'Enregistrer');
+      sv.onclick = function () { act(sv, cbox, function () { return call('editeurContactSave', { nom: nom.value, email: mail.value, tel: tel.value }); }, 'Contact enregistré'); };
+      cardContact.replaceChildren(h('h2', null, 'Mon contact (affiché à mes clients)'), h('p', { class: 'muted' }, "Les clients voient ce contact dans leur onglet « À propos » et vous écrivent à cette adresse e-mail."),
+        h('div', { class: 'row' }, field('Nom', nom), field('E-mail', mail, 'grow2'), field('Téléphone', tel)), cbox, sv);
+    }).catch(function (e) { cardContact.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+    wrap.replaceChildren(form, res, h('section', { class: 'card' }, h('h2', null, 'Clients (' + data.clients.length + ')'),
+      h('p', { class: 'muted' }, "Suspendre ou laisser expirer la licence bloque aussitôt la connexion et les sessions ouvertes de ce client, sans toucher aux autres. Le lien d'invitation fonctionne aussi en QR code."),
+      h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Code', 'Société', 'Statut', 'Fin de licence', 'Vitrine', 'Adresse /exec dédiée (facultatif)', 'Actions'].map(function (t) { return h('th', null, t); }))), h('tbody', null, rows)))), cardContact);
+  }
+  load();
+  return wrap;
+}
+
+// ---------- À propos : licence, contact de l'éditeur, commentaire par e-mail ----------
+function AProposPage() {
+  return asyncBlock(function () {
+    return call('apropos').then(function (a) {
+      var L = a.licence; var etat = { actif: ['Actif', 'acceptee'], essai: ['Période d\'essai', 'en_attente'], suspendu: ['Suspendu', 'refusee'] }[L.statut] || [L.statut, ''];
+      var fin = L.illimitee ? 'Sans date de fin' : (L.jours < 0 ? 'Expirée le ' + frDate(L.fin) : frDate(L.fin) + (L.jours === 0 ? " (aujourd'hui)" : ' — il reste ' + plural(L.jours, 'jour')));
+      var k = a.editeur;
+      var sujet = h('input', { placeholder: 'Objet (facultatif)', maxlength: 120 }); var msg = h('textarea', { rows: 5, maxlength: 4000, placeholder: 'Votre commentaire, une question, un problème rencontré…' });
+      var box = msgBox(); var send = h('button', { class: 'primary' }, "Envoyer à l'administrateur");
+      var form = h('form', { class: 'card', onsubmit: function (ev) {
+        ev.preventDefault();
+        act(send, box, function () { return call('commentaire', { sujet: sujet.value, message: msg.value }); }, 'Message envoyé : vous recevrez la réponse par e-mail.').then(function (r) { if (r) { sujet.value = ''; msg.value = ''; } });
+      } }, h('h2', null, 'Envoyer un commentaire'), h('p', { class: 'muted' }, "Votre message part par e-mail à l'administrateur de l'application ; la réponse arrive sur votre adresse e-mail."), field('Objet', sujet), field('Message', msg), box, send);
+      return h('div', { style: 'display:grid;gap:16px' },
+        h('section', { class: 'card' }, h('h2', null, 'Ma licence'), h('p', null, h('b', null, a.societe || ''), a.code ? h('small', null, 'Code entreprise : ' + a.code) : null),
+          h('p', null, 'Statut : ', h('span', { class: 'badge ' + etat[1] }, etat[0])), h('p', null, 'Fin de licence : ', h('b', null, fin)),
+          L.statut === 'suspendu' || (!L.illimitee && L.jours !== null && L.jours <= 30) ? h('p', { class: 'msg warn' }, 'Pensez à renouveler votre licence : contactez l\'administrateur ci-dessous.') : null),
+        h('section', { class: 'card' }, h('h2', null, "Contact de l'administrateur"), h('p', null, h('b', null, k.nom)),
+          k.email ? h('p', null, 'E-mail : ', h('a', { href: 'mailto:' + k.email }, k.email)) : h('p', { class: 'muted' }, "L'adresse e-mail n'est pas encore renseignée."), k.tel ? h('p', null, 'Téléphone : ', h('a', { href: 'tel:' + k.tel }, k.tel)) : null),
+        form,
+        h('section', { class: 'card' }, h('p', { class: 'muted' }, 'Sijil · version ' + a.version + ' · ', h('a', { href: '#/nouveautes', onclick: navClick('/nouveautes') }, 'Nouveautés'), ' · ', h('a', { href: '#/confidentialite', onclick: navClick('/confidentialite') }, 'Confidentialité'), h('br'), a.copyright)));
+    });
+  });
+}
+
+// ---------- Nouveautés : historique des versions ----------
+function NouveautesPage() {
+  return asyncBlock(function () {
+    return call('changelog').then(function (c) {
+      return h('section', { class: 'card' }, h('h2', null, 'Nouveautés — historique des versions'),
+        c.versions.map(function (v) {
+          return h('article', { class: 'release' }, h('h3', null, 'Version ' + v.v, h('small', null, frDate(v.date) + ' · ' + v.titre)), h('ul', null, v.points.map(function (p) { return h('li', null, p); })));
+        }), h('p', { class: 'muted' }, c.copyright));
+    });
+  });
+}
+
+// ---------- Setup : un onglet par sujet ----------
+var SETUP_TABS = [['contrat', 'Contrat'], ['prestataire', 'Prestataire'], ['client', 'Client'], ['rotation', 'Rotation'], ['maintenance', 'Maintenance']];
+var SETUP_INTRO = {
+  prestataire: "Le prestataire est la société qui utilise l'application : son nom apparaît dans l'en-tête, les documents et les e-mails. Les champs vides sont remplis automatiquement à la lecture du bordereau.",
+  client: "L'autre partie du contrat : son nom, son en-tête et son adresse de facturation apparaissent sur la fiche de pointage, l'attachement et la facture. Le nom est pré-rempli à la lecture du bordereau.",
+  rotation: "Dès le premier pointage T ou R, les jours suivants sont prévus automatiquement : T jusqu'au dernier jour du shift, puis R pendant la durée de repos, puis T… (les « ombres »). Un pointage réel n'est jamais remplacé : s'il diffère de la prévision, il devient le nouveau repère et les prévisions repartent de lui."
+};
+function SetupPage() {
+  var wrap = h('div', { style: 'display:grid;gap:16px' });
+  var body = h('div', { style: 'display:grid;gap:16px' });
+  wrap.append(loading());
+  call('setupGet').then(function (data) {
+    var tab = S.setupTab || 'contrat';
+    var tabs = SETUP_TABS.filter(function (t) { return t[0] !== 'maintenance' || data.isAdmin; });
+    if (!tabs.some(function (t) { return t[0] === tab; })) tab = 'contrat';
+    function bar() {
+      return h('nav', { class: 'tabs', role: 'tablist' }, tabs.map(function (t) {
+        return h('button', { type: 'button', role: 'tab', class: t[0] === tab ? 'on' : '', 'aria-selected': t[0] === tab ? 'true' : 'false', onclick: function () { S.setupTab = t[0]; tab = t[0]; show(); } }, t[1]);
+      }));
+    }
+    function logoControl(d) {
+      var qui = d.key === 'logo_client_id' ? 'client' : 'prestataire';
+      var img = h('img', { alt: '', style: 'max-height:64px;max-width:200px;display:none;border:1px solid var(--line,#ddd);border-radius:6px;padding:4px;background:#fff' });
+      var m = msgBox(); var file = h('input', { type: 'file', accept: 'image/png,image/jpeg,image/gif', style: 'display:none' });
+      var pick = h('button', { type: 'button' }, 'Choisir une image'); var del = h('button', { type: 'button', class: 'danger', style: 'display:none' }, 'Retirer le logo');
+      function show(src) { img.style.display = src ? '' : 'none'; if (src) img.src = src; del.style.display = src ? '' : 'none'; pick.textContent = tr(src ? 'Remplacer l\u2019image' : 'Choisir une image'); }
+      if (data.values[d.key]) call('logoView', qui).then(function (r) { show(r.apercu); }).catch(function () { /* aperçu indisponible */ });
+      pick.onclick = function () { file.click(); };
+      file.onchange = function () {
+        var f = file.files[0]; if (!f) return;
+        if (f.size > 1500000) { m.show('Logo trop volumineux (1,5 Mo maximum)', false); file.value = ''; return; }
+        var rd = new FileReader();
+        rd.onload = function () {
+          var b64 = String(rd.result).split(',')[1] || '';
+          act(pick, m, function () { return call('logoUpload', { qui: qui, mime: f.type, base64: b64 }); }, 'Logo enregistré').then(function (r) { if (r) { data.values[d.key] = r.id; show(r.apercu); } });
+          file.value = '';
+        };
+        rd.readAsDataURL(f);
+      };
+      del.onclick = function () { act(del, m, function () { return call('logoRemove', qui); }, 'Logo retiré').then(function (r) { if (r) { data.values[d.key] = ''; show(''); } }); };
+      return h('div', { class: 'field grow2' }, h('label', null, d.label), h('div', { class: 'sendbar' }, img, pick, del, file), h('small', { class: 'muted' }, 'PNG, JPG ou GIF, 1,5 Mo maximum. Le logo apparaît sur les documents exportés.'), m);
+    }
+    function paramsForm(name) {
+      var defs = data.defs.filter(function (d) { return d.tab === name; });
+      var groups = []; defs.forEach(function (d) { if (groups.indexOf(d.group) < 0) groups.push(d.group); });
+      var inputs = {}; var box = msgBox(); var btn = h('button', { class: 'primary' }, 'Enregistrer');
+      var sets = groups.map(function (g) {
+        var fields = defs.filter(function (d) { return d.group === g; }).map(function (d) {
+          if (d.type === 'logo') return logoControl(d);
+          var el = d.type === 'bool' ? h('select', null, h('option', { value: '1' }, 'Oui'), h('option', { value: '0' }, 'Non')) : d.type === 'area' ? h('textarea', { rows: 3 }) : h('input', { type: d.type === 'number' ? 'number' : d.type === 'color' ? 'color' : 'text', min: 1 });
+          el.value = data.values[d.key] || (d.type === 'color' ? '#000000' : ''); inputs[d.key] = el;
+          return field(d.label, el, d.type === 'text' || d.type === 'area' ? 'grow2' : '');
+        });
+        return h('fieldset', null, g === defs[0].group && groups.length === 1 ? null : h('legend', null, g), h('div', { class: 'row' }, fields));
+      });
+      if (name === 'rotation') {
+        var cur = (inputs.jours_travail.value || 28) + '/' + (inputs.jours_repos.value || 28);
+        var rp = rotationPicker(cur, false, '', function (v) { var m = /^(\d+)\/(\d+)$/.exec(v); if (m) { inputs.jours_travail.value = m[1]; inputs.jours_repos.value = m[2]; } });
+        var sync = function () { rp.set((inputs.jours_travail.value || 0) + '/' + (inputs.jours_repos.value || 0)); };
+        inputs.jours_travail.addEventListener('input', sync); inputs.jours_repos.addEventListener('input', sync);
+        sets.unshift(h('fieldset', null, h('legend', null, 'Rotation par défaut'), h('div', { class: 'row' }, field('Type de rotation (jours de travail / jours de repos)', rp.node, 'grow2')),
+          h('p', { class: 'muted' }, 'Rotation appliquée à tous les agents (28/28 = 4 semaines de travail, 4 semaines de repos). Une rotation différente peut être choisie agent par agent dans la fiche de l\u2019agent (6/2, 3/3, 14/14…).')));
+      }
+      var title = name === 'contrat' ? "Base de l'attachement" : SETUP_TABS.filter(function (t) { return t[0] === name; })[0][1];
+      return h('form', { class: 'card', onsubmit: function (ev) {
+        ev.preventDefault();
+        var out = {}; Object.keys(inputs).forEach(function (k) { out[k] = inputs[k].value; });
+        act(btn, box, function () { return call('setupSave', out); }, title + ' : enregistré').then(function (r) {
+          if (!r) return;
+          Object.keys(out).forEach(function (k) { data.values[k] = out[k]; });
+          if ('prestataire_nom' in out) { S.params.prestataire = out.prestataire_nom; document.querySelector('.brand').textContent = out.prestataire_nom || 'Pointage'; }
+          if ('jours_travail' in out) { S.params.jours_travail = +out.jours_travail; S.params.jours_repos = +out.jours_repos; ['T', 'R', 'ABS', 'T_prevu', 'R_prevu'].forEach(function (k) { S.params.colors[k] = out['couleur_' + k]; }); applyColors(); }
+        });
+      } }, h('h2', null, title), SETUP_INTRO[name] ? h('p', { class: 'muted' }, SETUP_INTRO[name]) : null, sets, box, btn);
+    }
+    function show() {
+      var nodes;
+      if (tab === 'contrat') nodes = [ContratsPage({ embedded: true, onSaved: show }), contratsCard(), paramsForm('contrat')];
+      else if (tab === 'maintenance') nodes = [exportCard(), importCard(), maintenanceCard(data.status), backupCard()];
+      else nodes = [paramsForm(tab)];
+      body.replaceChildren.apply(body, nodes);
+      wrap.replaceChildren(bar(), body);
+    }
+    show();
+  }).catch(function (e) { wrap.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  return wrap;
+}
+// Dépôt du bordereau des prix en un seul geste : choisir (ou glisser) le fichier → lecture automatique → relecture → « Enregistrer dans le contrat ».
+function BordereauUpload(onSaved) {
+  var card = h('section', { class: 'card upload' });
+  var box = msgBox();
+  var ACCEPT = '.pdf,.png,.jpg,.jpeg,.gif,.bmp,.tif,.tiff,.xlsx,.xls,.csv';
+  function title() { return h('h2', null, 'Bordereau des prix du contrat'); }
+  function start() {
+    var file = h('input', { type: 'file', accept: ACCEPT, 'aria-label': 'Choisir le bordereau des prix du contrat' });
+    file.addEventListener('change', function () { if (file.files[0]) analyse(file.files[0]); });
+    var zone = h('label', { class: 'dropzone' }, file, h('span', { class: 'dz-icon' }, '📄'), h('b', null, 'Déposer le bordereau des prix du contrat ici'),
+      h('span', { class: 'muted' }, 'PDF scanné, photo, Excel ou CSV : les fonctions, nombres, délais et prix sont lus automatiquement'), h('span', { class: 'dz-btn' }, 'Choisir un fichier'));
+    ['dragenter', 'dragover'].forEach(function (ev) { zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.add('over'); }); });
+    ['dragleave', 'drop'].forEach(function (ev) { zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.remove('over'); }); });
+    zone.addEventListener('drop', function (e) { var f = e.dataTransfer && e.dataTransfer.files[0]; if (f) analyse(f); });
+    card.replaceChildren(title(), zone, box);
+    if (S.uploadFlash) { box.show(S.uploadFlash, true); S.uploadFlash = null; }
+  }
+  function analyse(f) {
+    card.replaceChildren(title(), h('p', { class: 'reading' }, '⏳ Lecture de « ' + f.name + ' » en cours… (10 à 30 secondes pour un scan)'));
+    fileToBase64(f).then(function (b64) { return call('bordereauAnalyser', { nom: f.name, mime: f.type, base64: b64 }); })
+      .then(function (res) { return Promise.all([call('contratsGet'), call('setupGet')]).then(function (x) { review(res, x[0], x[1].values); }); })
+      .catch(function (e) { start(); box.show(e.message, false); });
+  }
+  function review(res, cfg, pv) {
+    var parties = res.parties || {}; pv = pv || {};
+    var NEW = '__new';
+    var exact = cfg.contrats.filter(function (c) { return c.numero === res.numero_detecte; })[0];
+    var chosen = exact ? exact.numero : (cfg.contrats.length === 1 && !res.numero_detecte ? cfg.contrats[0].numero : (cfg.contrats.length && !res.numero_detecte ? cfg.contrats[0].numero : NEW));
+    var rows = res.lignes.map(function (l) { var o = {}; Object.keys(l).forEach(function (k) { o[k] = l[k]; }); o.keep = !!l.fiable; return o; });
+    var numInput = h('input', { value: res.numero_detecte || '', placeholder: 'ex. I/24/DEMO-SRV/2025' });
+    var clientInput = h('input', { placeholder: 'Client', value: (exact && exact.client) || pv.client_nom || parties.client || '' });
+    var prestInput = h('input', { placeholder: 'Prestataire', value: pv.prestataire_nom || parties.prestataire || '' });
+    var sel = h('select', null, cfg.contrats.map(function (c) { return h('option', { value: c.numero }, c.numero + (c.client ? ' — ' + c.client : '')); }), h('option', { value: NEW }, '➕ Nouveau contrat'));
+    sel.value = chosen;
+    var out = h('div'); var box2 = msgBox();
+    sel.addEventListener('change', function () { chosen = sel.value; drawTable(); });
+    function target() { return chosen === NEW ? numInput.value.trim() : chosen; }
+    function existing(r) { return cfg.fonctions.filter(function (f) { return f.contrat === target() && noAcc(f.designation) === noAcc(r.designation); })[0]; }
+    function drawTable() {
+      numInput.parentNode.hidden = chosen !== NEW;
+      var table = h('table', { class: 'table' }, h('thead', null, h('tr', null, ['', 'Désignation (contrat)', 'Libellé sur la fiche', 'Nature', 'Nombre', 'Délai (j)', 'Prix unitaire HT', ''].map(function (t) { return h('th', null, t); }))),
+        h('tbody', null, rows.map(function (r) {
+          var ex = existing(r);
+          if (ex && !r.libelleTouched) { r.libelle = ex.libelle || ex.designation; r.nature = ex.nature === 'vehicule' ? 'vehicule' : 'personne'; }
+          var keep = h('input', { type: 'checkbox', checked: r.keep }); keep.onchange = function () { r.keep = keep.checked; };
+          var ed = function (k, type) { var el = h('input', { type: type || 'text', value: r[k], min: 0, step: 'any' }); el.oninput = function () { r[k] = type === 'number' ? Number(el.value) : el.value; if (k === 'libelle') r.libelleTouched = true; }; return h('td', null, el); };
+          var nat = h('select', null, h('option', { value: 'personne' }, 'Personne'), h('option', { value: 'vehicule' }, 'Véhicule (VH)')); nat.value = r.nature; nat.onchange = function () { r.nature = nat.value; };
+          return h('tr', null, h('td', null, keep), ed('designation'), ed('libelle'), h('td', null, nat), ed('positions', 'number'), ed('delai', 'number'), ed('prix_unitaire', 'number'),
+            h('td', null, r.fiable ? h('span', { class: 'chip' }, '✓') : h('span', { class: 'badge en_attente' }, '⚠ à vérifier'), h('small', null, ex ? 'mise à jour' : 'nouvelle')));
+        })));
+      out.replaceChildren(h('div', { class: 'gridwrap' }, table));
+    }
+    var nb = rows.filter(function (r) { return r.fiable; }).length;
+    var total = res.total_detecte !== '' ? (res.total_ok ? h('p', { class: 'msg ok' }, 'Total contrôlé ✓ : la somme des lignes (' + Number(res.total_calcule).toLocaleString('fr-FR') + ' DA) correspond au total du bordereau.')
+      : h('p', { class: 'msg warn' }, '⚠ Total annoncé ' + Number(res.total_detecte).toLocaleString('fr-FR') + ' DA ≠ somme des lignes ' + Number(res.total_calcule).toLocaleString('fr-FR') + ' DA : relisez les prix, nombres et délais.')) : null;
+    var lu = h('details', { class: 'theme' }, h('summary', null, 'Texte lu par Google (pour contrôle)'), h('pre', { style: 'white-space:pre-wrap;max-height:240px;overflow:auto;font-size:.8rem' }, res.apercu || '(vide)'));
+    var again = h('button', { type: 'button' }, 'Autre fichier'); again.onclick = start;
+    if (!rows.length) { card.replaceChildren(title(), h('p', { class: 'msg warn' }, "Aucune ligne détectée. Vérifiez que le tableau est lisible (scan net, page entière, bien droit) ou saisissez les fonctions à la main dans Setup → Contrats. Le texte lu par Google est affiché ci-dessous."), lu, again); return; }
+    var save = h('button', { type: 'button', class: 'primary big' }, 'Enregistrer dans le contrat');
+    save.onclick = function () {
+      var numero = target();
+      if (!numero) { box2.show('Indiquez le n° du contrat.', false); return; }
+      var C = cfg.contrats.map(function (c) { return c; }); var F = cfg.fonctions.map(function (f) { return f; });
+      if (chosen === NEW) {
+        if (C.some(function (c) { return c.numero === numero; })) { box2.show('Ce n° de contrat existe déjà : choisissez-le dans la liste.', false); return; }
+        C.push({ numero: numero, client: clientInput.value.trim(), objet: '', date_contrat: '', ref_mois: '', ref_attachement: '', rep_prestataire: '', rep_client: '', date_debut: '', duree_mois: '', client_email: '' });
+      } else C.forEach(function (c) { if (c.numero === numero && !c.client) c.client = clientInput.value.trim(); });
+      var added = 0; var updated = 0;
+      rows.filter(function (r) { return r.keep && String(r.designation).trim(); }).forEach(function (r) {
+        var ex = F.filter(function (f) { return f.contrat === numero && noAcc(f.designation) === noAcc(r.designation); })[0];
+        var o = { contrat: numero, designation: ex ? ex.designation : String(r.designation).trim(), libelle: String(r.libelle || (ex && ex.libelle) || r.designation).trim(), positions: r.positions, delai: r.delai, prix_unitaire: r.prix_unitaire, qte_precedente_ref: ex ? ex.qte_precedente_ref : 0, nature: r.nature };
+        if (ex) { Object.keys(o).forEach(function (k) { ex[k] = o[k]; }); updated += 1; } else { F.push(o); added += 1; }
+      });
+      if (!added && !updated) { box2.show('Cochez au moins une ligne.', false); return; }
+      // prestataire et client : on ne remplit que les champs encore vides des onglets Prestataire / Client
+      var fill = {};
+      if (!pv.prestataire_nom && prestInput.value.trim()) fill.prestataire_nom = prestInput.value.trim();
+      if (!pv.client_nom && clientInput.value.trim()) fill.client_nom = clientInput.value.trim();
+      act(save, box2, function () { return call('contratsSave', { contrats: C, fonctions: F }).then(function (r) { return Object.keys(fill).length ? call('setupSave', fill).then(function () { if (fill.prestataire_nom) { S.params.prestataire = fill.prestataire_nom; } return r; }) : r; }); }).then(function (r) {
+        if (!r) return;
+        S.uploadFlash = '✓ Contrat ' + numero + ' enregistré : ' + added + ' fonction(s) ajoutée(s), ' + updated + ' mise(s) à jour. Étape suivante : saisir les agents et véhicules (ils prennent ces désignations).';
+        if (onSaved) onSaved(); else start();
+      });
+    };
+    card.replaceChildren(title(),
+      h('p', { class: 'muted' }, plural(rows.length, 'ligne') + ' lue' + (rows.length > 1 ? 's' : '') + ' (' + nb + ' fiable' + (nb > 1 ? 's' : '') + ')' + (res.numero_detecte ? ' · contrat n° ' + res.numero_detecte : '') + (nb < rows.length ? '. Les lignes « à vérifier » ne sont pas cochées : corrigez-les puis cochez-les.' : '.')),
+      total, h('div', { class: 'row' }, field('Contrat', sel, 'grow2'), field('N° du nouveau contrat', numInput)),
+      h('div', { class: 'row' }, field('Prestataire', prestInput), field('Client', clientInput)),
+      h('p', { class: 'muted' }, 'Lus dans l’en-tête du bordereau des prix : ils remplissent les onglets Prestataire et Client s’ils sont encore vides. Vérifiez aussi le n° du contrat (la lecture confond parfois « I » et « 1 »).'), out,
+      h('div', { class: 'sendbar' }, save, again), box2, lu);
+    drawTable();
+  }
+  start();
+  return card;
+}
+function contratsCard() {
+  var host = h('section', { class: 'card' }, loading());
+  function load() {
+    call('contratsGet').then(function (data) {
+      var C = data.contrats; var F = data.fonctions; var chefs = data.chefs || []; var box = msgBox();
+      function draw() {
+        var comptesBox = h('div');
+        var save = h('button', { class: 'primary' }, 'Enregistrer les contrats');
+        var addC = h('button', { type: 'button' }, '+ Contrat');
+        addC.onclick = function () { C.push({ numero: '', client: '', objet: '', date_contrat: '', ref_mois: '', ref_attachement: '', rep_prestataire: '', rep_client: '', date_debut: '', duree_mois: '', client_email: '' }); draw(); };
+        var sets = C.map(function (c, i) {
+          var bind = function (k, type) { var el = h('input', { type: type || 'text', value: c[k] }); el.oninput = function () { c[k] = el.value; }; return el; };
+          // le n° de contrat est la clé des fonctions : on les suit quand il change
+          var numero = h('input', { value: c.numero }); numero.oninput = function () { var old = c.numero; c.numero = numero.value; F.forEach(function (f) { if (f.contrat === old) f.contrat = c.numero; }); };
+          // Représentant du prestataire : responsable de groupe par défaut, sinon autre choix, ou aucun
+          var chefDefaut = (chefs.filter(function (x) { return x.contrat === c.numero; })[0] || chefs[0] || {}).nom;
+          var rv = c.rep_prestataire || '';
+          var mode = rv === '' ? '' : rv === '-' ? '-' : (chefs.some(function (x) { return x.nom === rv; }) ? rv : '__autre');
+          var rsel = h('select', null, h('option', { value: '' }, chefDefaut ? 'Responsable de groupe (par défaut) : ' + chefDefaut : 'Responsable de groupe (par défaut) — aucun pour le moment'),
+            chefs.map(function (x) { return h('option', { value: x.nom }, x.nom); }), h('option', { value: '__autre' }, 'Autre personne…'), h('option', { value: '-' }, 'Aucun (laisser vide)'));
+          var rtxt = h('input', { placeholder: 'Nom du représentant', value: mode === '__autre' ? rv : '' }); rsel.value = mode; rtxt.hidden = mode !== '__autre';
+          rsel.onchange = function () { if (rsel.value === '__autre') { rtxt.hidden = false; c.rep_prestataire = rtxt.value; } else { rtxt.hidden = true; c.rep_prestataire = rsel.value; } };
+          rtxt.oninput = function () { c.rep_prestataire = rtxt.value; };
+          var rows = F.map(function (f, j) {
+            if (f.contrat !== c.numero) return null;
+            var cellIn = function (k, num) { var el = h('input', { type: num ? 'number' : 'text', min: 0, step: 'any', value: f[k] }); el.oninput = function () { f[k] = el.value; }; return h('td', null, el); };
+            var nat = h('select', null, h('option', { value: 'personne' }, 'Personne'), h('option', { value: 'vehicule' }, 'Véhicule (VH)')); nat.value = f.nature === 'vehicule' ? 'vehicule' : 'personne'; nat.onchange = function () { f.nature = nat.value; };
+            var del = h('button', { type: 'button', class: 'danger' }, '×'); del.onclick = function () { F.splice(j, 1); draw(); };
+            return h('tr', null, cellIn('designation'), cellIn('libelle'), h('td', null, nat), cellIn('positions', 1), cellIn('delai', 1), cellIn('prix_unitaire', 1), cellIn('qte_precedente_ref', 1), h('td', null, del));
+          });
+          var addF = h('button', { type: 'button' }, '+ Fonction'); addF.onclick = function () { F.push({ contrat: c.numero, designation: '', libelle: '', positions: 1, delai: 540, prix_unitaire: 0, qte_precedente_ref: 0, nature: 'personne' }); draw(); };
+          var delC = h('button', { type: 'button', class: 'danger' }, 'Supprimer le contrat'); delC.onclick = function () { if (window.confirm('Supprimer ce contrat et ses fonctions ?')) { F = F.filter(function (f) { return f.contrat !== c.numero; }); C.splice(i, 1); draw(); } };
+          return h('fieldset', null, h('legend', null, 'Contrat ' + (c.numero || 'nouveau')),
+            h('div', { class: 'row' }, field('N° de contrat', numero), field('Client', bind('client'), 'grow2'), field('Date du contrat', bind('date_contrat'))), field('Objet', bind('objet')),
+            h('div', { class: 'row' }, field('Début du contrat', bind('date_debut', 'date')), field('Durée du contrat (mois)', bind('duree_mois', 'number')), field('E-mail du contact client (compte de consultation créé par défaut)', bind('client_email', 'email'), 'grow2')),
+            h('div', { class: 'row' }, field('Mois de référence', bind('ref_mois', 'month')), field("N° d'attachement de ce mois", bind('ref_attachement', 'number')), field('Représentant prestataire', h('div', null, rsel, rtxt)), field('Représentant client', bind('rep_client'))),
+            h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Désignation (attachement / facture)', 'Libellé sur la fiche', 'Nature', 'Nombre (postes) / quantité', 'Délai (jours)', 'Prix unitaire HT', 'Qté cumulée avant le mois de réf.', ''].map(function (t) { return h('th', null, t); }))), h('tbody', null, rows))), addF, ' ', delC);
+        });
+        save.onclick = function () {
+          act(save, box, function () { return call('contratsSave', { contrats: C, fonctions: F }); }, 'Contrats enregistrés').then(function (r) {
+            if (!r) return;
+            C = r.contrats; F = r.fonctions;
+            comptesBox.replaceChildren.apply(comptesBox, (r.comptes || []).map(function (c) {
+              var m = msgBox(); var b = h('button', { type: 'button', class: 'primary' }, 'Envoyer par e-mail');
+              b.onclick = function () { act(b, m, function () { return call('agentEnvoyerAcces', c.id, c.password); }).then(function (x) { if (x) m.show('✓ Accès envoyés à ' + x.to + '.', true); }); };
+              return h('div', { class: 'card', style: 'margin:8px 0' }, h('b', null, 'Compte client créé : ' + c.nom + ' — ' + c.email + ' — contrat ' + c.contrat + ' — mot de passe : ' + c.password), h('div', { class: 'sendbar' }, b), m);
+            }));
+          });
+        };
+        host.replaceChildren.apply(host, [h('h2', null, 'Contrats : modification manuelle'),
+          h('p', { class: 'muted' }, "Les fonctions du contrat servent de base à l'attachement et limitent les agents / véhicules que l'on peut saisir. Pour partir d'un bordereau des prix, utilisez le dépôt ci-dessus. Le n° d'attachement et les quantités précédentes partent d'un mois de référence.")].concat(sets).concat([addC, box, save, comptesBox]));
+      }
+      draw();
+    }).catch(function (e) { host.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  }
+  load();
+  return host;
+}
+function maintenanceCard(status) {
+  var box = msgBox();
+  var repair = h('button', null, 'Réparer / mettre à jour la structure');
+  repair.onclick = function () { act(repair, box, function () { return call('repairStructure'); }, 'Structure à jour (données conservées).'); };
+  var mode = h('select', null, h('option', { value: 'donnees' }, 'Vider les données (agents, pointages, demandes, documents) — garder la configuration'), h('option', { value: 'tout' }, 'Coquille vide complète (données + prestataire, contrats, paramètres)'));
+  var conf = h('input', { placeholder: 'Tapez VIDER pour confirmer' }); var vb = h('button', { class: 'danger' }, 'Vider');
+  vb.onclick = function () {
+    if (!window.confirm('Cette action est irréversible. Continuer ?')) return;
+    act(vb, box, function () { return call('vider', mode.value, conf.value.trim()); }, 'Données vidées. Votre compte administrateur est conservé.').then(function (r) { if (r) conf.value = ''; });
+  };
+  return h('section', { class: 'card danger-zone' }, h('h2', null, 'Maintenance'),
+    h('p', { class: 'muted' }, 'Version ' + status.version + ' · structure ' + (status.installed ? 'installée' : 'incomplète')), repair,
+    h('h3', { style: 'margin-top:16px' }, 'Remise à zéro'), h('p', { class: 'muted' }, "Pour livrer une copie vierge à un nouveau prestataire : créez une copie du classeur puis choisissez « Coquille vide complète »."),
+    h('div', { class: 'row' }, field('Mode', mode, 'grow2'), field('Confirmation', conf)), box, vb);
+}
+
+
+// ---------- import d'un pointage Excel ----------
+function exportCard() {
+  var card = h('section', { class: 'card compact' }, h('h2', null, 'Exporter un pointage (Excel)'), loading());
+  var box = msgBox();
+  call('contratsLite').then(function (cfg) {
+    var sel = h('select', null, h('option', { value: '' }, '(aucun : tous les agents, pointage seul)'), cfg.contrats.map(function (c) { return h('option', { value: c.numero }, c.numero + (c.client ? ' — ' + c.client : '')); }));
+    if (cfg.contrats.length) sel.value = cfg.contrats[0].numero;
+    var d1 = h('input', { type: 'month' }); var d2 = h('input', { type: 'month' });
+    var dep = h('input', { type: 'checkbox', checked: true });
+    var go1 = h('button', { class: 'primary' }, 'Exporter (Excel)');
+    go1.onclick = function () { act(go1, box, function () { return call('pointageExport', { contrat: sel.value, debut: d1.value, fin: d2.value, dependances: dep.checked }).then(saveFile); }, 'Fichier généré'); };
+    card.replaceChildren(h('h2', null, 'Exporter un pointage (Excel)'),
+      h('p', { class: 'muted' }, "Un classeur Excel avec un onglet par mois de pointage et, si un contrat est choisi, tout ce qui en dépend : contrat, fonctions et prix, agents, quantités saisies, attachements validés et factures, paramètres. Les mots de passe ne sont jamais exportés. Le fichier se réimporte ci-dessous."),
+      h('div', { class: 'row' }, field('Contrat', sel, 'grow2'), field('Du mois (facultatif)', d1), field('Au mois (facultatif)', d2)),
+      h('label', { class: 'inline' }, dep, ' Inclure le contrat, les prix, les attachements et les paramètres'), box, go1);
+  }).catch(function (e) { card.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  return card;
+}
+function importCard() {
+  var card = h('section', { class: 'card upload' });
+  var box = msgBox();
+  function title() { return h('h2', null, 'Importer un pointage (Excel)'); }
+  function start() {
+    var file = h('input', { type: 'file', accept: '.xlsx,.xls,.csv', 'aria-label': 'Choisir le fichier de pointage' });
+    file.addEventListener('change', function () { if (file.files[0]) analyse(file.files[0]); });
+    var zone = h('label', { class: 'dropzone' }, file, h('span', { class: 'dz-icon' }, '📅'), h('b', null, 'Déposer le fichier de pointage ici'),
+      h('span', { class: 'muted' }, 'Un onglet par mois (« Mois de : Mai 2025 » ou onglet 2025-05), noms en colonne A, jours 1 à 31. T, R (ou CR) et ABS (ou AB) sont reconnus. Un export de pointage de l\'application est lu en entier : contrat, prix, agents, attachements.'), h('span', { class: 'dz-btn' }, 'Choisir un fichier'));
+    ['dragenter', 'dragover'].forEach(function (ev) { zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.add('over'); }); });
+    ['dragleave', 'drop'].forEach(function (ev) { zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.remove('over'); }); });
+    zone.addEventListener('drop', function (e) { var f = e.dataTransfer && e.dataTransfer.files[0]; if (f) analyse(f); });
+    card.replaceChildren(title(), zone, box);
+    if (S.importFlash) { box.show(S.importFlash, true); S.importFlash = null; }
+    if (S.importCreds) {
+      var txt = S.importCreds.map(function (c) { return c.nom + ' — ' + c.email + ' — mot de passe : ' + c.password; }).join('\n'); S.importCreds = null;
+      var cp = h('button', { type: 'button' }, 'Copier'); cp.onclick = function () { try { navigator.clipboard.writeText(txt); cp.textContent = tr('Copié ✓'); } catch (e) { window.prompt('Copiez :', txt); } };
+      card.append(h('p', { class: 'msg warn' }, 'Comptes créés — notez les mots de passe provisoires (ils ne seront plus affichés) :'), h('pre', { class: 'card', style: 'white-space:pre-wrap' }, txt), cp);
+    }
+  }
+  function analyse(f) {
+    card.replaceChildren(title(), h('p', { class: 'reading' }, '⏳ Lecture de « ' + f.name + ' » en cours…'));
+    fileToBase64(f).then(function (b64) { return Promise.all([call('pointageImportAnalyser', { nom: f.name, mime: f.type, base64: b64 }), call('agentsManage')]); })
+      .then(function (r) { review(r[0], r[1].filter(function (a) { return a.role !== 'admin' && a.role !== 'client' && a.type !== 'vehicule'; })); })
+      .catch(function (e) { start(); box.show(e.message, false); });
+  }
+  function review(a, agents) {
+    var choix = {};
+    var rows = a.personnes.map(function (p) {
+      var sel = h('select', null, h('option', { value: '__new' }, '➕ Créer un nouvel agent'), h('option', { value: '' }, '⏭ Ignorer cette personne'),
+        agents.map(function (g) { return h('option', { value: g.id }, g.nom); }));
+      choix[p.cle] = p.suggestion ? p.suggestion.id : '__new'; sel.value = choix[p.cle];
+      sel.onchange = function () { choix[p.cle] = sel.value; };
+      var tag = p.suggestion ? h('span', { class: 'chip' }, p.suggestion.score >= 0.95 ? '✓ même nom' : '≈ proche') : h('span', { class: 'badge en_attente' }, 'inconnu');
+      return h('tr', null, h('td', null, h('b', null, p.nom), p.variantes.length ? h('small', null, 'aussi écrit : ' + p.variantes.join(', ')) : null), h('td', null, p.fonction), h('td', null, p.mois), h('td', null, p.jours), h('td', null, monthLabel(p.debut) + ' → ' + monthLabel(p.fin)), h('td', null, sel, tag));
+    });
+    var A = a.archive; var rep = { contrat: true, attachements: true, quantites: true, params: false };
+    var depBloc = null;
+    if (A) {
+      var R = A.resume;
+      var chk = function (k, label, n, def) { var c = h('input', { type: 'checkbox', checked: def }); c.onchange = function () { rep[k] = c.checked; }; rep[k] = def; return h('label', { class: 'inline', style: 'display:flex;margin:2px 0' }, c, ' ' + label + ' (' + n + ')'); };
+      depBloc = h('fieldset', null, h('legend', null, 'Données liées au contrat trouvées dans le fichier'),
+        chk('contrat', 'Contrat, fonctions et prix (remplace les fonctions du même contrat)', R.contrats + ' contrat(s), ' + R.fonctions + ' fonction(s)', true),
+        chk('quantites', 'Quantités saisies à la main', R.attachements, true),
+        chk('attachements', 'Attachements validés et factures (un attachement déjà facturé ici est conservé)', R.valides, true),
+        chk('params', 'Paramètres : prestataire, client, rotation, couleurs…', R.params, false),
+        h('small', null, 'Les agents créés reprennent leur fonction, contrat, rotation, affectation et e-mail du fichier ; un mot de passe provisoire est généré.'));
+    }
+    var mode = h('select', null, h('option', { value: 'completer' }, 'Compléter : ne remplace aucun pointage existant'), h('option', { value: 'remplacer' }, 'Remplacer : le fichier l’emporte sur les pointages existants'));
+    var d1 = h('input', { type: 'month', value: a.premier }); var d2 = h('input', { type: 'month', value: a.dernier });
+    var go1 = h('button', { type: 'button', class: 'primary big' }, 'Importer le pointage'); var again = h('button', { type: 'button' }, 'Autre fichier'); again.onclick = start;
+    var box2 = msgBox();
+    go1.onclick = function () {
+      if (mode.value === 'remplacer' && !window.confirm('Les pointages existants seront remplacés par ceux du fichier. Continuer ?')) return;
+      act(go1, box2, function () { return call('pointageImportAppliquer', { mois: a.mois, choix: choix, mode: mode.value, debut: d1.value, fin: d2.value, archive: A || null, reprendre: A ? rep : null }); }).then(function (r) {
+        if (!r) return;
+        S.importFlash = '✓ ' + r.jours_ecrits + ' jour(s) pointé(s) sur ' + r.mois + ' mois' + (r.jours_conserves ? ', ' + r.jours_conserves + ' conservé(s) (déjà pointés différemment)' : '') + '. ' + (r.agents_crees.length ? r.agents_crees.length + ' agent(s) créé(s) : ' + r.agents_crees.join(', ') + ' — complétez leur e-mail, contrat et fonction dans Agents (modification groupée possible). ' : '') + (r.dependances && (r.dependances.contrats || r.dependances.valides || r.dependances.quantites || r.dependances.params) ? 'Repris : ' + [r.dependances.contrats && r.dependances.contrats + ' contrat(s) / ' + r.dependances.fonctions + ' fonction(s)', r.dependances.quantites && r.dependances.quantites + ' quantité(s)', r.dependances.valides && r.dependances.valides + ' attachement(s) validé(s)', r.dependances.params && r.dependances.params + ' paramètre(s)'].filter(Boolean).join(', ') + '. ' : '') + (r.dependances && r.dependances.ignores.length ? r.dependances.ignores.join(' ; ') + '. ' : '') + (r.avertissements && r.avertissements.length ? r.avertissements.join(' ; ') + '. ' : '') + 'Rechargez la grille pour voir le résultat.';
+        S.importCreds = r.identifiants && r.identifiants.length ? r.identifiants : null;
+        start();
+      });
+    };
+    card.replaceChildren(title(),
+      h('p', { class: 'muted' }, plural(a.mois.length, 'mois') + (a.premier ? ' (' + monthLabel(a.premier) + ' → ' + monthLabel(a.dernier) + ')' : '') + ', ' + plural(a.personnes.length, 'personne') + ', ' + a.jours + ' jours pointés. Vérifiez le rapprochement avec les agents de l’application.'),
+      a.avertissements.map(function (w) { return h('p', { class: 'msg warn' }, w); }),
+      h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Nom dans le fichier', 'Fonction', 'Mois', 'Jours', 'Période', 'Agent de l’application'].map(function (t) { return h('th', null, t); }))), h('tbody', null, rows))),
+      depBloc,
+      h('div', { class: 'row' }, field('Mode', mode, 'grow2'), field('Du mois', d1), field('Au mois', d2)),
+      h('div', { class: 'sendbar' }, go1, again), box2);
+  }
+  start();
+  return card;
+}
+function backupCard() {
+  var host = h('section', { class: 'card' }, h('h2', null, 'Sauvegarde et restauration'), loading());
+  var box = msgBox();
+  function load() {
+    call('backupList').then(function (list) {
+      var mk = h('button', { class: 'primary' }, 'Sauvegarder maintenant');
+      mk.onclick = function () { act(mk, box, function () { return call('backupCreate'); }, 'Sauvegarde créée dans Drive / Sauvegardes').then(load); };
+      var conf = h('input', { placeholder: 'Tapez RESTAURER pour confirmer' });
+      var rows = list.map(function (b) {
+        var rs = h('button', { class: 'danger' }, 'Restaurer'); var del = h('button', { type: 'button' }, 'Supprimer');
+        rs.onclick = function () {
+          if (!window.confirm('Remplacer toutes les données actuelles par « ' + b.nom + ' » ? Une sauvegarde de sécurité sera faite avant.')) return;
+          act(rs, box, function () { return call('backupRestore', b.id, conf.value.trim()); }, 'Sauvegarde restaurée : rechargez la page.').then(function (r) { if (r) conf.value = ''; });
+        };
+        del.onclick = function () { if (window.confirm('Supprimer cette sauvegarde ?')) act(del, box, function () { return call('backupDelete', b.id); }).then(load); };
+        return h('tr', null, h('td', null, h('a', { href: b.url, target: '_blank', rel: 'noopener' }, b.nom)), h('td', null, rs, ' ', del));
+      });
+      host.replaceChildren.apply(host, [h('h2', null, 'Sauvegarde et restauration'),
+        h('p', { class: 'muted' }, "Une sauvegarde est une copie complète du classeur (agents, pointages, contrats, paramètres) rangée dans le dossier « Sauvegardes » de Drive, à côté du classeur. Les documents des agents restent dans leur dossier Drive."),
+        mk, list.length ? h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, h('th', null, 'Sauvegarde'), h('th', null, ''))), h('tbody', null, rows))) : h('p', { class: 'muted' }, 'Aucune sauvegarde pour le moment.'),
+        list.length ? h('div', { class: 'row' }, field('Confirmation avant de restaurer', conf)) : null, box].filter(Boolean));
+    }).catch(function (e) { host.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  }
+  load();
+  return host;
+}
+
+// ---------- contrats : synthèse (fonctions, effectifs affectés, facturé, attachements) ----------
+var STATUT_ATT = { brouillon: ['Brouillon', 'en_attente'], valide: ['Validé', 'acceptee'], facture: ['Facturé', 'envoyee'] };
+var dzd = function (n) { return Number(n).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+function ContratsPage(opts) {
+  opts = opts || {};
+  var wrap = h('div', { style: 'display:grid;gap:16px' });
+  var isAdmin = S.user.role === 'admin'; var money = S.user.role !== 'chef'; // admin et client voient prix et montants
+  function load() { call('contratsSynthese').then(draw).catch(function (e) { wrap.replaceChildren(h('p', { class: 'msg err' }, e.message)); }); }
+  function effectif(l) {
+    var etat = l.affectes === l.besoin ? h('span', { class: 'chip' }, '✓ complet') : l.affectes < l.besoin ? h('span', { class: 'badge en_attente' }, 'manque ' + (l.besoin - l.affectes)) : h('span', { class: 'badge refusee' }, 'dépassé de ' + (l.affectes - l.besoin));
+    return h('td', null, h('b', null, l.affectes + ' / ' + l.besoin), ' ', etat, h('small', null, l.membres.length ? l.membres.map(function (m) { return m.nom; }).join(', ') : 'personne d’affecté pour le moment'));
+  }
+  function card(c) {
+    var head = money ? ['Désignation', 'Nature', 'Nombre', 'Délai (j)', 'Prix unitaire HT', 'Montant du contrat', 'Effectif affecté / nécessaire', 'Déjà facturé'] : ['Désignation', 'Nature', 'Nombre', 'Délai (j)', 'Effectif affecté / nécessaire', 'Déjà facturé'];
+    var rows = c.lignes.map(function (l) {
+      return h('tr', null, h('td', null, h('b', null, l.designation), l.libelle !== l.designation ? h('small', null, 'fiche : ' + l.libelle) : null), h('td', null, l.nature === 'vehicule' ? 'Véhicule (VH)' : 'Personne'), h('td', null, l.positions), h('td', null, l.delai),
+        money ? h('td', null, dzd(l.prix_unitaire)) : null, money ? h('td', null, dzd(l.montant_contrat)) : null, effectif(l),
+        h('td', null, l.quantite_facturee + ' / ' + l.quantite_contrat + ' j', money ? h('small', null, dzd(l.montant_facture) + ' DA') : null));
+    });
+    function pdfBtn(a, doc, label) { var b = h('button', { type: 'button' }, label + ' PDF'); b.onclick = function () { dl(a, doc, 'pdf', b); }; return b; }
+    var att = c.attachements.length ? h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Mois', 'Attachement N°', 'Statut', money ? 'Total HT' : '', 'Facture', money ? 'Documents (PDF)' : ''].filter(function (t, i) { return money || (i !== 3 && i !== 5); }).map(function (t) { return h('th', null, t); }))),
+      h('tbody', null, c.attachements.map(function (a) {
+        var st = STATUT_ATT[a.statut] || [a.statut, ''];
+        return h('tr', null, h('td', null, monthLabel(a.mois)), h('td', null, a.numero), h('td', null, h('span', { class: 'badge ' + st[1] }, st[0]), h('small', null, a.valide_par ? 'par ' + a.valide_par : '')), money ? h('td', null, dzd(a.total_ht) + ' DA') : null, h('td', null, a.facture_numero ? a.facture_numero + (a.facture_date ? ' · ' + frDate(a.facture_date) : '') : '—'), money ? h('td', { class: 'actions' }, pdfBtn(a, 'Attachement', 'Attachement'), a.facture_numero ? pdfBtn(a, 'Facture', 'Facture') : null) : null);
+      })))) : h('p', { class: 'muted' }, 'Aucun attachement validé pour le moment.');
+    function dl(a, doc, format, btn) { act(btn, box, function () { return call(doc === 'Facture' ? 'factureCopie' : 'exportAttachement', { month: a.mois, contrat: c.numero, format: format }).then(saveFile); }, 'Document généré'); }
+    var box = msgBox();
+    var hist = (c.historique || []).filter(function (f) { return f.mois.length; });
+    var histo = hist.length ? h('details', { class: 'theme', open: true }, h('summary', null, 'Historique par fonction (indicatif)'),
+      h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Mois', 'Att. N°', 'Précédente', 'Du mois', 'Cumulée', 'Reste à facturer'].concat(money ? ['Montant du mois'] : []).map(function (t) { return h('th', null, t); }))),
+        h('tbody', null, hist.map(function (f) {
+          return [h('tr', { class: 'subhead' }, h('th', { colspan: money ? 7 : 6 }, f.designation + ' — contrat : ' + f.quantite_contrat + ' j'))].concat(f.mois.map(function (m) {
+            return h('tr', { class: m.indicatif ? 'draft' : '' }, h('td', null, monthLabel(m.mois), m.indicatif ? h('small', null, 'brouillon, indicatif') : null), h('td', null, m.numero), h('td', null, m.precedente), h('td', null, m.du_mois), h('td', null, m.cumulee), h('td', null, m.reste), money ? h('td', null, dzd(m.montant)) : null);
+          }));
+        }).reduce(function (a, b) { return a.concat(b); }, [])))), h('small', null, 'Les mois validés sont figés ; le brouillon du mois suivant peut encore changer.')) : null;
+    var prep = h('button', { class: 'primary' }, "Préparer l'attachement de " + monthLabel(c.prochain));
+    prep.onclick = function () { S.target = { month: c.prochain, contrat: c.numero }; go('/exports'); };
+    var ag = h('button', null, 'Agents et véhicules'); ag.onclick = function () { go('/agents'); };
+    var ed = h('button', null, 'Modifier le contrat'); ed.onclick = function () { S.setupTab = 'contrat'; go('/setup'); };
+    return h('section', { class: 'card' }, h('h2', null, 'Contrat n° ' + c.numero),
+      h('p', { class: 'muted' }, [c.client, c.date_contrat && 'du ' + c.date_contrat, c.objet].filter(Boolean).join(' · ')),
+      c.date_debut || c.duree_mois ? h('p', null, contratPeriode(c)) : null,
+      money ? h('p', null, 'Montant contractuel HT : ', h('b', null, dzd(c.montant_contrat) + ' DA')) : null,
+      h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, head.map(function (t) { return h('th', null, t); }))), h('tbody', null, rows))),
+      h('h3', { style: 'margin-top:14px' }, 'Attachements et factures validés'), att, box, histo,
+      h('div', { class: 'sendbar' }, isAdmin ? prep : null, isAdmin || S.user.role === 'chef' ? ag : null, S.canSetup && !opts.embedded ? ed : null),
+      h('small', null, 'Les agents et véhicules prennent leur fonction parmi les désignations de ce contrat ; l’attachement mensuel en découle, puis la facture à partir de l’attachement validé.'));
+  }
+  function draw(list) {
+    var nodes = [];
+    if (S.canSetup) nodes.push(BordereauUpload(opts.onSaved || load));
+    if (!list.length) nodes.push(h('section', { class: 'card' }, h('p', { class: 'muted' }, S.canSetup ? 'Aucun contrat pour le moment : déposez le bordereau des prix du contrat ci-dessus.' : "Aucun contrat n'est encore enregistré : demandez à l'administrateur de déposer le bordereau des prix du contrat.")));
+    list.forEach(function (c) { nodes.push(card(c)); });
+    wrap.replaceChildren.apply(wrap, nodes);
+  }
+  wrap.append(loading()); load();
+  return wrap;
+}
+
+// ---------- exports : fiche de pointage, attachement (validation), facture (depuis l'attachement validé) ----------
+function ExportsPage() {
+  var wrap = h('div', { style: 'display:grid;gap:16px' });
+  call('contratsLite').then(function (cfg) {
+    var t = S.target; S.target = null; // venant de la page Contrats : mois et contrat déjà choisis
+    var month = (t && t.month) || thisMonth(); var contrat = (t && t.contrat) || (cfg.contrats[0] ? cfg.contrats[0].numero : '');
+    var box = msgBox(); var host = h('div', { style: 'display:grid;gap:16px' });
+    var csel = h('select', { onchange: function () { contrat = csel.value; draw(); } }, cfg.contrats.map(function (c) { return h('option', { value: c.numero }, c.numero); })); csel.value = contrat;
+    var top = h('section', { class: 'card' }, h('div', { class: 'toolbar' }, monthNav(month, function (m) { month = m; draw(); }), cfg.contrats.length ? h('label', { class: 'inline' }, 'Contrat ', csel) : null),
+      cfg.contrats.length ? null : h('p', { class: 'msg err' }, 'Aucun contrat : déposez le bordereau des prix dans la page Contrats.'), box);
+    var prevu = false; var fac = { numero: '', date: '' };
+    function buttons(doc, extra, disabled) {
+      var xl = h('button', { disabled: disabled }, 'Excel (.xlsx)'); var pdf = h('button', { disabled: disabled }, 'PDF');
+      [[xl, 'xlsx'], [pdf, 'pdf']].forEach(function (p) {
+        p[0].onclick = function () {
+          var o = { month: month, contrat: contrat, format: p[1] }; var ex = extra ? extra() : {}; Object.keys(ex).forEach(function (k) { o[k] = ex[k]; });
+          if (doc === 'Facture' && !String(o.facture_numero || '').trim()) { box.show('Indiquez le n° de facture.', false); return; }
+          act(p[0], box, function () { return call('export' + doc, o).then(saveFile); }, 'Document généré').then(function () { if (doc === 'Facture') draw(); }); // la facture est enregistrée sur l'attachement : on rafraîchit le statut
+        };
+      });
+      return h('p', null, xl, ' ', pdf);
+    }
+    function lignesTable(p, editable) {
+      var head = ['Désignation', 'Nombre', 'Qté contrat', 'Précédente', 'Du mois', 'Cumulée', 'Prix unitaire', 'Montant'].concat(editable ? ['Pointés'] : []);
+      return h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, head.map(function (x) { return h('th', null, x); }))),
+        h('tbody', null, p.lines.map(function (l) {
+          var cellMois;
+          if (editable) {
+            var q = h('input', { class: 'qty', type: 'number', min: 0, value: l.mois }); var ok = h('button', { hidden: true }, 'OK');
+            q.oninput = function () { ok.hidden = false; };
+            ok.onclick = function () { act(ok, box, function () { return call('attachementQte', { contrat: contrat, mois: month, designation: l.designation, qte_mois: q.value }); }, 'Quantité enregistrée').then(draw); };
+            cellMois = h('td', null, q, ok, l.auto ? null : h('small', null, 'modifié'));
+          } else cellMois = h('td', null, l.mois);
+          return h('tr', null, h('td', null, l.designation, l.nature === 'vehicule' ? h('span', { class: 'badge' }, 'VH') : null), h('td', null, l.positions), h('td', null, l.contrat), h('td', null, l.precedente), cellMois, h('td', null, l.cumulee), h('td', null, dzd(l.prix_unitaire)), h('td', null, dzd(l.montant)), editable ? h('td', null, l.pointes) : null);
+        }))));
+    }
+    function draw() {
+      var chk = h('input', { type: 'checkbox', checked: prevu, onchange: function () { prevu = chk.checked; } });
+      var tousChk = h('input', { type: 'checkbox', onchange: function () { tousChk.checked = tousChk.checked; } });
+      var info = h('p', { class: 'muted' });
+      if (contrat) call('ficheApercu', { month: month, contrat: contrat }).then(function (a) {
+        info.textContent = tr(a.dans + ' agent(s) du contrat dans la fiche' + (a.hors ? ', ' + a.hors + ' hors contrat' : '') + '.' + (a.avertissements.length ? ' ⚠ ' + a.avertissements.join(' ') : ''));
+      }).catch(function () {});
+      var prev = h('div', null, loading()); var fsec = h('section', { class: 'card' }, h('h2', null, '3. Facture'), loading());
+      host.replaceChildren(
+        h('section', { class: 'card' }, h('h2', null, '1. Fiche de pointage ', h('small', null, 'à valider avec le client')), h('label', { class: 'inline' }, chk, ' Inclure les jours prévus'), h('label', { class: 'inline' }, tousChk, ' Inclure tous les agents (ignorer le contrat)'), info, buttons('Fiche', function () { return { prevu: prevu, tous: tousChk.checked }; })),
+        h('section', { class: 'card' }, h('h2', null, '2. Attachement'), prev), fsec);
+      if (!contrat) { prev.replaceChildren(h('p', { class: 'muted' }, 'Choisissez un contrat.')); fsec.replaceChildren(h('h2', null, '3. Facture')); return; }
+      call('attachementPreview', month, contrat).then(function (p) {
+        var st = STATUT_ATT[p.statut] || ['', ''];
+        var title = h('h3', null, 'Attachement N° ' + p.numero + ' — ' + monthLabel(month) + ' ', h('span', { class: 'badge ' + st[1] }, st[0]));
+        var total = h('p', null, 'Total HT : ', h('b', null, dzd(p.totalHT) + ' DA'));
+        if (p.verrouille) {
+          var reopen = h('button', { class: 'danger' }, 'Rouvrir l\'attachement');
+          reopen.onclick = function () { if (window.confirm("Rouvrir l'attachement ? Il redeviendra un brouillon modifiable.")) act(reopen, box, function () { return call('attachementRouvrir', { month: month, contrat: contrat }); }, 'Attachement rouvert').then(draw); };
+          prev.replaceChildren(title, h('p', { class: 'muted' }, 'Validé le ' + frDateTime(p.date_validation) + ' par ' + p.valide_par + '. Copie figée : une modification du contrat, des prix ou des agents ne la change plus.'), lignesTable(p, false), total,
+            buttons('Attachement'), p.statut === 'valide' ? reopen : h('small', null, 'Facturé : ne peut plus être rouvert.'));
+        } else {
+          var validate = h('button', { class: 'primary big' }, "Valider l'attachement");
+          validate.onclick = function () { if (window.confirm("Valider l'attachement N° " + p.numero + " ? Il sera figé et servira de base à la facture.")) act(validate, box, function () { return call('attachementValider', { month: month, contrat: contrat }); }, 'Attachement validé').then(draw); };
+          prev.replaceChildren(title, h('p', { class: 'muted' }, 'Brouillon calculé : quantité du mois = jours T réellement pointés (ou nombre × jours du mois si la base contractuelle est choisie dans Setup → Contrat) ; modifiable. « Pointés » = jours T réellement pointés, à titre de contrôle. Les mois se valident dans l’ordre.'), lignesTable(p, true), total, buttons('Attachement'), validate);
+        }
+        if (!p.verrouille) { fsec.replaceChildren(h('h2', null, '3. Facture'), h('p', { class: 'msg warn' }, "Validez d'abord l'attachement : la facture est générée à partir de l'attachement validé.")); return; }
+        var fnum = h('input', { value: fac.numero || p.facture_numero || '', placeholder: '235/PS/2026', oninput: function () { fac.numero = fnum.value; } });
+        var fdate = h('input', { type: 'date', value: fac.date || p.facture_date || '', oninput: function () { fac.date = fdate.value; } });
+        fsec.replaceChildren(h('h2', null, '3. Facture ', p.statut === 'facture' ? h('span', { class: 'badge envoyee' }, 'Facturé') : null),
+          h('p', { class: 'muted' }, "Générée à partir de l'attachement N° " + p.numero + ' validé : mêmes quantités et mêmes prix. Total HT : ' + dzd(p.totalHT) + ' DA.'),
+          h('div', { class: 'row' }, field('N° de facture', fnum), field('Date de la facture', fdate)),
+          buttons('Facture', function () { return { facture_numero: fnum.value, date: fdate.value }; }));
+      }).catch(function (e) { prev.replaceChildren(h('p', { class: 'msg err' }, e.message)); fsec.replaceChildren(h('h2', null, '3. Facture')); });
+    }
+    wrap.replaceChildren(top, host); draw();
+  }).catch(function (e) { wrap.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  return wrap;
+}
+
+function PasswordPage() {
+  var cur = h('input', { type: 'password', required: true }); var nxt = h('input', { type: 'password', minlength: 6, required: true }); var box = msgBox(); var btn = h('button', { class: 'primary' }, 'Enregistrer');
+  var form = h('form', { class: 'card narrow', onsubmit: function (ev) { ev.preventDefault(); act(btn, box, function () { return call('passwordOwn', cur.value, nxt.value); }, 'Mot de passe modifié').then(function (r) { if (r) form.reset(); }); } },
+    h('h2', null, 'Changer mon mot de passe'), field('Mot de passe actuel', cur), field('Nouveau mot de passe (6 caractères min.)', nxt), box, btn);
+  return form;
+}
+
+boot();
+})();
+</script>
