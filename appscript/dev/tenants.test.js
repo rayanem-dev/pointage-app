@@ -171,3 +171,21 @@ test('console : accès direct à un client en essai (jamais éditeur, refusé po
   assert.deepStrictEqual([me.user.email, me.code, me.owner], ['chef@essai.dz', 'ESSAI1', false], 'session de l\'administrateur du client, jamais éditeur');
   fail(call(a.token, 'clients'), /éditeur/);
 });
+
+test('connexions : l\'éditeur voit l\'activité de toutes les entreprises et le journal ; un client ne voit que la sienne', () => {
+  env.props.OWNER_EMAILS = '';
+  T.owner = ok(call(null, 'login', 'editeur@t.fr', 'editeurpw1', 'ADMIN')).token;
+  const ent = () => ok(call(T.owner, 'connexions'));
+  assert.ok(ent().entreprises.length >= 3, 'principal + clients');
+  const alpha = ent().entreprises.find((e) => e.code === 'ALPHA');
+  assert.ok(alpha && alpha.gens.length >= 1);
+  const avant = alpha.gens.find((g) => g.email === 'admin@alpha.dz').n;
+  const a = ok(call(null, 'login', 'admin@alpha.dz', T.alphaPw, 'ALPHA')).token;
+  ok(call(a, 'badges'));
+  const apres = ent().entreprises.find((e) => e.code === 'ALPHA');
+  assert.strictEqual(apres.gens.find((g) => g.email === 'admin@alpha.dz').en_ligne, true);
+  assert.strictEqual(apres.gens.find((g) => g.email === 'admin@alpha.dz').n, avant + 1);
+  const j = ent().journal; assert.ok(j.length >= 1 && j[0][1] === 'ALPHA' && j[0][2], 'journal : entreprise et nom de la dernière connexion');
+  const own = ok(call(a, 'connexions'));
+  assert.ok(own.gens && !own.entreprises && !own.journal, 'un client ne voit que ses propres utilisateurs');
+});

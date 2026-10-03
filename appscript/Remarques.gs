@@ -8,7 +8,7 @@ var Remarques = (function () {
   function visibleIds(user) { var m = {}; Agents.visibleTo(user).forEach(function (a) { m[a.id] = a; }); return m; }
 
   function add(user, data) {
-    if (user.role !== 'client') throw httpErr_('Réservé au compte client', 'FORBIDDEN');
+    if (user.role !== 'client' && user.role !== 'agent') throw httpErr_('Réservé au compte client et à l’agent', 'FORBIDDEN');
     data = data || {};
     var agent = visibleIds(user)[data.agent_id];
     if (!agent) throw httpErr_('Agent introuvable');
@@ -26,17 +26,21 @@ var Remarques = (function () {
       var agents = Agents.list(); var chef = agent.chef_id ? agents.filter(function (a) { return a.id === agent.chef_id && a.actif === '1'; })[0] : null;
       var dest = (chef ? [chef] : agents.filter(function (a) { return a.role === 'admin' && a.actif === '1'; })).filter(function (a) { return /^\S+@\S+\.\S+$/.test(a.email || ''); }).slice(0, 3);
       dest.forEach(function (a) {
-        MailApp.sendEmail({ to: a.email, replyTo: user.email || undefined, subject: 'Remarque du client — ' + agent.nom + ' le ' + Dates.frDate(r.date),
-          body: 'Bonjour ' + a.nom + ',\n\n' + user.nom + ' (client) a laissé une remarque sur le pointage de ' + agent.nom + ' du ' + Dates.frDate(r.date) + ' :\n\n« ' + r.texte + ' »\n\nOuvrez Sijil, onglet Pointage, pour la consulter et répondre.' });
+        MailApp.sendEmail({ to: a.email, replyTo: user.email || undefined, subject: (user.role === 'agent' ? 'Remarque de l’agent — ' : 'Remarque du client — ') + agent.nom + ' le ' + Dates.frDate(r.date),
+          body: 'Bonjour ' + a.nom + ',\n\n' + user.nom + (user.role === 'agent' ? ' (agent)' : ' (client)') + ' a laissé une remarque sur le pointage de ' + agent.nom + ' du ' + Dates.frDate(r.date) + ' :\n\n« ' + r.texte + ' »\n\nOuvrez Sijil, onglet Pointage, pour la consulter et répondre.' });
       });
     } catch (e) { Logger.log('Remarque non notifiée : ' + e.message); }
   }
   function enrich(r, agentsById) { var a = agentsById[r.agent_id] || {}; var o = {}; Object.keys(r).forEach(function (k) { o[k] = r[k]; }); o.agent_nom = a.nom || '?'; return o; }
   // Remarques entre deux dates pour les agents visibles de l'utilisateur.
   function between(user, from, to) {
-    var by = visibleIds(user);
-    return all().filter(function (r) { return by[r.agent_id] && r.date >= from && r.date <= to; })
-      .sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : a.date_creation < b.date_creation ? -1 : 1; }).map(function (r) { return enrich(r, by); });
+    var by = visibleIds(user); var role = {}; Agents.list().forEach(function (x) { role[x.id] = x.role; });
+    return all().filter(function (r) {
+      if (!by[r.agent_id] || r.date < from || r.date > to) return false;
+      if (user.role === 'agent') return r.auteur_id === user.id; // l'agent ne voit que ses propres remarques (et les réponses)
+      if (user.role === 'client') return role[r.auteur_id] === 'client'; // le client ne voit pas les remarques personnelles des agents
+      return true;
+    }).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : a.date_creation < b.date_creation ? -1 : 1; }).map(function (r) { return enrich(r, by); });
   }
   // Le prestataire marque une remarque « vu » et/ou y répond.
   function traiter(user, id, data) {

@@ -62,7 +62,7 @@ var HANDLERS = {
   logout: { fn: function (u, a, token) { Auth.logout(token); return true; } },
   me: { fn: function (u) { return { owner: Tenants.isOwner(u), code: Store.tenantCode(), user: Agents.publicAgent(u), canSetup: Auth.canSetup(u), params: Params.pub(Params.get()), rotations: CFG.ROTATIONS }; } },
   // Pastilles du menu : documents déposés pour moi (dates et noms, le navigateur retient ce qu'il a déjà vu) et demandes à traiter.
-  remarqueAdd: { roles: ['client'], write: true, fn: function (u, a) { return Remarques.add(u, a[0] || {}); } },
+  remarqueAdd: { roles: ['client', 'agent'], write: true, fn: function (u, a) { return Remarques.add(u, a[0] || {}); } },
   remarqueTraiter: { roles: STAFF, write: true, fn: function (u, a) { return Remarques.traiter(u, a[0], a[1] || {}); } },
   badges: { fn: function (u) {
     var docs = Store.readTable('Documents').filter(function (d) { return d.agent_id === u.id; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; }).slice(0, 20)
@@ -218,7 +218,11 @@ var HANDLERS = {
       return Export.render('facture', d, o.format, 'Facture_' + String(d.facture_numero || o.month).replace(/[^\w-]+/g, '_'));
     }
   },
-  connexions: { roles: ['admin'], fn: function () { return { maintenant: new Date().toISOString(), gens: Auth.activity() }; } },
+  connexions: { roles: ['admin'], fn: function (u) {
+    var out = { maintenant: new Date().toISOString() };
+    if (Tenants.isOwner(u)) { out.entreprises = Tenants.activityAll(u); out.journal = Auth.journal(); } else out.gens = Auth.activity(); // l'éditeur voit toutes les entreprises
+    return out;
+  } },
   repairStructure: { roles: ['admin'], write: true, fn: function () { return Setup.repairStructure(); } },
   vider: { roles: ['admin'], write: true, fn: function (u, a) { return Setup.vider(a[0], a[1]); } },
   pointageExport: { roles: ['admin'], fn: function (u, a) { return Archive.exportXlsx(u, a[0] || {}); } },

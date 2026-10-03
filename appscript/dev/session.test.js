@@ -80,11 +80,11 @@ test('connexions : en ligne, dernière connexion, jamais connecté (administrate
   ok2(call(ad, 'agentCreate', { nom: 'DEJA VENU', email: 'dv@t.fr', role: 'agent', password: 'venupw123' }));
   const ag = ok2(call(null, 'login', 'dv@t.fr', 'venupw123')).token;
   ok2(call(ag, 'badges'));
-  const l = ok2(call(ad, 'connexions')).gens;
+  const l = ok2(call(ad, 'connexions')).entreprises[0].gens; // administrateur du classeur principal = éditeur : vue de toutes les entreprises
   const by = (n) => l.find((g) => g.nom === n);
   assert.strictEqual(by('DEJA VENU').en_ligne, true); assert.strictEqual(by('DEJA VENU').n, 1); assert.ok(by('DEJA VENU').derniere);
   assert.strictEqual(by('JAMAIS VU').en_ligne, false); assert.strictEqual(by('JAMAIS VU').derniere, ''); assert.strictEqual(by('JAMAIS VU').n, 0);
   assert.strictEqual(call(ag, 'connexions').ok, false, 'réservé à l\'administrateur');
   ok2(call(null, 'login', 'dv@t.fr', 'venupw123'));
-  assert.strictEqual(ok2(call(ad, 'connexions')).gens.find((g) => g.nom === 'DEJA VENU').n, 2);
+  assert.strictEqual(ok2(call(ad, 'connexions')).entreprises[0].gens.find((g) => g.nom === 'DEJA VENU').n, 2);
 });

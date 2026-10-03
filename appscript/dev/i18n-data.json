@@ -4948,5 +4948,100 @@
 "Une demande envoyée à la direction est marquée « Traitée : demande transmise à la direction » avec le nom de l'entreprise prestataire.",
 "A request sent to management is marked \"Processed: request sent to management\" with the provider company's name.",
 "يُعلَّم الطلب المرسل إلى الإدارة «تمت المعالجة: تم إرسال الطلب إلى الإدارة» مع اسم الشركة المزوّدة."
+],
+[
+"Réservé au compte client et à l’agent",
+"Reserved to the client account and the agent",
+"مخصص لحساب العميل وللعون"
+],
+[
+"Remarques (",
+"Remarks (",
+"ملاحظات ("
+],
+[
+"Mes remarques (",
+"My remarks (",
+"ملاحظاتي ("
+],
+[
+"Votre remarque sur ce pointage (visible par votre responsable d’équipe)",
+"Your remark on this record (visible to your team manager)",
+"ملاحظتك على هذا التسجيل (يراها مسؤول فريقك)"
+],
+[
+"Votre réponse :",
+"Your reply:",
+"ردّك:"
+],
+[
+"Remarques",
+"Remarks",
+"ملاحظات"
+],
+[
+"Toutes les entreprises (",
+"All companies (",
+"كل الشركات ("
+],
+[
+"Journal des dernières connexions",
+"Latest connections log",
+"سجل آخر الاتصالات"
+],
+[
+"Aucune connexion enregistrée depuis la mise en service de ce suivi.",
+"No connection recorded since this tracking went live.",
+"لا يوجد اتصال مسجّل منذ تشغيل هذا التتبع."
+],
+[
+"Tous les utilisateurs",
+"All users",
+"كل المستخدمين"
+],
+[
+"Entreprise",
+"Company",
+"الشركة"
+],
+[
+"Comptes",
+"Accounts",
+"الحسابات"
+],
+[
+"Déjà connectés",
+"Already connected",
+"اتصلوا سابقًا"
+],
+[
+"Jamais connectés",
+"Never connected",
+"لم يتصلوا أبدًا"
+],
+[
+" (espace principal)",
+" (main space)",
+" (المساحة الرئيسية)"
+],
+[
+"Espace principal",
+"Main space",
+"المساحة الرئيسية"
+],
+[
+"Connexions de toutes les entreprises et remarques des agents",
+"Connections of all companies and agent remarks",
+"اتصالات كل الشركات وملاحظات الأعوان"
+],
+[
+"L'éditeur voit dans « Connexions » toutes les entreprises clientes : qui est en ligne, les dernières connexions et un journal.",
+"The publisher sees all client companies in \"Connections\": who is online, latest connections and a log.",
+"يرى الناشر في «الاتصالات» كل الشركات العميلة: من متصل، وآخر الاتصالات، وسجلًا."
+],
+[
+"Un agent peut laisser une remarque sur son propre pointage : son responsable d'équipe est prévenu et peut lui répondre.",
+"An agent can leave a remark on their own attendance: their team manager is notified and can reply.",
+"يمكن للعون ترك ملاحظة على حضوره: يُبلَّغ مسؤول فريقه ويمكنه الرد."
 ]
 ]

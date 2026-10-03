@@ -9,13 +9,24 @@ var Auth = (function () {
   // ----- Activité : dernière connexion (propriété du script, sans toucher au classeur) et présence en ligne (cache, expire seul) -----
   var ONLINE_SECONDS = 180; // « en ligne » = une requête de l'application dans les 3 dernières minutes (elle en envoie une par minute)
   function tkey(code) { return code || 'MAIN'; }
-  function noteLogin(code, agentId) {
+  // Journal des connexions de toutes les entreprises (éditeur) : les 60 dernières, [date, code, nom, profil]. Une propriété du script (limite de 9 Ko).
+  function journalAdd(code, agent) {
+    var props = PropertiesService.getScriptProperties(); var list = [];
+    try { list = JSON.parse(props.getProperty('LOG_ALL') || '[]'); } catch (e) { list = []; }
+    list.unshift([new Date().toISOString(), code || '', String(agent.nom || '').slice(0, 28), agent.role || '']);
+    list = list.slice(0, 60); var s = JSON.stringify(list);
+    while (s.length > 8500 && list.length > 5) { list.pop(); s = JSON.stringify(list); }
+    props.setProperty('LOG_ALL', s);
+  }
+  function journal() { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('LOG_ALL') || '[]'); } catch (e) { return []; } }
+  function noteLogin(code, agent) {
+    var agentId = agent.id;
     try {
       var props = PropertiesService.getScriptProperties(); var k = 'LC_' + tkey(code) + '_' + agentId; var v = {};
       try { v = JSON.parse(props.getProperty(k) || '{}'); } catch (e) { v = {}; }
       var now = new Date().toISOString();
       props.setProperty(k, JSON.stringify({ last: now, prev: v.last || '', n: (Number(v.n) || 0) + 1 }));
-      touch(code, agentId, true);
+      touch(code, agentId, true); journalAdd(code, agent);
     } catch (e) { Logger.log('Connexion non notée : ' + e.message); }
   }
   function touch(code, agentId, force) {
@@ -62,7 +73,7 @@ var Auth = (function () {
     cache.remove(key);
     var token = Utilities.getUuid() + Utilities.getUuid().replace(/-/g, '');
     cache.put('S_' + token, tenant.code + '|' + agent.id, CFG.SESSION_SECONDS);
-    noteLogin(tenant.code, agent.id);
+    noteLogin(tenant.code, agent);
     var out = { token: token, user: Agents.publicAgent(agent) };
     if (remember) out.remember = issueRemember(tenant.code, agent.id);
     return out;
@@ -94,7 +105,7 @@ var Auth = (function () {
     props.deleteProperty(key);
     var token = Utilities.getUuid() + Utilities.getUuid().replace(/-/g, '');
     CacheService.getScriptCache().put('S_' + token, v.c + '|' + agent.id, CFG.SESSION_SECONDS);
-    noteLogin(v.c, agent.id);
+    noteLogin(v.c, agent);
     return { token: token, user: Agents.publicAgent(agent), remember: issueRemember(v.c, agent.id) };
   }
   function forget(rmToken) { if (rmToken) PropertiesService.getScriptProperties().deleteProperty(rmKey(rmToken)); return true; }
@@ -159,5 +170,5 @@ var Auth = (function () {
     return agent;
   }
   function canSetup(user) { return user.role === 'admin' || (user.role === 'chef' && user.acces_setup === '1'); }
-  return { activity: activity, forgot: forgot, resetPassword: resetPassword, resume: resume, forget: forget, revokeAll: revokeAll, openSession: openSession, makeCredentials: makeCredentials, check: check, login: login, logout: logout, userFromToken: userFromToken, canSetup: canSetup };
+  return { journal: journal, activity: activity, forgot: forgot, resetPassword: resetPassword, resume: resume, forget: forget, revokeAll: revokeAll, openSession: openSession, makeCredentials: makeCredentials, check: check, login: login, logout: logout, userFromToken: userFromToken, canSetup: canSetup };
 })();

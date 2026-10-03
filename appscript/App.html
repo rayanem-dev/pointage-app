@@ -285,7 +285,7 @@ function paintBadges() {
   document.querySelectorAll('header.top nav a[data-path]').forEach(function (a) {
     var old = a.querySelector('.bubble'); if (old) old.remove();
     var n = counts[a.getAttribute('data-path')];
-    if (n > 0) { var b = h('span', { class: 'bubble', title: a.getAttribute('data-path') === '/documents' ? tr('Nouveau : ') + names : a.getAttribute('data-path') === '/groupe' ? tr('Remarques du client') : '' }, pad(n)); a.append(b); }
+    if (n > 0) { var b = h('span', { class: 'bubble', title: a.getAttribute('data-path') === '/documents' ? tr('Nouveau : ') + names : a.getAttribute('data-path') === '/groupe' ? tr('Remarques') : '' }, pad(n)); a.append(b); }
   });
 }
 function toast(text) {
@@ -462,7 +462,7 @@ function GridView(o) {
   // Le compte client laisse une remarque sur un jour d'un agent (visible du prestataire).
   function openRemark(ev, agent, date) {
     ev.stopPropagation(); closeMenu();
-    var txt = h('textarea', { rows: 3, maxlength: 600, placeholder: 'Votre remarque (visible par le prestataire)', style: 'min-width:240px' }); var m = msgBox(); var b = h('button', { class: 'primary', type: 'button' }, 'Envoyer la remarque');
+    var txt = h('textarea', { rows: 3, maxlength: 600, placeholder: S.user.role === 'agent' ? 'Votre remarque sur ce pointage (visible par votre responsable d’équipe)' : 'Votre remarque (visible par le prestataire)', style: 'min-width:240px' }); var m = msgBox(); var b = h('button', { class: 'primary', type: 'button' }, 'Envoyer la remarque');
     var prev = (rm[agent.id + '|' + date] || []).map(function (r) { return h('div', { class: 'reply' }, h('b', null, frDate(r.date_creation.slice(0, 10))), ' ', r.texte, r.reponse ? h('div', { class: 'muted' }, 'Réponse : ' + r.reponse) : null); });
     b.onclick = function () { act(b, m, function () { return call('remarqueAdd', { agent_id: agent.id, date: date, texte: txt.value }); }, 'Remarque envoyée').then(function (r) { if (r) { closeMenu(); load(); } }); };
     menu = h('div', { class: 'popmenu', style: 'left:' + Math.max(8, Math.min(ev.clientX, window.innerWidth - 300)) + 'px;top:' + Math.min(ev.clientY, window.innerHeight - 260) + 'px;max-width:290px', onclick: function (e) { e.stopPropagation(); } },
@@ -473,9 +473,9 @@ function GridView(o) {
   function remarquesCard(list) {
     if (!list || !list.length) return h('span');
     var staff = S.user.role === 'admin' || S.user.role === 'chef';
-    return h('section', { class: 'theme' }, h('h3', null, 'Remarques du client (' + list.length + ')'), list.map(function (r) {
+    return h('section', { class: 'theme' }, h('h3', null, (S.user.role === 'agent' ? 'Mes remarques (' : 'Remarques (') + list.length + ')'), list.map(function (r) {
       var buttons = staff ? [h('button', { type: 'button', onclick: function () { call('remarqueTraiter', r.id, {}).then(load).catch(function (e) { msg.show(e.message, false); }); } }, 'Marquer vu'),
-        h('button', { type: 'button', onclick: function () { var t = window.prompt('Votre réponse au client :', r.reponse || ''); if (t !== null) call('remarqueTraiter', r.id, { reponse: t }).then(load).catch(function (e) { msg.show(e.message, false); }); } }, 'Répondre')] : null;
+        h('button', { type: 'button', onclick: function () { var t = window.prompt('Votre réponse :', r.reponse || ''); if (t !== null) call('remarqueTraiter', r.id, { reponse: t }).then(load).catch(function (e) { msg.show(e.message, false); }); } }, 'Répondre')] : null;
       return h('div', { class: 'item' }, h('b', null, frDate(r.date) + ' · ' + r.agent_nom), ' ', h('span', { class: 'badge ' + (r.statut === 'nouveau' ? 'en_attente' : 'traitee') }, r.statut === 'nouveau' ? 'Nouveau' : 'Vu'),
         h('p', null, r.texte), h('small', null, r.auteur_nom + ' · ' + frDateTime(r.date_creation)), r.reponse ? h('div', { class: 'reply' }, 'Réponse : ' + r.reponse) : null, buttons ? h('div', { class: 'sendbar' }, buttons) : null);
     }));
@@ -602,7 +602,7 @@ function PointerPage() {
   call('agentsVisible').then(function (list) { sel.replaceChildren.apply(sel, list.map(function (a) { return h('option', { value: a.id }, (a.type === 'vehicule' ? '[VH] ' : '') + a.nom + (a.fonction ? ' — ' + a.fonction : '')); })); });
   return wrap;
 }
-function GroupePage() { var staff = S.user.role === 'admin' || S.user.role === 'chef'; return GridView({ canEdit: staff, canRemark: S.user.role === 'client', exportable: S.user.role !== 'agent', periods: true }).el; } // l'agent consulte son propre pointage (lecture seule)
+function GroupePage() { var staff = S.user.role === 'admin' || S.user.role === 'chef'; return GridView({ canEdit: staff, canRemark: S.user.role === 'client' || S.user.role === 'agent', exportable: S.user.role !== 'agent', periods: true }).el; } // l'agent consulte son propre pointage (lecture seule)
 
 // ---------- demandes ----------
 function DemandesPage() {
@@ -1532,21 +1532,44 @@ function ContratsPage(opts) {
 function ConnexionsPage() {
   var wrap = h('div', { style: 'display:grid;gap:16px' }); var ROLE = { agent: 'Agent', chef: 'Responsable d’équipe', admin: 'Administrateur', client: 'Client' };
   function ago(iso, now) { if (!iso) return ''; var s = Math.max(0, Math.round((new Date(now) - new Date(iso)) / 1000)); return s < 90 ? 'à l\u2019instant' : s < 3600 ? 'il y a ' + Math.round(s / 60) + ' min' : s < 86400 ? 'il y a ' + Math.round(s / 3600) + ' h' : 'il y a ' + Math.round(s / 86400) + ' j'; }
+  function dot(on) { return h('span', { style: 'display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;background:' + (on ? '#2e9e4f' : '#b7c0c9') }); }
+  function etat(g, now) { return g.en_ligne ? h('b', { style: 'color:#2e9e4f' }, 'En ligne') : (g.vu ? 'Vu ' + ago(g.vu, now) : (g.derniere ? 'Hors ligne' : 'Jamais connecté')); }
+  function usersTable(gens, now, withCo) {
+    var head = ['Nom', 'Profil'].concat(withCo ? ['Entreprise'] : ['Contrat']).concat(['État', 'Dernière connexion', 'Connexions']);
+    return h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, head.map(function (t) { return h('th', null, t); }))), h('tbody', null, gens.map(function (g) {
+      return h('tr', null, h('td', null, dot(g.en_ligne), g.nom), h('td', null, ROLE[g.role] || g.role), h('td', null, withCo ? g.entreprise : g.contrat), h('td', null, etat(g, now)),
+        h('td', null, g.derniere ? frDateTime(g.derniere) + ' (' + ago(g.derniere, now) + ')' : '—'), h('td', null, g.n || 0));
+    }))));
+  }
+  function onlineCard(gens, now) {
+    var on = gens.filter(function (g) { return g.en_ligne; });
+    return h('section', { class: 'card' }, h('h2', null, 'En ligne maintenant (' + on.length + ')'),
+      on.length ? h('p', null, on.map(function (g) { return h('span', { class: 'badge', style: 'margin:2px 6px 2px 0' }, dot(true), g.nom + (g.entreprise ? ' · ' + g.entreprise : '') + ' · ' + (ROLE[g.role] || g.role)); })) : h('p', { class: 'muted' }, 'Personne n\u2019est en ligne pour le moment.'),
+      h('small', { class: 'muted' }, 'Est « en ligne » toute personne dont l\u2019application est ouverte (activité des 3 dernières minutes). La liste se met à jour toute seule.'));
+  }
+  function drawOwner(d) {
+    var now = d.maintenant; var all = [];
+    d.entreprises.forEach(function (e) { e.gens.forEach(function (g) { var o = Object.assign({}, g); o.entreprise = e.nom; all.push(o); }); });
+    var summary = h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Entreprise', 'Statut', 'Comptes', 'En ligne', 'Déjà connectés', 'Jamais connectés', 'Dernière connexion'].map(function (t) { return h('th', null, t); }))),
+      h('tbody', null, d.entreprises.map(function (e) {
+        var on = e.gens.filter(function (g) { return g.en_ligne; }).length; var co = e.gens.filter(function (g) { return g.derniere || g.en_ligne; }).length;
+        var last = e.gens.map(function (g) { return g.derniere; }).sort().pop();
+        return h('tr', null, h('td', null, h('b', null, e.nom), e.principal ? h('small', null, ' (espace principal)') : null, e.erreur ? h('small', { class: 'msg err' }, ' ' + e.erreur) : null), h('td', null, { actif: 'Actif', essai: 'Essai', suspendu: 'Suspendu' }[e.statut] || e.statut),
+          h('td', null, e.gens.length), h('td', null, on ? h('b', { style: 'color:#2e9e4f' }, on) : 0), h('td', null, co), h('td', null, e.gens.length - co), h('td', null, last ? frDateTime(last) + ' (' + ago(last, now) + ')' : '—'));
+      }))));
+    var jr = h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Date', 'Entreprise', 'Nom', 'Profil'].map(function (t) { return h('th', null, t); }))),
+      h('tbody', null, d.journal.map(function (j) { var e = d.entreprises.filter(function (x) { return x.code === j[1]; })[0]; return h('tr', null, h('td', null, frDateTime(j[0]) + ' (' + ago(j[0], now) + ')'), h('td', null, e ? e.nom : (j[1] || 'Espace principal')), h('td', null, j[2]), h('td', null, ROLE[{ a: 'agent', c: 'chef', 'ch': 'chef' }[j[3]] || j[3]] || j[3])); }))));
+    wrap.replaceChildren(onlineCard(all, now),
+      h('section', { class: 'card' }, h('h2', null, 'Toutes les entreprises (' + d.entreprises.length + ')'), summary),
+      h('section', { class: 'card' }, h('h2', null, 'Journal des dernières connexions'), d.journal.length ? jr : h('p', { class: 'muted' }, 'Aucune connexion enregistrée depuis la mise en service de ce suivi.')),
+      h('section', { class: 'card' }, h('h2', null, 'Tous les utilisateurs'), h('p', { class: 'muted' }, all.length + ' comptes actifs, toutes entreprises confondues'), usersTable(all, now, true)));
+  }
   function draw(d) {
-    var on = d.gens.filter(function (g) { return g.en_ligne; }); var jamais = d.gens.filter(function (g) { return !g.derniere && !g.en_ligne; });
-    var dot = function (g) { return h('span', { class: 'dot ' + (g.en_ligne ? 'on' : ''), style: 'display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;background:' + (g.en_ligne ? '#2e9e4f' : '#b7c0c9') }); };
-    var rows = d.gens.map(function (g) {
-      return h('tr', null, h('td', null, dot(g), g.nom), h('td', null, ROLE[g.role] || g.role), h('td', null, g.contrat),
-        h('td', null, g.en_ligne ? h('b', { style: 'color:#2e9e4f' }, 'En ligne') : (g.vu ? 'Vu ' + ago(g.vu, d.maintenant) : (g.derniere ? 'Hors ligne' : 'Jamais connecté'))),
-        h('td', null, g.derniere ? frDateTime(g.derniere) + ' (' + ago(g.derniere, d.maintenant) + ')' : '—'), h('td', null, g.n || 0));
-    });
-    wrap.replaceChildren(
-      h('section', { class: 'card' }, h('h2', null, 'En ligne maintenant (' + on.length + ')'),
-        on.length ? h('p', null, on.map(function (g) { return h('span', { class: 'badge', style: 'margin:2px 6px 2px 0' }, dot(g), g.nom + ' · ' + (ROLE[g.role] || g.role)); })) : h('p', { class: 'muted' }, 'Personne n\u2019est en ligne pour le moment.'),
-        h('small', { class: 'muted' }, 'Est « en ligne » toute personne dont l\u2019application est ouverte (activité des 3 dernières minutes). La liste se met à jour toute seule.')),
+    if (d.entreprises) return drawOwner(d);
+    var jamais = d.gens.filter(function (g) { return !g.derniere && !g.en_ligne; });
+    wrap.replaceChildren(onlineCard(d.gens, d.maintenant),
       h('section', { class: 'card' }, h('h2', null, 'Connexions des utilisateurs'),
-        h('p', { class: 'muted' }, d.gens.length + ' comptes actifs · ' + (d.gens.length - jamais.length) + ' déjà connectés · ' + jamais.length + ' jamais connectés'),
-        h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Nom', 'Profil', 'Contrat', 'État', 'Dernière connexion', 'Connexions'].map(function (t) { return h('th', null, t); }))), h('tbody', null, rows)))));
+        h('p', { class: 'muted' }, d.gens.length + ' comptes actifs · ' + (d.gens.length - jamais.length) + ' déjà connectés · ' + jamais.length + ' jamais connectés'), usersTable(d.gens, d.maintenant, false)));
   }
   function load() { call('connexions').then(draw).catch(function (e) { wrap.replaceChildren(h('p', { class: 'msg err' }, e.message)); }); }
   wrap.append(loading()); load();

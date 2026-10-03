@@ -56,9 +56,10 @@ test('remarques du client sur le pointage : visibles du prestataire, notificatio
   const vu = ok(call(T.client, 'gridMonth', '2026-10')).remarques[0];
   assert.strictEqual(vu.statut, 'vu'); assert.strictEqual(vu.reponse, 'Il était en formation.');
   assert.strictEqual(ok(call(T.admin, 'badges')).remarques, 0);
-  // un agent ou un chef ne peut pas poster une remarque client
+  // un agent ne peut remarquer que son propre pointage ; le chef ne poste pas de remarque
   const ag = ok(call(null, 'login', 'a1@t.fr', 'agentpw12')).token;
-  fail(call(ag, 'remarqueAdd', { agent_id: T.agent.id, date: '2026-10-05', texte: 'x' }), /(accès|réservé|autoris)/i);
+  fail(call(ag, 'remarqueAdd', { agent_id: 'A-autre', date: '2026-10-05', texte: 'x' }), /introuvable/);
+  fail(call(T.admin, 'remarqueAdd', { agent_id: T.agent.id, date: '2026-10-05', texte: 'x' }), /(réservé|accès)/i);
 });
 
 test('le client ne voit que les agents de son contrat', () => {
@@ -82,4 +83,18 @@ test('contact client (Setup → Client) : 4 e-mails au maximum, un compte de con
   assert.strictEqual(ok(call(T.admin, 'setupGet')).values.client_emails, 'un@c.dz');
   fail(call(T.admin, 'setupSave', { direction_email: 'a@p.dz,b@p.dz,c@p.dz,d@p.dz,e@p.dz' }), /4 adresses/);
   assert.strictEqual(ok(call(T.admin, 'setupSave', { direction_email: 'A@p.dz; b@p.dz' })).direction_email, 'a@p.dz, b@p.dz');
+});
+
+test('remarque d\'un agent sur son propre pointage : visible de lui et du responsable, pas du client', () => {
+  ok(call(T.admin, 'agentCreate', { nom: 'AGENT REM', email: 'agrem@c.dz', role: 'agent', password: 'agremp123', contrat: 'C1' }));
+  const ag = ok(call(null, 'login', 'agrem@c.dz', 'agremp123')).token; const me = ok(call(ag, 'me')).user;
+  const d = '2026-03-10';
+  fail(call(ag, 'remarqueAdd', { agent_id: 'autre', date: d, texte: 'x' }), /introuvable/);
+  const r = ok(call(ag, 'remarqueAdd', { agent_id: me.id, date: d, texte: 'J\'étais présent ce jour-là' }));
+  assert.strictEqual(r.auteur_id, me.id);
+  assert.ok(ok(call(ag, 'gridMonth', '2026-03')).remarques.some((x) => x.texte.includes('présent')), 'l\'agent voit sa remarque');
+  assert.ok(ok(call(T.admin, 'gridMonth', '2026-03')).remarques.some((x) => x.texte.includes('présent')), 'le responsable / l\'admin la voit');
+  assert.ok(!ok(call(T.client, 'gridMonth', '2026-03')).remarques.some((x) => x.texte.includes('présent')), 'le client ne voit pas les remarques des agents');
+  ok(call(T.admin, 'remarqueTraiter', r.id, { reponse: 'Noté, corrigé' }));
+  assert.ok(ok(call(ag, 'gridMonth', '2026-03')).remarques.some((x) => x.reponse === 'Noté, corrigé'), 'l\'agent voit la réponse');
 });

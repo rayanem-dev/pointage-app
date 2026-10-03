@@ -165,6 +165,19 @@ var Tenants = (function () {
     try { Store.setTenant(c.code, c.classeur_id); return fn(); } finally { Store.setTenant(keep.code, keep.id); }
   }
   function mustFind(code) { var c = find(normCode(code)); if (!c) throw httpErr_('Client introuvable'); return c; }
+  // Éditeur : l'activité de toutes les entreprises (le classeur principal puis chaque client) : qui est en ligne, dernières connexions.
+  function activityAll(user) {
+    requireOwner(user);
+    var rows = list(); var out = [];
+    if (!rows.length) rows = [{ code: '', nom: 'Espace principal', classeur_id: '', statut: 'actif', fin_licence: '' }];
+    rows.forEach(function (c) {
+      var item = { code: c.classeur_id ? c.code : '', nom: c.nom || c.code, statut: c.statut || 'actif', fin_licence: c.fin_licence || '', principal: !c.classeur_id, gens: [], erreur: '' };
+      try { item.gens = inClient({ code: c.classeur_id ? c.code : '', classeur_id: c.classeur_id }, function () { return Auth.activity(); }); }
+      catch (e) { item.erreur = e.message; }
+      out.push(item);
+    });
+    return out;
+  }
   function admins(user, code) {
     requireOwner(user);
     return inClient(mustFind(code), function () { return Store.readTable('Agents').filter(function (a) { return a.role === 'admin'; }).map(function (a) { return { id: a.id, nom: a.nom, email: a.email, actif: a.actif }; }); });
@@ -264,5 +277,5 @@ var Tenants = (function () {
     var m = list().filter(function (r) { return !r.classeur_id; })[0];
     return m ? m.code : '';
   }
-  return { codeActuel: codeActuel, lien: lien, envoyerMessage: envoyerMessage, vitrine: vitrine, access: access, admins: admins, adminUpdate: adminUpdate, remove: remove, contact: contact, setContact: setContact, apropos: apropos, commentaire: commentaire, normCode: normCode, multi: multi, use: use, isOwner: isOwner, requireOwner: requireOwner, clients: clients, create: create, update: update, resolve: resolve, test: test, find: find, list: list };
+  return { activityAll: activityAll, codeActuel: codeActuel, lien: lien, envoyerMessage: envoyerMessage, vitrine: vitrine, access: access, admins: admins, adminUpdate: adminUpdate, remove: remove, contact: contact, setContact: setContact, apropos: apropos, commentaire: commentaire, normCode: normCode, multi: multi, use: use, isOwner: isOwner, requireOwner: requireOwner, clients: clients, create: create, update: update, resolve: resolve, test: test, find: find, list: list };
 })();

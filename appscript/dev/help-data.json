@@ -145,6 +145,18 @@
      "Your pay sheets, leave certificates and attestations uploaded by your manager. A bubble and an e-mail tell you about a new document; \"Download\" saves it on your device.",
      "كشوف أجورك ووثائق إجازتك وشهاداتك التي رفعها مسؤولك. تنبّهك إشارة وبريد إلكتروني بوثيقة جديدة، و«تنزيل» يحفظها على جهازك."
     ]
+   },
+   {
+    "t": [
+     "Laisser une remarque sur mon pointage",
+     "Leave a remark on my attendance",
+     "ترك ملاحظة على حضوري"
+    ],
+    "x": [
+     "Dans « Mon pointage », cliquez sur un jour : écrivez votre remarque (par exemple « j'étais présent ce jour-là »). Votre responsable d'équipe est prévenu par e-mail, la consulte et peut vous répondre. Seuls vous et votre responsable la voient ; un repère rouge marque le jour.",
+     "In \"My attendance\", click a day and write your remark (for example \"I was present that day\"). Your team manager is notified by e-mail, reads it and can reply. Only you and your manager see it; a red marker flags the day.",
+     "في «حضوري» انقر على يوم واكتب ملاحظتك (مثلًا «كنت حاضرًا ذلك اليوم»). يُبلَّغ مسؤول فريقك بالبريد، ويقرؤها ويمكنه الرد. أنت ومسؤولك فقط من يراها؛ وتُعلَّم بعلامة حمراء."
+    ]
    }
   ]
  },
@@ -462,9 +474,9 @@
      "من متصل؟"
     ],
     "x": [
-     "L'onglet « Connexions » (administrateur) montre qui est en ligne maintenant, la date de la dernière connexion de chaque utilisateur, le nombre de connexions et ceux qui ne se sont jamais connectés. La liste se rafraîchit toute seule.",
-     "The \"Connections\" tab (administrator) shows who is online now, each user's last connection date, the number of connections and who has never connected. The list refreshes by itself.",
-     "تعرض علامة «الاتصالات» (للمسؤول) من هو متصل الآن، وتاريخ آخر اتصال لكل مستخدم، وعدد الاتصالات، ومن لم يتصل أبدًا. تتحدّث القائمة تلقائيًا."
+     "L'onglet « Connexions » (administrateur) montre qui est en ligne maintenant, la date de la dernière connexion de chaque utilisateur, le nombre de connexions et ceux qui ne se sont jamais connectés. Pour l'éditeur du produit, il rassemble toutes les entreprises clientes : un tableau par entreprise (comptes, en ligne, déjà connectés), le journal des dernières connexions et la liste de tous les utilisateurs. La liste se rafraîchit toute seule.",
+     "The \"Connections\" tab (administrator) shows who is online now, each user's last connection date, the number of connections and who has never connected. For the product publisher it gathers all client companies: a table per company (accounts, online, already connected), the latest connections log and the list of all users. The list refreshes by itself.",
+     "تعرض علامة «الاتصالات» (للمسؤول) من هو متصل الآن، وتاريخ آخر اتصال لكل مستخدم، وعدد الاتصالات، ومن لم يتصل أبدًا. وبالنسبة لناشر المنتج تجمع كل الشركات العميلة: جدول لكل شركة (الحسابات، المتصلون، من اتصل سابقًا)، وسجل آخر الاتصالات، وقائمة كل المستخدمين. تتحدّث القائمة تلقائيًا."
     ]
    }
   ]

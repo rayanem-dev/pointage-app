@@ -2,6 +2,11 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.19.0 — 2026-10-03 — Connexions de toutes les entreprises et remarques des agents
+
+- L'éditeur voit dans « Connexions » toutes les entreprises clientes : qui est en ligne, les dernières connexions et un journal.
+- Un agent peut laisser une remarque sur son propre pointage : son responsable d'équipe est prévenu et peut lui répondre.
+
 ## 3.18.0 — 2026-10-03 — Responsable d'équipe
 
 - Le « chef de groupe » devient « responsable d'équipe » partout dans l'application, l'aide et les documents.
