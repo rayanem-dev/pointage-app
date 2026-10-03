@@ -2,6 +2,10 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.17.0 — 2026-10-03 — Qui est en ligne ?
+
+- Nouvel onglet « Connexions » pour l'administrateur : qui est en ligne maintenant, la date de la dernière connexion de chacun, le nombre de connexions, et ceux qui ne se sont jamais connectés.
+
 ## 3.16.0 — 2026-10-03 — Privilèges du chef de groupe et plusieurs e-mails
 
 - L'administrateur choisit, chef par chef, s'il peut extraire l'attachement et la facture (case dans sa fiche), en plus de l'accès au Setup.

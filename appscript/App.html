@@ -206,7 +206,7 @@ var NAV = {
   agent: [['#/', 'Accueil'], ['#/groupe', 'Mon pointage'], ['#/demandes', 'Mes demandes'], ['#/documents', 'Mes documents'], ['#/aide', 'Aide']],
   chef: [['#/', 'Mon espace'], ['#/pointer', 'Pointer'], ['#/groupe', 'Mon groupe'], ['#/contrats', 'Contrat'], ['#/agents', 'Agents'], ['#/demandes', 'Demandes'], ['#/documents', 'Documents'], ['#/exports', 'Exports'], ['#/aide', 'Aide']],
   client: [['#/groupe', 'Pointage'], ['#/contrats', 'Contrat et attachements'], ['#/aide', 'Aide']],
-  admin: [['#/pointer', 'Pointer'], ['#/groupe', 'Pointage global'], ['#/agents', 'Agents'], ['#/demandes', 'Demandes'], ['#/documents', 'Documents'], ['#/exports', 'Exports'], ['#/apropos', 'À propos'], ['#/aide', 'Aide']]
+  admin: [['#/pointer', 'Pointer'], ['#/groupe', 'Pointage global'], ['#/agents', 'Agents'], ['#/demandes', 'Demandes'], ['#/documents', 'Documents'], ['#/exports', 'Exports'], ['#/connexions', 'Connexions'], ['#/apropos', 'À propos'], ['#/aide', 'Aide']]
 };
 // ---------- aide ----------
 function HelpPage() {
@@ -233,7 +233,7 @@ var ROUTES = {
   '/demandes': function () { return DemandesPage(); }, '/documents': function () { return DocumentsPage(); },
   '/pointer': function () { return PointerPage(); }, '/groupe': function () { return GroupePage(); },
   '/agents': function () { return AgentsPage(); }, '/setup': function () { return SetupPage(); },
-  '/exports': function () { return ExportsPage(); }, '/contrats': function () { return ContratsPage(); }, '/motdepasse': function () { return PasswordPage(); }, '/nouveautes': function () { return NouveautesPage(); }, '/confidentialite': function () { return CharteBlock(); }, '/clients': function () { return ClientsPage(); }, '/prospects': function () { return ProspectsPage(); }, '/apropos': function () { return AProposPage(); }, '/aide': function () { return HelpPage(); }
+  '/connexions': function () { return ConnexionsPage(); }, '/exports': function () { return ExportsPage(); }, '/contrats': function () { return ContratsPage(); }, '/motdepasse': function () { return PasswordPage(); }, '/nouveautes': function () { return NouveautesPage(); }, '/confidentialite': function () { return CharteBlock(); }, '/clients': function () { return ClientsPage(); }, '/prospects': function () { return ProspectsPage(); }, '/apropos': function () { return AProposPage(); }, '/aide': function () { return HelpPage(); }
 };
 // Navigation interne : on ne laisse pas le navigateur suivre les liens (dans le cadre isolé d'Apps Script,
 // un lien « #/page » ouvrirait la fenêtre entière sur une page blanche).
@@ -1528,6 +1528,31 @@ function ContratsPage(opts) {
 }
 
 // ---------- exports : fiche de pointage, attachement (validation), facture (depuis l'attachement validé) ----------
+// Qui est en ligne et qui s'est déjà connecté (administrateur) ; la liste se rafraîchit toute seule.
+function ConnexionsPage() {
+  var wrap = h('div', { style: 'display:grid;gap:16px' }); var ROLE = { agent: 'Agent', chef: 'Chef de groupe', admin: 'Administrateur', client: 'Client' };
+  function ago(iso, now) { if (!iso) return ''; var s = Math.max(0, Math.round((new Date(now) - new Date(iso)) / 1000)); return s < 90 ? 'à l\u2019instant' : s < 3600 ? 'il y a ' + Math.round(s / 60) + ' min' : s < 86400 ? 'il y a ' + Math.round(s / 3600) + ' h' : 'il y a ' + Math.round(s / 86400) + ' j'; }
+  function draw(d) {
+    var on = d.gens.filter(function (g) { return g.en_ligne; }); var jamais = d.gens.filter(function (g) { return !g.derniere && !g.en_ligne; });
+    var dot = function (g) { return h('span', { class: 'dot ' + (g.en_ligne ? 'on' : ''), style: 'display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;background:' + (g.en_ligne ? '#2e9e4f' : '#b7c0c9') }); };
+    var rows = d.gens.map(function (g) {
+      return h('tr', null, h('td', null, dot(g), g.nom), h('td', null, ROLE[g.role] || g.role), h('td', null, g.contrat),
+        h('td', null, g.en_ligne ? h('b', { style: 'color:#2e9e4f' }, 'En ligne') : (g.vu ? 'Vu ' + ago(g.vu, d.maintenant) : (g.derniere ? 'Hors ligne' : 'Jamais connecté'))),
+        h('td', null, g.derniere ? frDateTime(g.derniere) + ' (' + ago(g.derniere, d.maintenant) + ')' : '—'), h('td', null, g.n || 0));
+    });
+    wrap.replaceChildren(
+      h('section', { class: 'card' }, h('h2', null, 'En ligne maintenant (' + on.length + ')'),
+        on.length ? h('p', null, on.map(function (g) { return h('span', { class: 'badge', style: 'margin:2px 6px 2px 0' }, dot(g), g.nom + ' · ' + (ROLE[g.role] || g.role)); })) : h('p', { class: 'muted' }, 'Personne n\u2019est en ligne pour le moment.'),
+        h('small', { class: 'muted' }, 'Est « en ligne » toute personne dont l\u2019application est ouverte (activité des 3 dernières minutes). La liste se met à jour toute seule.')),
+      h('section', { class: 'card' }, h('h2', null, 'Connexions des utilisateurs'),
+        h('p', { class: 'muted' }, d.gens.length + ' comptes actifs · ' + (d.gens.length - jamais.length) + ' déjà connectés · ' + jamais.length + ' jamais connectés'),
+        h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Nom', 'Profil', 'Contrat', 'État', 'Dernière connexion', 'Connexions'].map(function (t) { return h('th', null, t); }))), h('tbody', null, rows)))));
+  }
+  function load() { call('connexions').then(draw).catch(function (e) { wrap.replaceChildren(h('p', { class: 'msg err' }, e.message)); }); }
+  wrap.append(loading()); load();
+  var t = setInterval(function () { if (!wrap.isConnected) { clearInterval(t); return; } load(); }, 30000);
+  return wrap;
+}
 function ExportsPage() {
   var ro = S.user.role !== 'admin'; // chef de groupe : extraction en lecture seule (pas de validation, de saisie ni de création de facture)
   var wrap = h('div', { style: 'display:grid;gap:16px' });

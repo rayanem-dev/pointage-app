@@ -114,6 +114,8 @@ M = [
  ('h2', "Maintenance : export, import et sauvegarde"),
  ('p', "Exporter un pointage en Excel avec le contrat, les prix, les agents et les attachements qui en dépendent ; le même fichier se réimporte en entier. Importer un pointage depuis un fichier Excel, un mois par onglet : les noms écrits différemment sont rapprochés des agents existants. « Sauvegarder maintenant » crée une copie complète du classeur dans Drive, restaurable à tout moment."),
  ('img', 'docs/captures/crops/43-setup-maintenance.png', "L'onglet Maintenance.", 15.5),
+ ('h2', "Qui est connecté ?"),
+ ('p', "L'onglet « Connexions » (administrateur) montre qui est en ligne maintenant, la date de la dernière connexion de chaque utilisateur, le nombre de connexions et ceux qui ne se sont jamais connectés. La liste se rafraîchit toute seule."),
  ('h2', "L'attachement et la facture"),
  ('p', "Dans « Exports », choisissez le mois et le contrat. La fiche de pointage s'exporte en Excel et en PDF. L'attachement reprend les jours réellement pointés de chaque fonction ; vous pouvez corriger une quantité. « Valider l'attachement » le fige : mêmes quantités, mêmes prix. La facture est alors établie à partir de l'attachement validé, avec son numéro et sa date. Un attachement non facturé peut être rouvert."),
  ('img', 'docs/captures/crops/50-exports.png', "La fiche de pointage, l'attachement et la facture.", 15.5),

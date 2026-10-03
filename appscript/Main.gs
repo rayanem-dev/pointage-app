@@ -218,6 +218,7 @@ var HANDLERS = {
       return Export.render('facture', d, o.format, 'Facture_' + String(d.facture_numero || o.month).replace(/[^\w-]+/g, '_'));
     }
   },
+  connexions: { roles: ['admin'], fn: function () { return { maintenant: new Date().toISOString(), gens: Auth.activity() }; } },
   repairStructure: { roles: ['admin'], write: true, fn: function () { return Setup.repairStructure(); } },
   vider: { roles: ['admin'], write: true, fn: function (u, a) { return Setup.vider(a[0], a[1]); } },
   pointageExport: { roles: ['admin'], fn: function (u, a) { return Archive.exportXlsx(u, a[0] || {}); } },

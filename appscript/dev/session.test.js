@@ -72,3 +72,19 @@ test('rester connecté : compte désactivé, jeton expiré, au plus 3 appareils'
   assert.ok(Object.keys(env.props).filter((k) => k.startsWith('RM_')).length <= 3, 'au plus 3 appareils par compte');
   assert.strictEqual(ok(call(null, 'resume', toks[3])).user.email, 'un@t.fr');
 });
+
+test('connexions : en ligne, dernière connexion, jamais connecté (administrateur seulement)', () => {
+  const ok2 = (r) => { assert.strictEqual(r.ok, true, JSON.stringify(r)); return r.data; };
+  const ad = ok2(call(null, 'login', 'admin@t.fr', 'adminpw12')).token;
+  ok2(call(ad, 'agentCreate', { nom: 'JAMAIS VU', email: 'jv@t.fr', role: 'agent', password: 'jamaispw1' }));
+  ok2(call(ad, 'agentCreate', { nom: 'DEJA VENU', email: 'dv@t.fr', role: 'agent', password: 'venupw123' }));
+  const ag = ok2(call(null, 'login', 'dv@t.fr', 'venupw123')).token;
+  ok2(call(ag, 'badges'));
+  const l = ok2(call(ad, 'connexions')).gens;
+  const by = (n) => l.find((g) => g.nom === n);
+  assert.strictEqual(by('DEJA VENU').en_ligne, true); assert.strictEqual(by('DEJA VENU').n, 1); assert.ok(by('DEJA VENU').derniere);
+  assert.strictEqual(by('JAMAIS VU').en_ligne, false); assert.strictEqual(by('JAMAIS VU').derniere, ''); assert.strictEqual(by('JAMAIS VU').n, 0);
+  assert.strictEqual(call(ag, 'connexions').ok, false, 'réservé à l\'administrateur');
+  ok2(call(null, 'login', 'dv@t.fr', 'venupw123'));
+  assert.strictEqual(ok2(call(ad, 'connexions')).gens.find((g) => g.nom === 'DEJA VENU').n, 2);
+});

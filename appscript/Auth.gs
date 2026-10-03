@@ -6,6 +6,41 @@ var Auth = (function () {
     for (var i = 0; i < ITER; i += 1) d = Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, d));
     return d;
   }
+  // ----- Activité : dernière connexion (propriété du script, sans toucher au classeur) et présence en ligne (cache, expire seul) -----
+  var ONLINE_SECONDS = 180; // « en ligne » = une requête de l'application dans les 3 dernières minutes (elle en envoie une par minute)
+  function tkey(code) { return code || 'MAIN'; }
+  function noteLogin(code, agentId) {
+    try {
+      var props = PropertiesService.getScriptProperties(); var k = 'LC_' + tkey(code) + '_' + agentId; var v = {};
+      try { v = JSON.parse(props.getProperty(k) || '{}'); } catch (e) { v = {}; }
+      var now = new Date().toISOString();
+      props.setProperty(k, JSON.stringify({ last: now, prev: v.last || '', n: (Number(v.n) || 0) + 1 }));
+      touch(code, agentId, true);
+    } catch (e) { Logger.log('Connexion non notée : ' + e.message); }
+  }
+  function touch(code, agentId, force) {
+    try {
+      var cache = CacheService.getScriptCache(); var k = 'PRES_' + tkey(code); var m = {};
+      try { m = JSON.parse(cache.get(k) || '{}'); } catch (e) { m = {}; }
+      var now = Date.now();
+      if (!force && m[agentId] && now - m[agentId] < 60000) return; // au plus une écriture par minute et par personne
+      m[agentId] = now;
+      Object.keys(m).forEach(function (id) { if (now - m[id] > 3600000) delete m[id]; });
+      cache.put(k, JSON.stringify(m), 3600);
+    } catch (e) { /* présence facultative */ }
+  }
+  // Pour l'administrateur : qui est en ligne, qui s'est déjà connecté (date de la dernière connexion, nombre de connexions).
+  function activity() {
+    var code = Store.tenantCode(); var props = PropertiesService.getScriptProperties(); var all = props.getProperties(); var m = {};
+    try { m = JSON.parse(CacheService.getScriptCache().get('PRES_' + tkey(code)) || '{}'); } catch (e) { m = {}; }
+    var now = Date.now();
+    return Store.readTable('Agents').filter(function (a) { return a.actif === '1' && a.type !== 'vehicule'; }).map(function (a) {
+      var v = {}; try { v = JSON.parse(all['LC_' + tkey(code) + '_' + a.id] || '{}'); } catch (e) { v = {}; }
+      var seen = m[a.id] || 0;
+      return { id: a.id, nom: a.nom, role: a.role, contrat: a.contrat, email: a.email, en_ligne: !!seen && now - seen < ONLINE_SECONDS * 1000,
+        vu: seen ? new Date(seen).toISOString() : '', derniere: v.last || '', precedente: v.prev || '', n: Number(v.n) || 0 };
+    }).sort(function (x, y) { return (y.en_ligne - x.en_ligne) || (x.derniere < y.derniere ? 1 : x.derniere > y.derniere ? -1 : String(x.nom).localeCompare(String(y.nom), 'fr')); });
+  }
   function newSalt() { return Utilities.getUuid().replace(/-/g, ''); }
   function makeCredentials(password) {
     if (!password || String(password).length < 6) throw httpErr_('Mot de passe : 6 caractères minimum');
@@ -27,6 +62,7 @@ var Auth = (function () {
     cache.remove(key);
     var token = Utilities.getUuid() + Utilities.getUuid().replace(/-/g, '');
     cache.put('S_' + token, tenant.code + '|' + agent.id, CFG.SESSION_SECONDS);
+    noteLogin(tenant.code, agent.id);
     var out = { token: token, user: Agents.publicAgent(agent) };
     if (remember) out.remember = issueRemember(tenant.code, agent.id);
     return out;
@@ -58,6 +94,7 @@ var Auth = (function () {
     props.deleteProperty(key);
     var token = Utilities.getUuid() + Utilities.getUuid().replace(/-/g, '');
     CacheService.getScriptCache().put('S_' + token, v.c + '|' + agent.id, CFG.SESSION_SECONDS);
+    noteLogin(v.c, agent.id);
     return { token: token, user: Agents.publicAgent(agent), remember: issueRemember(v.c, agent.id) };
   }
   function forget(rmToken) { if (rmToken) PropertiesService.getScriptProperties().deleteProperty(rmKey(rmToken)); return true; }
@@ -118,8 +155,9 @@ var Auth = (function () {
     if (v) { if (code) Tenants.use(code); else Store.setTenant('', ''); } // refuse un client suspendu ou à licence expirée (session ouverte avant l'annuaire : classeur principal)
     var agent = id && Agents.get(id);
     if (!agent || agent.actif !== '1') throw httpErr_('Session expirée', 'SESSION');
+    touch(code, agent.id);
     return agent;
   }
   function canSetup(user) { return user.role === 'admin' || (user.role === 'chef' && user.acces_setup === '1'); }
-  return { forgot: forgot, resetPassword: resetPassword, resume: resume, forget: forget, revokeAll: revokeAll, openSession: openSession, makeCredentials: makeCredentials, check: check, login: login, logout: logout, userFromToken: userFromToken, canSetup: canSetup };
+  return { activity: activity, forgot: forgot, resetPassword: resetPassword, resume: resume, forget: forget, revokeAll: revokeAll, openSession: openSession, makeCredentials: makeCredentials, check: check, login: login, logout: logout, userFromToken: userFromToken, canSetup: canSetup };
 })();

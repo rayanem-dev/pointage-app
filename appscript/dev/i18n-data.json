@@ -4788,5 +4788,65 @@
 "Adresse e-mail 4",
 "E-mail address 4",
 "عنوان البريد 4"
+],
+[
+"Connexions",
+"Connections",
+"الاتصالات"
+],
+[
+"En ligne maintenant (",
+"Online now (",
+"متصلون الآن ("
+],
+[
+"Personne n’est en ligne pour le moment.",
+"Nobody is online right now.",
+"لا أحد متصل حاليًا."
+],
+[
+"Est « en ligne » toute personne dont l’application est ouverte (activité des 3 dernières minutes). La liste se met à jour toute seule.",
+"Anyone with the app open is \"online\" (activity in the last 3 minutes). The list updates by itself.",
+"يُعتبر «متصلًا» كل من تطبيقه مفتوح (نشاط خلال آخر 3 دقائق). تتحدّث القائمة تلقائيًا."
+],
+[
+"Connexions des utilisateurs",
+"User connections",
+"اتصالات المستخدمين"
+],
+[
+"Dernière connexion",
+"Last connection",
+"آخر اتصال"
+],
+[
+"En ligne",
+"Online",
+"متصل"
+],
+[
+"Hors ligne",
+"Offline",
+"غير متصل"
+],
+[
+"Jamais connecté",
+"Never connected",
+"لم يتصل أبدًا"
+],
+[
+"Profil",
+"Profile",
+"الملف"
+],
+[
+"État",
+"Status",
+"الحالة"
+],
+[
+"à l’instant",
+"just now",
+"الآن"
 ]
 ]
