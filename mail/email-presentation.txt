@@ -10,6 +10,9 @@ POUR LA DIRECTION : une seule demande groupée par e-mail ; la réponse s'appliq
 DOCUMENTS : fiches de paie, titres de congé, attestations rangés par agent, avec notification.
 PROTECTION : chacun ne voit que ce qui le concerne ; mots de passe jamais en clair ; mot de passe oublié par e-mail.
 
+Se connecter à l'application : https://rayanem-dev.github.io/pointage-app/
+Identifiant et mot de passe : transmis par e-mail ou par votre chef de groupe.
+
 Présentation : https://docs.google.com/presentation/d/1ziQ3U7c2lvkEywjihQnhlqHUNaRj0OjS/edit?usp=sharing&ouid=100581094853869883670&rtpof=true&sd=true
 Document : https://drive.google.com/file/d/1A5EqFAm2lkxheq45ONfrDexYiD7oTxrp/view?usp=sharing
 

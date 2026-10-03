@@ -53,8 +53,8 @@ m1 = page(
   block('demandes.jpg', 'Les demandes, sans courir après', 'L’agent fait sa demande en deux clics ; le chef de groupe est prévenu, regroupe les demandes par thème et envoie une seule demande à la direction. La date de reprise est calculée automatiquement.', True),
   block('completer.jpg', 'Pour le chef de groupe', 'Il pointe son équipe en un clic (T, R, ABS) et rattrape les jours oubliés d’un seul bouton. Les prévisions suivent la rotation prévue.'),
   block('mobile.jpg', 'Partout, sur téléphone', 'L’application s’installe sur le téléphone comme une application. Une pastille signale les nouveaux documents et demandes.', True)],
- f'<tr><td style="padding:10px 24px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>{card("Pour la direction","Une demande groupée par e-mail, la réponse s’applique à toutes les demandes.")}{card("Documents rangés","Fiches de paie, titres de congé, attestations : classés par agent et notifiés.")}{card("Jours fériés","Fêtes nationales et religieuses visibles sur toutes les vues.")}</tr></table></td></tr><tr><td style="padding:8px 24px 0;font:15px/1.6 Arial,Helvetica,sans-serif;color:{INK}"><b style="color:{NAVY}">Vos données sont protégées</b>{ul(["Chacun ne voit que ce qui le concerne (l’agent, son chef de groupe, la direction).","Les mots de passe ne sont jamais stockés en clair ; « Mot de passe oublié ? » envoie un code par e-mail.","Option « Rester connecté » pour ne pas retaper son mot de passe."])}</td></tr>',
- [('Découvrir la présentation', PRES), ('Ouvrir le document', DOC, BLUE)],
+ f'<tr><td style="padding:10px 24px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>{card("Direction et RH","Une demande groupée par e-mail, la réponse s’applique à toutes les demandes.")}{card("Documents rangés","Fiches de paie, titres de congé, attestations : classés par agent et notifiés.")}{card("Jours fériés","Fêtes nationales et religieuses visibles sur toutes les vues.")}</tr></table></td></tr><tr><td style="padding:8px 24px 0;font:15px/1.6 Arial,Helvetica,sans-serif;color:{INK}"><b style="color:{NAVY}">Vos données sont protégées</b>{ul(["Chacun ne voit que ce qui le concerne (l’agent, son chef de groupe, la direction).","Les mots de passe ne sont jamais stockés en clair ; « Mot de passe oublié ? » envoie un code par e-mail.","Option « Rester connecté » pour ne pas retaper son mot de passe."])}<p style="margin:14px 0 0"><b style="color:'+NAVY+'">Pour vous connecter</b> : cliquez sur « Se connecter à l’application », saisissez l’identifiant et le mot de passe qui vous ont été transmis (par e-mail ou par votre chef de groupe), puis installez l’application sur votre téléphone si vous le souhaitez.</p></td></tr>',
+ [('Se connecter à l’application', APP), ('Découvrir la présentation', PRES, BLUE), ('Ouvrir le document', DOC, BLUE)],
  'Nous restons à votre disposition pour une démonstration ou pour répondre à vos questions.<br><br>Cordialement,<br><b>Rayane M.</b><br><span style="color:'+GREY+'">Sijil — Gestion du temps de travail</span>')
 
 # ---------- E-mail 2 : commercial ----------
@@ -81,6 +81,9 @@ POUR LE CHEF DE GROUPE : pointage en un clic (T, R, ABS), rattrapage des jours o
 POUR LA DIRECTION : une seule demande groupée par e-mail ; la réponse s'applique à toutes les demandes.
 DOCUMENTS : fiches de paie, titres de congé, attestations rangés par agent, avec notification.
 PROTECTION : chacun ne voit que ce qui le concerne ; mots de passe jamais en clair ; mot de passe oublié par e-mail.
+
+Se connecter à l'application : {APP}
+Identifiant et mot de passe : transmis par e-mail ou par votre chef de groupe.
 
 Présentation : {PRES}
 Document : {DOC}

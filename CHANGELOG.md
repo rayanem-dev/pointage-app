@@ -2,6 +2,11 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.15.0 — 2026-10-03 — Exports pour le chef de groupe
+
+- Le chef de groupe a un nouvel onglet « Exports » : il extrait en Excel ou PDF la fiche de pointage, l'attachement et la facture déjà établie. Il consulte seulement ; la validation reste à l'administrateur.
+- Dans Setup, les onglets sont dans un nouvel ordre : Prestataire (mon entreprise), Client, Contrat, Rotation.
+
 ## 3.14.0 — 2026-10-03 — Sécurité renforcée et listes triées
 
 - Les agents sont classés par ordre alphabétique partout (pointage, gestion, documents).

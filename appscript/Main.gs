@@ -187,9 +187,9 @@ var HANDLERS = {
   attachementRouvrir: { roles: ['admin'], write: true, fn: function (u, a) { var o = a[0] || {}; return DocData.rouvrir(u, o.month, o.contrat); } },
   attachementFacturer: { roles: ['admin'], write: true, fn: function (u, a) { var o = a[0] || {}; return DocData.facturer(u, o.month, o.contrat, o); } },
   contratsSynthese: { roles: VIEWERS, fn: function (u) { return Contrats.synthese(u.role === 'admin', u.role !== 'chef', u.role === 'client' ? u.contrat : ''); } },
-  attachementPreview: { roles: ['admin'], fn: function (u, a) { return DocData.attachementData(a[0], a[1]); } },
+  attachementPreview: { roles: ['admin', 'chef'], fn: function (u, a) { return DocData.attachementData(a[0], a[1]); } },
   exportAttachement: {
-    roles: ['admin', 'client'],
+    roles: ['admin', 'chef', 'client'],
     fn: function (u, a) {
       var o = a[0] || {}; clientScope_(u, o.contrat);
       var d = DocData.attachementData(o.month, o.contrat);
@@ -198,7 +198,7 @@ var HANDLERS = {
   },
   // Copie PDF/Excel d'une facture déjà enregistrée (consultation : admin et client), sans rien modifier.
   factureCopie: {
-    roles: ['admin', 'client'],
+    roles: ['admin', 'chef', 'client'],
     fn: function (u, a) {
       var o = a[0] || {}; clientScope_(u, o.contrat);
       if (!DocData.attachementData(o.month, o.contrat).facture_numero) throw httpErr_("Cette facture n'est pas encore établie", 'FORBIDDEN');

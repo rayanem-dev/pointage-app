@@ -191,7 +191,7 @@ function forgotView() {
 // ---------- structure ----------
 var NAV = {
   agent: [['#/', 'Accueil'], ['#/groupe', 'Mon pointage'], ['#/demandes', 'Mes demandes'], ['#/documents', 'Mes documents'], ['#/aide', 'Aide']],
-  chef: [['#/', 'Mon espace'], ['#/pointer', 'Pointer'], ['#/groupe', 'Mon groupe'], ['#/contrats', 'Contrat'], ['#/agents', 'Agents'], ['#/demandes', 'Demandes'], ['#/documents', 'Documents'], ['#/aide', 'Aide']],
+  chef: [['#/', 'Mon espace'], ['#/pointer', 'Pointer'], ['#/groupe', 'Mon groupe'], ['#/contrats', 'Contrat'], ['#/agents', 'Agents'], ['#/demandes', 'Demandes'], ['#/documents', 'Documents'], ['#/exports', 'Exports'], ['#/aide', 'Aide']],
   client: [['#/groupe', 'Pointage'], ['#/contrats', 'Contrat et attachements'], ['#/aide', 'Aide']],
   admin: [['#/pointer', 'Pointer'], ['#/groupe', 'Pointage global'], ['#/agents', 'Agents'], ['#/demandes', 'Demandes'], ['#/documents', 'Documents'], ['#/exports', 'Exports'], ['#/apropos', 'À propos'], ['#/aide', 'Aide']]
 };
@@ -1079,7 +1079,7 @@ function NouveautesPage() {
 }
 
 // ---------- Setup : un onglet par sujet ----------
-var SETUP_TABS = [['contrat', 'Contrat'], ['prestataire', 'Prestataire'], ['client', 'Client'], ['rotation', 'Rotation'], ['maintenance', 'Maintenance']];
+var SETUP_TABS = [['prestataire', 'Prestataire (mon entreprise)'], ['client', 'Client'], ['contrat', 'Contrat'], ['rotation', 'Rotation'], ['maintenance', 'Maintenance']];
 var SETUP_INTRO = {
   prestataire: "Le prestataire est la société qui utilise l'application : son nom apparaît dans l'en-tête, les documents et les e-mails. Les champs vides sont remplis automatiquement à la lecture du bordereau.",
   client: "L'autre partie du contrat : son nom, son en-tête et son adresse de facturation apparaissent sur la fiche de pointage, l'attachement et la facture. Le nom est pré-rempli à la lecture du bordereau.",
@@ -1090,9 +1090,9 @@ function SetupPage() {
   var body = h('div', { style: 'display:grid;gap:16px' });
   wrap.append(loading());
   call('setupGet').then(function (data) {
-    var tab = S.setupTab || 'contrat';
+    var tab = S.setupTab || 'prestataire';
     var tabs = SETUP_TABS.filter(function (t) { return t[0] !== 'maintenance' || data.isAdmin; });
-    if (!tabs.some(function (t) { return t[0] === tab; })) tab = 'contrat';
+    if (!tabs.some(function (t) { return t[0] === tab; })) tab = 'prestataire';
     function bar() {
       return h('nav', { class: 'tabs', role: 'tablist' }, tabs.map(function (t) {
         return h('button', { type: 'button', role: 'tab', class: t[0] === tab ? 'on' : '', 'aria-selected': t[0] === tab ? 'true' : 'false', onclick: function () { S.setupTab = t[0]; tab = t[0]; show(); } }, t[1]);
@@ -1513,6 +1513,7 @@ function ContratsPage(opts) {
 
 // ---------- exports : fiche de pointage, attachement (validation), facture (depuis l'attachement validé) ----------
 function ExportsPage() {
+  var ro = S.user.role !== 'admin'; // chef de groupe : extraction en lecture seule (pas de validation, de saisie ni de création de facture)
   var wrap = h('div', { style: 'display:grid;gap:16px' });
   call('contratsLite').then(function (cfg) {
     var t = S.target; S.target = null; // venant de la page Contrats : mois et contrat déjà choisis
@@ -1527,8 +1528,8 @@ function ExportsPage() {
       [[xl, 'xlsx'], [pdf, 'pdf']].forEach(function (p) {
         p[0].onclick = function () {
           var o = { month: month, contrat: contrat, format: p[1] }; var ex = extra ? extra() : {}; Object.keys(ex).forEach(function (k) { o[k] = ex[k]; });
-          if (doc === 'Facture' && !String(o.facture_numero || '').trim()) { box.show('Indiquez le n° de facture.', false); return; }
-          act(p[0], box, function () { return call('export' + doc, o).then(saveFile); }, 'Document généré').then(function () { if (doc === 'Facture') draw(); }); // la facture est enregistrée sur l'attachement : on rafraîchit le statut
+          if (doc === 'Facture' && !ro && !String(o.facture_numero || '').trim()) { box.show('Indiquez le n° de facture.', false); return; }
+          act(p[0], box, function () { return call(ro && doc === 'Facture' ? 'factureCopie' : 'export' + doc, o).then(saveFile); }, 'Document généré').then(function () { if (doc === 'Facture') draw(); }); // la facture est enregistrée sur l'attachement : on rafraîchit le statut
         };
       });
       return h('p', null, xl, ' ', pdf);
@@ -1563,6 +1564,12 @@ function ExportsPage() {
         var st = STATUT_ATT[p.statut] || ['', ''];
         var title = h('h3', null, 'Attachement N° ' + p.numero + ' — ' + monthLabel(month) + ' ', h('span', { class: 'badge ' + st[1] }, st[0]));
         var total = h('p', null, 'Total HT : ', h('b', null, dzd(p.totalHT) + ' DA'));
+        if (ro) {
+          prev.replaceChildren(title, total, h('p', { class: 'muted' }, p.verrouille ? 'Attachement validé par l\u2019administrateur : copie figée.' : 'Brouillon calculé sur les jours pointés : seul l\u2019administrateur valide l\u2019attachement.'), lignesTable(p, false), buttons('Attachement'));
+          fsec.replaceChildren(h('h2', null, '3. Facture ', p.statut === 'facture' ? h('span', { class: 'badge envoyee' }, 'Facturé') : null),
+            p.facture_numero ? h('div', null, h('p', { class: 'muted' }, 'Facture N° ' + p.facture_numero + ' : copie en consultation.'), buttons('Facture')) : h('p', { class: 'muted' }, 'La facture n\u2019est pas encore établie par l\u2019administrateur.'));
+          return;
+        }
         if (p.verrouille) {
           var reopen = h('button', { class: 'danger' }, 'Rouvrir l\'attachement');
           reopen.onclick = function () { if (window.confirm("Rouvrir l'attachement ? Il redeviendra un brouillon modifiable.")) act(reopen, box, function () { return call('attachementRouvrir', { month: month, contrat: contrat }); }, 'Attachement rouvert').then(draw); };

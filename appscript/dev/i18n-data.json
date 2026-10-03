@@ -4693,5 +4693,25 @@
 "Trop de remarques en peu de temps, réessayez plus tard",
 "Too many remarks in a short time, please try again later",
 "ملاحظات كثيرة في وقت قصير، أعد المحاولة لاحقًا"
+],
+[
+"Prestataire (mon entreprise)",
+"Provider (my company)",
+"المزوّد (شركتي)"
+],
+[
+"Attachement validé par l’administrateur : copie figée.",
+"Statement validated by the administrator: frozen copy.",
+"المحضر معتمد من المسؤول: نسخة ثابتة."
+],
+[
+"Brouillon calculé sur les jours pointés : seul l’administrateur valide l’attachement.",
+"Draft calculated from recorded days: only the administrator validates the statement.",
+"مسودة محسوبة على الأيام المسجلة: المسؤول وحده يعتمد المحضر."
+],
+[
+"La facture n’est pas encore établie par l’administrateur.",
+"The invoice has not yet been issued by the administrator.",
+"لم يُصدر المسؤول الفاتورة بعد."
 ]
 ]

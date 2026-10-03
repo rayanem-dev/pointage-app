@@ -219,6 +219,18 @@
      "The Excel and PDF buttons above the grid produce the month's attendance sheet.",
      "زرّا Excel وPDF فوق الشبكة ينتجان ورقة حضور الشهر."
     ]
+   },
+   {
+    "t": [
+     "Exports : fiche, attachement, facture",
+     "Exports: sheet, statement, invoice",
+     "التصدير: الورقة، المحضر، الفاتورة"
+    ],
+    "x": [
+     "L'onglet « Exports » permet au chef de groupe d'extraire en Excel ou PDF la fiche de pointage, l'attachement du mois et la facture déjà établie. Il consulte seulement : la validation de l'attachement et la création de la facture restent à l'administrateur.",
+     "The \"Exports\" tab lets the group leader extract the attendance sheet, the month's statement and the issued invoice as Excel or PDF. It is read-only: validating the statement and creating the invoice remain with the administrator.",
+     "تتيح علامة «التصدير» لرئيس المجموعة استخراج ورقة الحضور ومحضر الشهر والفاتورة الصادرة بصيغة Excel أو PDF. للاطلاع فقط: اعتماد المحضر وإنشاء الفاتورة يبقيان للمسؤول."
+    ]
    }
   ]
  },
