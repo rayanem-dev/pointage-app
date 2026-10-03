@@ -11,7 +11,7 @@ var Contrats = (function () {
       if (c.ref_mois && !/^\d{4}-\d{2}$/.test(c.ref_mois)) throw httpErr_('Mois de référence : AAAA-MM');
       var debut = String(c.date_debut || '').trim(); if (debut && !Dates.isDate(debut)) throw httpErr_('Date de début du contrat invalide (AAAA-MM-JJ)');
       var duree = String(c.duree_mois == null ? '' : c.duree_mois).trim(); if (duree && !(Number(duree) >= 1 && Number(duree) % 1 === 0)) throw httpErr_('Durée du contrat : nombre de mois entier ≥ 1');
-      var cemail = Format.emails(c.client_email, 'E-mails du contact client', 3).join(', ');
+      var cemail = Format.emails(c.client_email, 'E-mails du contact client', 4).join(', ');
       return { numero: numero, client: c.client || '', objet: c.objet || '', date_contrat: c.date_contrat || '', ref_mois: c.ref_mois || '', ref_attachement: c.ref_attachement || '', rep_prestataire: c.rep_prestataire || '', rep_client: c.rep_client || '', date_debut: debut, duree_mois: duree, client_email: cemail };
     });
     Store.writeTable('Contrats', clean);
@@ -34,7 +34,7 @@ var Contrats = (function () {
   function ensureClientAccounts(user) {
     var out = []; var existing = {}; Agents.list().forEach(function (a) { existing[String(a.email).toLowerCase()] = true; });
     contrats().forEach(function (c) {
-      Format.emails(c.client_email, 'E-mails du contact client', 3).forEach(function (email, i) {
+      Format.emails(c.client_email, 'E-mails du contact client', 4).forEach(function (email, i) {
         if (existing[email]) return;
         try {
           var base = c.rep_client || ('Client ' + (c.client || c.numero));

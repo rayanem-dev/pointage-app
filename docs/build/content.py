@@ -119,7 +119,7 @@ M = [
  ('img', 'docs/captures/crops/50-exports.png', "La fiche de pointage, l'attachement et la facture.", 15.5),
  ('p', "L'historique de chaque contrat liste les attachements et factures validés avec leurs PDF, et un tableau par fonction : quantité précédente, du mois, cumulée, reste à facturer et montant."),
  ('h1', "6. Le compte client"),
- ('p', "Le contact client reçoit un compte de consultation limité à son contrat ; jusqu'à 3 adresses e-mail peuvent être saisies dans le contrat (Setup → Contrat), chacune avec le même compte de consultation. L'e-mail de la direction du prestataire accepte aussi 3 adresses. Il suit le pointage (mois, 3 mois, 6 mois, 1 an), le contrat, les attachements et les factures validés. Il ne peut rien modifier."),
+ ('p', "Le contact client reçoit un compte de consultation limité à son contrat ; jusqu'à 4 adresses e-mail peuvent être saisies dans le contrat (Setup → Contrat), chacune avec le même compte de consultation. L'e-mail de la direction du prestataire accepte aussi 4 adresses. Il suit le pointage (mois, 3 mois, 6 mois, 1 an), le contrat, les attachements et les factures validés. Il ne peut rien modifier."),
  ('img', C+'80-client-pointage.png', "Le pointage vu par le client.", 15.5),
  ('p', "Pour faire une remarque, le client clique sur un jour du pointage et l'écrit. Elle est signalée par un repère rouge dans la grille et envoyée par e-mail au chef de groupe."),
  ('img', C+'81-client-remarque.png', "Le client laisse une remarque sur un jour.", 15.5),

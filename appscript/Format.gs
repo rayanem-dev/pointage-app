@@ -44,11 +44,11 @@ var Format = (function () {
     if (n >= max) return false;
     cache.put(key, String(n + 1), seconds); return true;
   }
-  // Liste d'adresses e-mail (3 au plus) séparées par virgule, point-virgule ou espace : renvoie « a@x, b@y » ; lève une erreur si une adresse est invalide.
+  // Liste d'adresses e-mail (4 au plus) séparées par virgule, point-virgule ou espace : renvoie « a@x, b@y » ; lève une erreur si une adresse est invalide.
   function emails(v, label, max) {
     var list = String(v == null ? '' : v).toLowerCase().split(/[\s,;]+/).filter(Boolean).filter(function (x, i, a) { return a.indexOf(x) === i; });
     list.forEach(function (x) { if (!/^\S+@\S+\.\S+$/.test(x)) throw httpErr_(label + ' : adresse invalide (' + x + ')'); });
-    if (list.length > (max || 3)) throw httpErr_(label + ' : ' + (max || 3) + ' adresses au maximum');
+    if (list.length > (max || 4)) throw httpErr_(label + ' : ' + (max || 4) + ' adresses au maximum');
     return list;
   }
   return { emails: emails, cell: cell, cells: cells, allow: allow, words: words, money: money, int: int, amountInWords: amountInWords, norm: norm };

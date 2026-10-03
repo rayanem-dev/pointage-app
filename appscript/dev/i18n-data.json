@@ -4730,14 +4730,14 @@
 "المحضر والفاتورة غير مفعّلين لحسابك: اطلب هذه الصلاحية من المسؤول."
 ],
 [
-"E-mails du contact client (3 au maximum, séparés par une virgule ; un compte de consultation est créé par adresse)",
-"Client contact e-mails (3 maximum, comma-separated; one view-only account is created per address)",
-"عناوين بريد جهة اتصال العميل (3 كحد أقصى، مفصولة بفاصلة؛ يُنشأ حساب اطلاع لكل عنوان)"
+"E-mails du contact client (4 au maximum, séparés par une virgule ; un compte de consultation est créé par adresse)",
+"Client contact e-mails (4 maximum, comma-separated; one view-only account is created per address)",
+"عناوين بريد جهة اتصال العميل (4 كحد أقصى، مفصولة بفاصلة؛ يُنشأ حساب اطلاع لكل عنوان)"
 ],
 [
-"E-mails de la direction du prestataire (3 au maximum, séparés par une virgule)",
-"Provider management e-mails (3 maximum, comma-separated)",
-"عناوين بريد إدارة المزوّد (3 كحد أقصى، مفصولة بفاصلة)"
+"E-mails de la direction du prestataire (4 au maximum, séparés par une virgule)",
+"Provider management e-mails (4 maximum, comma-separated)",
+"عناوين بريد إدارة المزوّد (4 كحد أقصى، مفصولة بفاصلة)"
 ],
 [
 " · accès exports",
@@ -4750,13 +4750,43 @@
 "عناوين بريد العميل: عنوان غير صالح"
 ],
 [
-"E-mails du contact client : 3 adresses au maximum",
-"Client contact e-mails: 3 addresses maximum",
-"عناوين بريد العميل: 3 عناوين كحد أقصى"
+"E-mails du contact client : 4 adresses au maximum",
+"Client contact e-mails: 4 addresses maximum",
+"عناوين بريد العميل: 4 عناوين كحد أقصى"
 ],
 [
-"E-mails de la direction : 3 adresses au maximum",
-"Management e-mails: 3 addresses maximum",
-"عناوين بريد الإدارة: 3 عناوين كحد أقصى"
+"E-mails de la direction : 4 adresses au maximum",
+"Management e-mails: 4 addresses maximum",
+"عناوين بريد الإدارة: 4 عناوين كحد أقصى"
+],
+[
+"E-mails du contact client (4 au maximum ; un compte de consultation est créé par adresse)",
+"Client contact e-mails (4 maximum; one view-only account is created per address)",
+"عناوين بريد جهة اتصال العميل (4 كحد أقصى؛ يُنشأ حساب اطلاع لكل عنوان)"
+],
+[
+"E-mails de la direction du prestataire (4 au maximum)",
+"Provider management e-mails (4 maximum)",
+"عناوين بريد إدارة المزوّد (4 كحد أقصى)"
+],
+[
+"Adresse e-mail 1",
+"E-mail address 1",
+"عنوان البريد 1"
+],
+[
+"Adresse e-mail 2",
+"E-mail address 2",
+"عنوان البريد 2"
+],
+[
+"Adresse e-mail 3",
+"E-mail address 3",
+"عنوان البريد 3"
+],
+[
+"Adresse e-mail 4",
+"E-mail address 4",
+"عنوان البريد 4"
 ]
 ]
