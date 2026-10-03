@@ -154,8 +154,8 @@ var HANDLERS = {
     }
   },
   // ----- onglet Setup : admin, ou chef avec accès accordé par l'admin -----
-  setupGet: { setup: true, fn: function (u) { return { defs: Params.defsForClient(), values: Params.get(), isAdmin: u.role === 'admin', status: Setup.status() }; } },
-  setupSave: { setup: true, write: true, fn: function (u, a) { return Params.set(a[0] || {}); } },
+  setupGet: { setup: true, fn: function (u) { var vals = Params.get(); if (!vals.client_emails) vals.client_emails = Contrats.contrats().map(function (c) { return c.client_email; }).filter(Boolean).join(', ').split(', ').filter(function (x, i, a) { return x && a.indexOf(x) === i; }).slice(0, 4).join(', '); return { defs: Params.defsForClient(), values: vals, isAdmin: u.role === 'admin', status: Setup.status() }; } },
+  setupSave: { setup: true, write: true, fn: function (u, a) { var o = a[0] || {}; var res = Params.set(o); if ('client_emails' in o && u.role === 'admin') res = Object.assign({}, res, { comptes: Contrats.ensureClientAccounts(u) }); return res; } },
   logoUpload: { setup: true, write: true, fn: function (u, a) { return Params.logoUpload(a[0] || {}); } },
   logoRemove: { setup: true, write: true, fn: function (u, a) { return Params.logoRemove(a[0]); } },
   logoView: { setup: true, fn: function (u, a) { return Params.logoView(a[0]); } },

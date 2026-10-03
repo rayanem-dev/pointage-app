@@ -5,7 +5,7 @@
 ## 3.16.0 — 2026-10-03 — Privilèges du chef de groupe et plusieurs e-mails
 
 - L'administrateur choisit, chef par chef, s'il peut extraire l'attachement et la facture (case dans sa fiche), en plus de l'accès au Setup.
-- Le contrat accepte jusqu'à 4 e-mails de contact client : chacun reçoit son compte de consultation, avec les mêmes droits.
+- L'onglet Client accepte jusqu'à 4 e-mails de contact client (Setup → Client) : chacun reçoit son compte de consultation, avec les mêmes droits.
 - L'e-mail de la direction du prestataire accepte aussi 4 adresses.
 
 ## 3.15.0 — 2026-10-03 — Exports pour le chef de groupe

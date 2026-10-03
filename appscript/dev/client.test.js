@@ -67,13 +67,19 @@ test('le client ne voit que les agents de son contrat', () => {
   assert.ok(noms.includes('AGENT C1')); assert.ok(!noms.includes('AUTRE CONTRAT'));
 });
 
-test('contact client : 4 e-mails au maximum, un compte de consultation par adresse ; direction : 4 e-mails', () => {
-  const base = { date_debut: '2026-01-31', duree_mois: '24' };
-  fail(call(T.admin, 'contratsSave', { contrats: [contrat({ ...base, client_email: 'a@c.dz, b@c.dz, c@c.dz, d@c.dz, e@c.dz' })], fonctions: [] }), /4 adresses/);
-  const r = ok(call(T.admin, 'contratsSave', { contrats: [contrat({ ...base, client_email: 'Un@c.dz; deux@c.dz  trois@c.dz, quatre@c.dz' })], fonctions: [] }));
-  assert.strictEqual(r.contrats[0].client_email, 'un@c.dz, deux@c.dz, trois@c.dz, quatre@c.dz');
-  assert.deepStrictEqual(r.comptes.map((c) => c.email).sort(), ['deux@c.dz', 'quatre@c.dz', 'trois@c.dz', 'un@c.dz']);
-  ok(call(null, 'login', 'deux@c.dz', r.comptes.find((c) => c.email === 'deux@c.dz').password));
+test('contact client (Setup → Client) : 4 e-mails au maximum, un compte de consultation par adresse ; direction : 4 e-mails', () => {
+  ok(call(T.admin, 'contratsSave', { contrats: [contrat({ date_debut: '2026-01-31', duree_mois: '24' })], fonctions: [] }));
+  fail(call(T.admin, 'setupSave', { client_emails: 'a@c.dz, b@c.dz, c@c.dz, d@c.dz, e@c.dz' }), /4 adresses/);
+  fail(call(T.admin, 'setupSave', { client_emails: 'pas-une-adresse' }), /invalide/);
+  const r = ok(call(T.admin, 'setupSave', { client_emails: 'Un@c.dz; deux@c.dz  trois@c.dz, quatre@c.dz' }));
+  assert.strictEqual(r.client_emails, 'un@c.dz, deux@c.dz, trois@c.dz, quatre@c.dz');
+  const nouveaux = r.comptes.map((c) => c.email).sort();
+  assert.deepStrictEqual(nouveaux, ['deux@c.dz', 'quatre@c.dz', 'trois@c.dz', 'un@c.dz']);
+  assert.ok(r.comptes.every((c) => c.contrat === 'C1'), 'un seul contrat : compte rattaché à ce contrat');
+  const tok = ok(call(null, 'login', 'deux@c.dz', r.comptes.find((c) => c.email === 'deux@c.dz').password)).token;
+  assert.strictEqual(ok(call(tok, 'me')).user.role, 'client');
+  assert.strictEqual(ok(call(T.admin, 'setupSave', { client_emails: 'un@c.dz' })).comptes.length, 0, 'pas de doublon');
+  assert.strictEqual(ok(call(T.admin, 'setupGet')).values.client_emails, 'un@c.dz');
   fail(call(T.admin, 'setupSave', { direction_email: 'a@p.dz,b@p.dz,c@p.dz,d@p.dz,e@p.dz' }), /4 adresses/);
   assert.strictEqual(ok(call(T.admin, 'setupSave', { direction_email: 'A@p.dz; b@p.dz' })).direction_email, 'a@p.dz, b@p.dz');
 });

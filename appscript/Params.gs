@@ -31,6 +31,7 @@ var Params = (function () {
     { key: 'client_adresse_facture', label: 'Adresse de facturation (« DOIT »)', group: 'Client', type: 'area', def: '' },
     { key: 'logo_client_id', label: 'Logo du client', group: 'Client', type: 'logo', def: '' },
     { key: 'signature_client', label: 'Signature client (fiche de pointage)', group: 'Client', type: 'text', def: '' },
+    { key: 'client_emails', label: 'E-mails du contact client (4 au maximum ; un compte de consultation est créé par adresse)', group: 'Client', type: 'emails', def: '' },
     { key: 'signature_prestataire', label: 'Signature prestataire (fiche de pointage)', group: 'Prestataire', type: 'text', def: '' }
   ];
   var DEFAULTS = {};
@@ -49,7 +50,7 @@ var Params = (function () {
       if (!def) return;
       var s = String(values[k] == null ? '' : values[k]);
       if (def.type === 'number' && !(Number(s) >= 1 && Number(s) % 1 === 0)) throw httpErr_(def.label + ' : entier ≥ 1 attendu');
-      if (k === 'direction_email') s = Format.emails(s, 'E-mails de la direction', 4).join(', ');
+      if (def.type === 'emails') s = Format.emails(s, k === 'client_emails' ? 'E-mails du contact client' : 'E-mails de la direction', 4).join(', ');
       if (def.type === 'bool') { s = (values[k] === true || s === '1' || s === 'true') ? '1' : '0'; }
       if (def.type === 'color' && !/^#[0-9a-fA-F]{6}$/.test(s)) throw httpErr_(def.label + ' : couleur #RRGGBB attendue');
       cur[k] = s;

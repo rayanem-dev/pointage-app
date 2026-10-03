@@ -1097,7 +1097,7 @@ function NouveautesPage() {
 var SETUP_TABS = [['prestataire', 'Prestataire (mon entreprise)'], ['client', 'Client'], ['contrat', 'Contrat'], ['rotation', 'Rotation'], ['maintenance', 'Maintenance']];
 var SETUP_INTRO = {
   prestataire: "Le prestataire est la société qui utilise l'application : son nom apparaît dans l'en-tête, les documents et les e-mails. Les champs vides sont remplis automatiquement à la lecture du bordereau.",
-  client: "L'autre partie du contrat : son nom, son en-tête et son adresse de facturation apparaissent sur la fiche de pointage, l'attachement et la facture. Le nom est pré-rempli à la lecture du bordereau. Les e-mails du client (4 au maximum, comptes de consultation) se saisissent dans l'onglet Contrat.",
+  client: "L'autre partie du contrat : son nom, son en-tête et son adresse de facturation apparaissent sur la fiche de pointage, l'attachement et la facture. Le nom est pré-rempli à la lecture du bordereau.",
   rotation: "Dès le premier pointage T ou R, les jours suivants sont prévus automatiquement : T jusqu'au dernier jour du shift, puis R pendant la durée de repos, puis T… (les « ombres »). Un pointage réel n'est jamais remplacé : s'il diffère de la prévision, il devient le nouveau repère et les prévisions repartent de lui."
 };
 function SetupPage() {
@@ -1310,7 +1310,7 @@ function contratsCard() {
           var delC = h('button', { type: 'button', class: 'danger' }, 'Supprimer le contrat'); delC.onclick = function () { if (window.confirm('Supprimer ce contrat et ses fonctions ?')) { F = F.filter(function (f) { return f.contrat !== c.numero; }); C.splice(i, 1); draw(); } };
           return h('fieldset', null, h('legend', null, 'Contrat ' + (c.numero || 'nouveau')),
             h('div', { class: 'row' }, field('N° de contrat', numero), field('Client', bind('client'), 'grow2'), field('Date du contrat', bind('date_contrat'))), field('Objet', bind('objet')),
-            h('div', { class: 'row', style: 'align-items:start' }, field('Début du contrat', bind('date_debut', 'date')), field('Durée du contrat (mois)', bind('duree_mois', 'number')), emailsField('E-mails du contact client (4 au maximum ; un compte de consultation est créé par adresse)', emailsBox(c.client_email, function (v) { c.client_email = v; }), 'grow2')),
+            h('div', { class: 'row', style: 'align-items:start' }, field('Début du contrat', bind('date_debut', 'date')), field('Durée du contrat (mois)', bind('duree_mois', 'number')), ),
             h('div', { class: 'row' }, field('Mois de référence', bind('ref_mois', 'month')), field("N° d'attachement de ce mois", bind('ref_attachement', 'number')), field('Représentant prestataire', h('div', null, rsel, rtxt)), field('Représentant client', bind('rep_client'))),
             h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Désignation (attachement / facture)', 'Libellé sur la fiche', 'Nature', 'Nombre (postes) / quantité', 'Délai (jours)', 'Prix unitaire HT', 'Qté cumulée avant le mois de réf.', ''].map(function (t) { return h('th', null, t); }))), h('tbody', null, rows))), addF, ' ', delC);
         });

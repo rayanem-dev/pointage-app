@@ -33,16 +33,20 @@ var Contrats = (function () {
   // Compte de consultation par défaut pour le contact client de chaque contrat (e-mail renseigné, pas encore de compte).
   function ensureClientAccounts(user) {
     var out = []; var existing = {}; Agents.list().forEach(function (a) { existing[String(a.email).toLowerCase()] = true; });
-    contrats().forEach(function (c) {
-      Format.emails(c.client_email, 'E-mails du contact client', 4).forEach(function (email, i) {
-        if (existing[email]) return;
-        try {
-          var base = c.rep_client || ('Client ' + (c.client || c.numero));
-          var r = Agents.create(user, { nom: i ? base + ' (' + (i + 1) + ')' : base, email: email, role: 'client', contrat: c.numero });
-          existing[email] = true;
-          out.push({ id: r.agent.id, nom: r.agent.nom, email: email, contrat: c.numero, password: r.password });
-        } catch (e) { Logger.log('Compte client non créé (' + email + ') : ' + e.message); }
-      });
+    var all = contrats(); var params = Params.get();
+    // Sources : les e-mails du client saisis dans Setup → Client (rattachés au contrat s'il n'y en a qu'un, sinon à tous), puis ceux d'anciens contrats.
+    var sources = [];
+    Format.emails(params.client_emails, 'E-mails du contact client', 4).forEach(function (e) { sources.push({ email: e, contrat: all.length === 1 ? all[0].numero : '', base: (all[0] && all[0].rep_client) || ('Client ' + (params.client_nom || (all[0] && all[0].client) || '')) }); });
+    all.forEach(function (c) { Format.emails(c.client_email, 'E-mails du contact client', 4).forEach(function (e) { sources.push({ email: e, contrat: c.numero, base: c.rep_client || ('Client ' + (c.client || c.numero)) }); }); });
+    var rang = {};
+    sources.forEach(function (src) {
+      if (existing[src.email]) return;
+      rang[src.base] = (rang[src.base] || 0) + 1;
+      try {
+        var r = Agents.create(user, { nom: rang[src.base] > 1 ? src.base + ' (' + rang[src.base] + ')' : src.base, email: src.email, role: 'client', contrat: src.contrat });
+        existing[src.email] = true;
+        out.push({ id: r.agent.id, nom: r.agent.nom, email: src.email, contrat: src.contrat, password: r.password });
+      } catch (e) { Logger.log('Compte client non créé (' + src.email + ') : ' + e.message); }
     });
     return out;
   }

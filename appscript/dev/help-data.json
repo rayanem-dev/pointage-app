@@ -414,7 +414,7 @@
      "العقد"
     ],
     "x": [
-     "Déposez le bordereau des prix du contrat (PDF scanné, photo, Excel ou CSV) : les fonctions, nombres, délais et prix sont lus automatiquement, avec un contrôle du total. Complétez le contrat : début, durée en mois (la fin est calculée et visible de tous), e-mail du contact client.",
+     "Déposez le bordereau des prix du contrat (PDF scanné, photo, Excel ou CSV) : les fonctions, nombres, délais et prix sont lus automatiquement, avec un contrôle du total. Complétez le contrat : début, durée en mois (la fin est calculée et visible de tous). Les e-mails du contact client (4 au maximum) se saisissent dans l'onglet Client.",
      "Upload the contract's price schedule (scanned PDF, photo, Excel or CSV): functions, numbers, lead times and prices are read automatically, with a check of the total. Complete the contract: start, duration in months (the end is calculated and visible to all), client contact e-mail.",
      "ارفع جدول أسعار العقد (PDF ممسوح أو صورة أو Excel أو CSV): تُقرأ الوظائف والأعداد والآجال والأسعار تلقائيًا مع مراجعة المجموع. أكمل العقد: البداية والمدة بالأشهر (تُحسب النهاية ويراها الجميع) وبريد جهة اتصال الزبون."
     ]
@@ -537,7 +537,7 @@
      "إنشاء الحساب"
     ],
     "x": [
-     "Saisissez l'e-mail du contact client dans le contrat : un compte de consultation est créé, limité à ce contrat, et ses accès peuvent lui être envoyés par e-mail.",
+     "Saisissez les e-mails du contact client (4 au maximum) dans Setup → Client : un compte de consultation est créé, limité à ce contrat, et ses accès peuvent lui être envoyés par e-mail.",
      "Enter the client contact's e-mail in the contract: a view-only account is created, limited to that contract, and its access can be sent by e-mail.",
      "أدخل بريد جهة اتصال الزبون في العقد: يُنشأ حساب اطلاع محدود بهذا العقد ويمكن إرسال بيانات دخوله بالبريد."
     ]
