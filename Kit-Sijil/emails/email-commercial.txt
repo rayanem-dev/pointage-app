@@ -1,0 +1,21 @@
+Objet : Sijil — du bordereau des prix à la facture, sans ressaisie
+
+Bonjour,
+
+Vous mettez du personnel à disposition de vos clients ? Entre les fichiers Excel, les jours oubliés et les calculs à la main, chaque fin de mois coûte du temps et expose à l'erreur.
+
+Sijil relie tout, du bordereau des prix jusqu'à l'attachement et à la facture :
+- le bordereau des prix se lit tout seul (PDF scanné, photo, Excel) ;
+- le pointage des agents et véhicules, avec prévisions, soldes et jours fériés algériens ;
+- l'attachement et la facture calculés sur les jours pointés, figés à la validation, en Excel et PDF ;
+- votre client suit le pointage en direct et vous laisse ses remarques ;
+- les demandes et documents du personnel au même endroit.
+
+Essai gratuit : https://rayanem-dev.github.io/pointage-app/
+Présentation : https://docs.google.com/presentation/d/1ziQ3U7c2lvkEywjihQnhlqHUNaRj0OjS/edit?usp=sharing&ouid=100581094853869883670&rtpof=true&sd=true
+
+Je vous propose une démonstration de 20 minutes, sur votre propre cas. Répondez à ce message ou appelez-moi.
+
+Cordialement,
+Rayane M.
+Sijil — Gestion du temps de travail
