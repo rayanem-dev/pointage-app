@@ -180,7 +180,17 @@ var Documents = (function () {
       return { a: a, toks: toks.length, hit: hit };
     }).filter(function (s) { return s.hit > 0 && s.hit === s.toks && s.toks >= 2; }); // nom ET prénom présents
     var partial = agents.filter(function (a) { var toks = n(a.nom).split(' '); return toks.length >= 2 && words[toks[0]] && !scored.some(function (s) { return s.a.id === a.id; }); });
-    return scored.length ? scored.map(function (s) { return s.a; }) : partial;
+    var res = scored.length ? scored.map(function (s) { return s.a; }) : partial;
+    if (res.length) return res;
+    // Aucun nom exact : noms d'orthographe proche (une faute de frappe dans le nom du fichier : BEHEIN / BELHEINE) proposés à vérifier.
+    var mots = Object.keys(words).filter(function (w) { return w.length >= 4 && !/^\d+$/.test(w); });
+    var flou = agents.filter(function (a) { return n(a.nom).split(' ').some(function (tok) { return tok.length >= 4 && mots.some(function (w) { return distance(tok, w) <= (tok.length >= 7 ? 2 : 1) && w !== tok; }); }); });
+    flou.flou = true; return flou;
+  }
+  function distance(a, b) {
+    var prev = []; for (var j = 0; j <= b.length; j += 1) prev.push(j);
+    for (var i = 1; i <= a.length; i += 1) { var cur = [i]; for (var k = 1; k <= b.length; k += 1) cur.push(Math.min(prev[k] + 1, cur[k - 1] + 1, prev[k - 1] + (a.charAt(i - 1) === b.charAt(k - 1) ? 0 : 1))); prev = cur; }
+    return prev[b.length];
   }
 
   // Type et champs d'un fichier : nom du fichier d'abord, contenu (OCR) seulement si nécessaire.
@@ -207,7 +217,7 @@ var Documents = (function () {
     var manque = missing(type, f);
     if (manque.length) avert.push('À compléter : ' + manque.map(function (k) { return { date: 'date', mois: 'mois', mois2: 'mois de fin' }[k] || k; }).join(', ') + '.');
     if (type === 'attestation_cnas' && !f.nss) avert.push('N° de sécurité sociale non lu : à compléter si besoin.');
-    return { type: type, source: source, champs: f, avertissement: avert.join(' '), candidats: cands };
+    return { type: type, source: source, champs: f, avertissement: avert.join(' '), candidats: cands, flou: !!cands.flou };
   }
 
   // ----- API -----
@@ -451,6 +461,7 @@ var Documents = (function () {
     var chosen = CFG.TYPES_DOC[data.type] ? data.type : '';
     var info = detect(data, chosen, forced, agents);
     var agent = forced || (info.candidats.length === 1 ? info.candidats[0] : null);
+    if (agent && info.flou && !forced) info.avertissement = (info.avertissement + ' Agent deviné d\'après un nom proche : à vérifier.').trim();
     if (!agent && info.candidats.length > 1) info.avertissement = (info.avertissement + ' Plusieurs agents possibles : choisissez.').trim();
     if (!agent && !info.candidats.length) info.avertissement = (info.avertissement + ' Agent non reconnu : choisissez-le.').trim();
     // La conversion en PDF se fait à l'envoi : en attendant, l'image reste telle quelle et peut être consultée dans l'aperçu.
@@ -469,7 +480,7 @@ var Documents = (function () {
     var all = Store.readTable('Depots'); var r = depotRows(user).filter(function (x) { return x.id === id; })[0];
     if (!r) throw httpErr_('Document en attente introuvable');
     r = all.filter(function (x) { return x.id === id; })[0]; var agents = visibles(user);
-    if (patch.agent_id !== undefined) { if (patch.agent_id && !agents.some(function (a) { return a.id === patch.agent_id; })) throw httpErr_("Cet agent n'est pas dans votre groupe", 'FORBIDDEN'); r.agent_id = patch.agent_id; }
+    if (patch.agent_id !== undefined) { if (patch.agent_id && !agents.some(function (a) { return a.id === patch.agent_id; })) throw httpErr_("Cet agent n'est pas dans votre groupe", 'FORBIDDEN'); r.agent_id = patch.agent_id; if (patch.agent_id) r.avert = String(r.avert || '').replace(/ ?Agent non reconnu : choisissez-le\./g, '').replace(/ ?Plusieurs agents possibles : choisissez\./g, '').replace(/ ?Agent deviné d'après un nom proche : à vérifier\./g, '').trim(); }
     if (patch.type !== undefined) { if (!CFG.TYPES_DOC[patch.type]) throw httpErr_('Type de document invalide'); if (patch.type !== r.type) { r.champs = JSON.stringify(adapt(patch.type, champsOf(r))); r.type = patch.type; } }
     if (patch.champs) {
       var f = champsOf(r); var p = patch.champs;

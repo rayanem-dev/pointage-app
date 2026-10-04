@@ -229,6 +229,7 @@ var HANDLERS = {
     if (Tenants.isOwner(u)) { out.entreprises = Tenants.activityAll(u); out.journal = Auth.journal(); } else out.gens = Auth.activity(); // l'éditeur voit toutes les entreprises
     return out;
   } },
+  cacheVider: { roles: ['admin'], fn: function () { Store.reset(); return { ok: true, at: new Date().toISOString() }; } },
   repairStructure: { roles: ['admin'], write: true, fn: function () { return Setup.repairStructure(); } },
   vider: { roles: ['admin'], write: true, fn: function (u, a) { return Setup.vider(a[0], a[1]); } },
   pointageExport: { roles: ['admin'], fn: function (u, a) { return Archive.exportXlsx(u, a[0] || {}); } },

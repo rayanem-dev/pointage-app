@@ -44,3 +44,19 @@ test('modification à la main du classeur : visible après remise à zéro du ca
   run("Store.setTenant('ALPHA', Tenants.find('ALPHA').classeur_id); Store.reset(); Store.setTenant('', '')");
   assert.ok(ok(call(T.alpha, 'agentsVisible')).some((a) => a.nom === 'RENOMMÉ À LA MAIN'));
 });
+
+test('éviction du numéro de version par Google : une ancienne lecture en cache ne ressuscite pas', () => {
+  const evince = () => { Object.keys(env.cache).filter((k) => k.startsWith('V_')).forEach((k) => delete env.cache[k]); run('Store.flushLocal()'); };
+  evince(); const avant = ok(call(T.alpha, 'agentsVisible')); // lectures mises en cache sans numéro de version
+  const cible = avant[0];
+  ok(call(T.alpha, 'agentUpdate', cible.id, { nom: 'RENOMME APRES' })); // écriture : le numéro de version change
+  evince(); // Google évince de nouveau le numéro : avant correction, l'ancien numéro « 0 » rendait la lecture d'avant l'écriture valide
+  assert.ok(ok(call(T.alpha, 'agentsVisible')).some((a) => a.id === cible.id && a.nom === 'RENOMME APRES'), 'la lecture reflète l\'écriture');
+});
+test('« Actualiser les données » : réservé à l\'administrateur, relit le classeur', () => {
+  assert.strictEqual(ok(call(T.alpha, 'cacheVider')).ok, true);
+  const ag = ok(call(T.alpha, 'agentCreate', { nom: 'SIMPLE AGENT', email: 'simple@alpha.dz', role: 'agent', password: 'simple12345' })).agent;
+  const tk = ok(call(null, 'login', 'simple@alpha.dz', 'simple12345', 'ALPHA')).token;
+  assert.strictEqual(call(tk, 'cacheVider').ok, false, 'un agent ne peut pas vider le cache');
+  assert.ok(ag.id);
+});

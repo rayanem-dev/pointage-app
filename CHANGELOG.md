@@ -2,6 +2,13 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.25.1 — 2026-10-04 — Actualiser les données et agent deviné
+
+- Un lien « ↻ Actualiser » en bas de page relit les données du serveur ; dans Setup → Maintenance, « Actualiser les données » vide le cache du classeur.
+- Correction d'un cas rare où une ancienne liste pouvait réapparaître quelques minutes après une modification.
+- Dépôt de documents : « Actualiser la liste », et la liste se met à jour toute seule si un document n'est plus en attente.
+- Une faute de frappe dans le nom d'un fichier (BELMAHY au lieu de BELMAHI) ne bloque plus : l'agent est proposé, à vérifier.
+
 ## 3.25.0 — 2026-10-04 — Dépôt de documents : mois abrégés, aperçu des photos
 
 - Le mois est reconnu même abrégé dans le nom du fichier : « FEVR 26 », « JANV 26 », « dec 25 » (février 2026, janvier 2026, décembre 2025). Le mois du nom du fichier prime sur celui lu dans le document, et un avertissement signale les dates lues dans le contenu.

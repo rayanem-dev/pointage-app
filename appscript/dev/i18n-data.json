@@ -5673,5 +5673,80 @@
 "Aperçu d'un PDF : si la zone reste vide, « Ouvrir dans un onglet » l'affiche avec le lecteur du navigateur.",
 "PDF preview: if the area stays blank, \"Open in a tab\" shows it with the browser's viewer.",
 "معاينة PDF: إذا بقيت المنطقة فارغة فإن «فتح في علامة تبويب» يعرضه بقارئ المتصفح."
+],
+[
+"Actualiser les données (vider le cache)",
+"Refresh data (clear the cache)",
+"تحديث البيانات (مسح الذاكرة المؤقتة)"
+],
+[
+"Cache vidé : les données sont relues depuis le classeur.",
+"Cache cleared: data is re-read from the workbook.",
+"تم مسح الذاكرة المؤقتة: تُقرأ البيانات من جديد من المصنّف."
+],
+[
+"Si une liste vous semble périmée ou incohérente, « Actualiser les données » force la relecture du classeur. Rechargez aussi la page (Ctrl+F5) pour récupérer la dernière version de l’application.",
+"If a list looks outdated or inconsistent, \"Refresh data\" forces the workbook to be re-read. Also reload the page (Ctrl+F5) to get the latest version of the app.",
+"إذا بدت قائمة قديمة أو غير متسقة فإن «تحديث البيانات» يفرض إعادة قراءة المصنّف. أعد أيضًا تحميل الصفحة (Ctrl+F5) للحصول على آخر إصدار من التطبيق."
+],
+[
+"Actualiser la liste",
+"Refresh the list",
+"تحديث القائمة"
+],
+[
+"Relire la liste depuis le serveur",
+"Re-read the list from the server",
+"إعادة قراءة القائمة من الخادم"
+],
+[
+"La liste a été actualisée : ce document n’était plus en attente.",
+"The list has been refreshed: this document was no longer pending.",
+"تم تحديث القائمة: لم يعد هذا المستند قيد الانتظار."
+],
+[
+"↻ Actualiser",
+"↻ Refresh",
+"↻ تحديث"
+],
+[
+"Relire les données depuis le serveur",
+"Re-read the data from the server",
+"إعادة قراءة البيانات من الخادم"
+],
+[
+"Données actualisées.",
+"Data refreshed.",
+"تم تحديث البيانات."
+],
+[
+" Agent deviné d'après un nom proche : à vérifier.",
+" Agent guessed from a similar name: please check.",
+" عون مُخمَّن من اسم مشابه: يرجى التحقق."
+],
+[
+"Actualiser les données et agent deviné",
+"Refresh data and guessed agent",
+"تحديث البيانات والعون المُخمَّن"
+],
+[
+"Un lien « ↻ Actualiser » en bas de page relit les données du serveur ; dans Setup → Maintenance, « Actualiser les données » vide le cache du classeur.",
+"A \"↻ Refresh\" link at the bottom of the page re-reads the server data; in Setup → Maintenance, \"Refresh data\" clears the workbook cache.",
+"يعيد رابط «↻ تحديث» أسفل الصفحة قراءة بيانات الخادم؛ وفي الإعدادات ← الصيانة يمسح «تحديث البيانات» الذاكرة المؤقتة للمصنّف."
+],
+[
+"Correction d'un cas rare où une ancienne liste pouvait réapparaître quelques minutes après une modification.",
+"Fixed a rare case where an old list could reappear a few minutes after a change.",
+"تصحيح حالة نادرة كانت فيها قائمة قديمة تعود للظهور بعد دقائق من التعديل."
+],
+[
+"Dépôt de documents : « Actualiser la liste », et la liste se met à jour toute seule si un document n'est plus en attente.",
+"Document upload: \"Refresh the list\", and the list updates by itself if a document is no longer pending.",
+"إيداع المستندات: «تحديث القائمة» وتتحدّث القائمة تلقائيًا إذا لم يعد مستند قيد الانتظار."
+],
+[
+"Une faute de frappe dans le nom d'un fichier (BELMAHY au lieu de BELMAHI) ne bloque plus : l'agent est proposé, à vérifier.",
+"A typo in a file name (BELMAHY instead of BELMAHI) no longer blocks: the agent is suggested, to be checked.",
+"لم يعد الخطأ المطبعي في اسم الملف (BELMAHY بدل BELMAHI) يعطّل: يُقترح العون للتحقق."
 ]
 ]

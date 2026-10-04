@@ -167,3 +167,17 @@ test('mois en abrégé et année sur 2 chiffres dans le nom du fichier (FEVR 26,
   assert.strictEqual(contenu.champs.mois, 'fevrier2026'); assert.match(contenu.avertissement, /lues dans le contenu/);
   env.fetchHandler = null;
 });
+
+test('faute de frappe dans le nom : agent proposé (orthographe proche), message effacé une fois l\'agent choisi', () => {
+  env.fetchHandler = null;
+  const bel = ok(call(T.admin, 'agentCreate', { nom: 'BELMAHI SOFIANE', email: 'belmahi@t.fr', role: 'agent', password: 'belmahipw1' })).agent.id;
+  ocr = '';
+  const r = ok(call(T.admin, 'depotAdd', { nom: 'FDP BELMAHY FEVR 26.pdf', mime: 'application/pdf', base64: unique() }));
+  assert.strictEqual(r.agent_id, bel, 'agent deviné'); assert.match(r.avertissement, /deviné d'après un nom proche/);
+  assert.strictEqual(r.nom_final, 'BELMAHI_Sofiane_FDP_Fevrier2026.pdf');
+  const x = ok(call(T.admin, 'depotAdd', { nom: 'FDP ZZZZZZ FEVR 26.pdf', mime: 'application/pdf', base64: unique() }));
+  assert.strictEqual(x.agent_id, '', 'rien de proche : à choisir'); assert.match(x.avertissement, /Agent non reconnu/);
+  const y = ok(call(T.admin, 'depotUpdate', x.id, { agent_id: bel }));
+  assert.ok(!/Agent non reconnu/.test(y.avertissement), 'message obsolète effacé');
+  ok(call(T.admin, 'depotRejeter', [r.id, x.id]));
+});

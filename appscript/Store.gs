@@ -27,7 +27,11 @@ var Store = (function () {
   function cache() { return CacheService.getScriptCache(); }
   function version() {
     var k = tkey();
-    if (verMemo[k] === undefined) { var v = null; try { v = cache().get('V_' + k); } catch (e) { /* ignore */ } verMemo[k] = v || '0'; }
+    if (verMemo[k] === undefined) {
+      var v = null; try { v = cache().get('V_' + k); } catch (e) { /* ignore */ }
+      if (!v) { v = Date.now() + '.' + Math.floor(Math.random() * 1e6); try { cache().put('V_' + k, v, 21600); } catch (e2) { /* ignore */ } } // numéro absent (cache vidé ou évincé par Google) : on en crée un nouveau, les anciennes lectures en cache ne sont plus valables
+      verMemo[k] = v;
+    }
     return verMemo[k];
   }
   // Toute écriture change la version du client : les lectures en cache des autres exécutions deviennent invalides.

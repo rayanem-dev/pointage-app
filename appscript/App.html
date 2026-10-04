@@ -297,6 +297,11 @@ function entSelect() {
   usel.onchange = function () { if (usel.value && (!S.user || usel.value !== S.user.id)) enterClient(S.back.code, usel.value); };
   return h('span', { class: 'entwrap' }, sel, usel);
 }
+// Actualiser : relit les données du serveur (pour l'administrateur, le cache du classeur est aussi vidé) puis redessine la page.
+function actualiser() {
+  var vide = S.user && S.user.role === 'admin' ? call('cacheVider').catch(function () {}) : Promise.resolve();
+  vide.then(function () { S.badges = null; S.verCheck = null; S.clientsFetched = false; S.usersByCode = {}; S.badgesAt = 0; render(); toast(tr('Données actualisées.')); });
+}
 function render() {
   var root = $app();
   if (!S.user) { root.replaceChildren(S.charte ? h('div', { class: 'login', style: 'max-width:760px' }, CharteBlock(function () { S.charte = false; render(); })) : loginView()); return; }
@@ -319,7 +324,7 @@ function render() {
   var main = h('main', null);
   var back = S.back ? h('div', { class: 'msg warn', style: 'margin:0;border-radius:0;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap' }, 'Mode support : vous êtes dans l\'espace de « ' + S.back.societe + ' » en tant que ' + S.user.nom + ' (' + tr(ROLE_LIB[S.user.role] || S.user.role) + ').',
     h('button', { type: 'button', class: 'primary', onclick: function () { call('logout').catch(function () {}).then(function () { S.token = S.back.token; setBack(null); S.path = null; try { sessionStorage.setItem('tk', S.token); } catch (e) { /* ignore */ } boot(); }); } }, "‹ Retour à l'administration")) : null;
-  root.replaceChildren.apply(root, [back, bar, main, h('footer', { class: 'muted', style: 'text-align:center;padding:14px;font-size:.8rem' }, 'Sijil · ', h('a', { href: '#/nouveautes', onclick: navClick('/nouveautes') }, 'version ' + ((S.info && S.info.version) || '?') + ' (nouveautés)'), h('br'), (S.info && S.info.copyright) || '', ' · ', h('a', { href: '#/confidentialite', onclick: navClick('/confidentialite') }, 'Confidentialité'))].filter(Boolean));
+  root.replaceChildren.apply(root, [back, bar, main, h('footer', { class: 'muted', style: 'text-align:center;padding:14px;font-size:.8rem' }, 'Sijil · ', h('a', { href: '#/nouveautes', onclick: navClick('/nouveautes') }, 'version ' + ((S.info && S.info.version) || '?') + ' (nouveautés)'), h('br'), (S.info && S.info.copyright) || '', ' · ', h('a', { href: '#/confidentialite', onclick: navClick('/confidentialite') }, 'Confidentialité'), ' · ', h('a', { href: '#', title: 'Relire les données depuis le serveur', onclick: function (ev) { ev.preventDefault(); actualiser(); } }, '↻ Actualiser'))].filter(Boolean));
   if (S.owner) checkVersion().then(function (r) { var a = document.querySelector('a[data-path="/version"]'); if (a) { a.textContent = tr('Version') + (r.c === 0 ? ' ✓' : r.c === null ? '' : ' ⚠'); a.title = r.c === 0 ? tr('✓ Tout est à jour') : ''; } });
   setTimeout(refreshBadges, 0);
   main.append(ROUTES[path]());
@@ -802,8 +807,12 @@ function DocumentsPage() {
     var upBox = msgBox(); var go = h('button', { class: 'primary', type: 'button' }, 'Analyser les documents');
     var queue = h('section', { class: 'card', hidden: true }); var qBox = msgBox();
     function agentOpts(cur) { return [h('option', { value: '' }, '— choisir l’agent —')].concat(agentsAll.map(function (a) { return h('option', { value: a.id }, a.nom); })); }
+    // Relit la liste côté serveur (après une erreur « introuvable » ou à la demande) : elle redevient exacte.
+    function reloadQueue(msg) {
+      return call('depotList').then(function (rows) { Q = rows; var ids = {}; rows.forEach(function (r) { ids[r.id] = 1; if (r.pret && !r.doublon_exact && chk[r.id] === undefined) chk[r.id] = true; }); Object.keys(chk).forEach(function (k) { if (!ids[k]) delete chk[k]; }); drawQueue(); if (msg) qBox.show(msg, 'warn'); }).catch(function (e) { qBox.show(e.message, false); });
+    }
     function upd(it, patch) {
-      return call('depotUpdate', it.id, patch).then(function (r) { Q = Q.map(function (x) { return x.id === r.id ? r : x; }); if (r.pret && !r.doublon_exact && chk[r.id] === undefined) chk[r.id] = true; drawQueue(); }).catch(function (e) { qBox.show(e.message, false); drawQueue(); });
+      return call('depotUpdate', it.id, patch).then(function (r) { Q = Q.map(function (x) { return x.id === r.id ? r : x; }); if (r.pret && !r.doublon_exact && chk[r.id] === undefined) chk[r.id] = true; drawQueue(); }).catch(function (e) { if (/introuvable/i.test(e.message)) reloadQueue(tr('La liste a été actualisée : ce document n’était plus en attente.')); else { qBox.show(e.message, false); drawQueue(); } });
     }
     function fieldsFor(it) {
       var c = it.champs; var t = it.type; var inp = function (label, val, type, key, ph) { var el = h('input', { type: type, value: val || '', placeholder: ph || '', style: 'min-width:120px' }); el.onchange = function () { var p = {}; p[key] = el.value; upd(it, { champs: p }); }; return h('label', { class: 'inline' }, h('small', null, label), el); };
@@ -821,7 +830,7 @@ function DocumentsPage() {
       var ag = h('select', { style: 'min-width:170px' }, agentOpts()); ag.value = it.agent_id || ''; ag.onchange = function () { upd(it, { agent_id: ag.value }); };
       var ty = h('select', { style: 'min-width:190px' }, Object.keys(DOC_TYPES).map(function (k) { return h('option', { value: k }, DOC_TYPES[k]); })); ty.value = it.type; ty.onchange = function () { upd(it, { type: ty.value }); };
       var nm = h('input', { value: it.nom_final, style: 'min-width:240px;width:100%', title: 'Nom final du fichier : modifiable' }); nm.onchange = function () { upd(it, { nom_force: nm.value === it.nom_final ? undefined : nm.value }); };
-      var pv = h('button', { type: 'button', title: 'Voir le document pour vérifier' }, 'Aperçu'); pv.onclick = function () { act(pv, qBox, function () { return call('depotApercu', it.id).then(previewFile); }); };
+      var pv = h('button', { type: 'button', title: 'Voir le document pour vérifier' }, 'Aperçu'); pv.onclick = function () { act(pv, qBox, function () { return call('depotApercu', it.id).then(previewFile); }).then(function (r) { if (r === undefined && /introuvable/i.test(qBox.textContent || '')) reloadQueue(tr('La liste a été actualisée : ce document n’était plus en attente.')); }); };
       var rm = h('button', { type: 'button', class: 'danger', title: 'Retirer ce document' }, '✕'); rm.onclick = function () { call('depotRejeter', [it.id]).then(function () { Q = Q.filter(function (x) { return x.id !== it.id; }); delete chk[it.id]; drawQueue(); }); };
       var etat = it.pret ? h('b', { style: 'color:var(--pos,#2e9e4f)' }, '✓ Prêt') : h('b', { style: 'color:#b45309' }, '⚠ ' + (it.agent_id ? 'À compléter' : 'Agent à choisir'));
       return h('tr', null, h('td', null, cb), h('td', null, h('small', null, it.nom_original)), h('td', null, ag, it.candidats.length > 1 ? h('small', { class: 'muted' }, 'Possibles : ' + it.candidats.map(function (c) { return c.nom; }).join(', ')) : null),
@@ -833,12 +842,13 @@ function DocumentsPage() {
       queue.hidden = !Q.length;
       if (!Q.length) return;
       var all = h('input', { type: 'checkbox', title: 'Tout cocher', onchange: function () { Q.forEach(function (x) { if (x.pret) chk[x.id] = all.checked; }); drawQueue(); } });
+      var refresh = h('button', { type: 'button', title: 'Relire la liste depuis le serveur' }, 'Actualiser la liste'); refresh.onclick = function () { reloadQueue(); };
       var rmChecked = h('button', { type: 'button' }, 'Retirer les documents cochés');
       rmChecked.onclick = function () { var ids = Q.filter(function (x) { return chk[x.id]; }).map(function (x) { return x.id; }); if (!ids.length || !window.confirm(tr('Retirer ces documents de la liste ? Ils ne seront pas envoyés.'))) return; call('depotRejeter', ids).then(function () { Q = Q.filter(function (x) { return ids.indexOf(x.id) < 0; }); ids.forEach(function (i) { delete chk[i]; }); drawQueue(); }); };
       queue.replaceChildren(h('h2', null, 'À vérifier avant envoi (' + Q.length + ')'),
         h('p', { class: 'muted' }, 'Rien n’est encore dans l’espace des agents. Corrigez si besoin (agent, type, dates, nom), cochez les documents à envoyer, puis envoyez : chaque agent est prévenu par e-mail.'),
         h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, [all, 'Fichier déposé', 'Agent', 'Type', 'Dates', 'Nom final', 'État', ''].map(function (t) { return h('th', null, t); }))), h('tbody', null, Q.map(qRow)))),
-        qBox, h('div', { class: 'sendbar' }, sendBtn, rmChecked));
+        qBox, h('div', { class: 'sendbar' }, sendBtn, rmChecked, refresh));
       countBtn();
     }
     sendBtn.onclick = function () {
@@ -1475,6 +1485,8 @@ function maintenanceCard(status) {
   var box = msgBox();
   var repair = h('button', null, 'Réparer / mettre à jour la structure');
   repair.onclick = function () { act(repair, box, function () { return call('repairStructure'); }, 'Structure à jour (données conservées).'); };
+  var cacheBtn = h('button', { type: 'button' }, 'Actualiser les données (vider le cache)');
+  cacheBtn.onclick = function () { act(cacheBtn, box, function () { return call('cacheVider'); }, 'Cache vidé : les données sont relues depuis le classeur.').then(function (r) { if (r) { S.badges = null; S.verCheck = null; S.clientsFetched = false; S.usersByCode = {}; } }); };
   var mode = h('select', null, h('option', { value: 'donnees' }, 'Vider les données (agents, pointages, demandes, documents) — garder la configuration'), h('option', { value: 'tout' }, 'Coquille vide complète (données + prestataire, contrats, paramètres)'));
   var conf = h('input', { placeholder: 'Tapez VIDER pour confirmer' }); var vb = h('button', { class: 'danger' }, 'Vider');
   vb.onclick = function () {
@@ -1482,7 +1494,7 @@ function maintenanceCard(status) {
     act(vb, box, function () { return call('vider', mode.value, conf.value.trim()); }, 'Données vidées. Votre compte administrateur est conservé.').then(function (r) { if (r) conf.value = ''; });
   };
   return h('section', { class: 'card danger-zone' }, h('h2', null, 'Maintenance'),
-    h('p', { class: 'muted' }, 'Version ' + status.version + ' · structure ' + (status.installed ? 'installée' : 'incomplète')), repair,
+    h('p', { class: 'muted' }, 'Version ' + status.version + ' · structure ' + (status.installed ? 'installée' : 'incomplète')), repair, ' ', cacheBtn, h('p', { class: 'muted' }, 'Si une liste vous semble périmée ou incohérente, « Actualiser les données » force la relecture du classeur. Rechargez aussi la page (Ctrl+F5) pour récupérer la dernière version de l’application.'),
     h('h3', { style: 'margin-top:16px' }, 'Remise à zéro'), h('p', { class: 'muted' }, "Pour livrer une copie vierge à un nouveau prestataire : créez une copie du classeur puis choisissez « Coquille vide complète »."),
     h('div', { class: 'row' }, field('Mode', mode, 'grow2'), field('Confirmation', conf)), box, vb);
 }

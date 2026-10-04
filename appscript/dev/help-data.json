@@ -713,6 +713,18 @@
      "Each company has its own Google workbook, never mixed with another. Passwords are never stored in clear. The privacy policy is available at the bottom of every page.",
      "لكل مؤسسة مصنّف Google خاص بها لا يختلط بغيره. لا تُخزَّن كلمات المرور بوضوح أبدًا. وميثاق الخصوصية متاح أسفل كل صفحة."
     ]
+   },
+   {
+    "t": [
+     "Une liste me semble périmée ou bizarre",
+     "A list looks outdated or odd",
+     "قائمة تبدو قديمة أو غريبة"
+    ],
+    "x": [
+     "Cliquez sur « ↻ Actualiser » en bas de la page : Sijil relit les données. Pour l'administrateur, Setup → Maintenance → « Actualiser les données » vide aussi le cache du classeur. Rechargez enfin la page (Ctrl+F5) pour être sûr d'avoir la dernière version de l'application.",
+     "Click \"↻ Refresh\" at the bottom of the page: Sijil re-reads the data. For the administrator, Setup → Maintenance → \"Refresh data\" also clears the workbook cache. Finally reload the page (Ctrl+F5) to be sure you have the latest version of the app.",
+     "انقر «↻ تحديث» أسفل الصفحة: يعيد Sijil قراءة البيانات. وللمسؤول، يمسح «تحديث البيانات» في الإعدادات ← الصيانة أيضًا الذاكرة المؤقتة للمصنّف. وأخيرًا أعد تحميل الصفحة (Ctrl+F5) للتأكد من آخر إصدار للتطبيق."
+    ]
    }
   ]
  }
