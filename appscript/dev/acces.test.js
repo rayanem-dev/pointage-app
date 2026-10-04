@@ -52,6 +52,18 @@ test('pastilles : documents déposés pour l\'agent, e-mail de notification', ()
   const b = ok(call(ag, 'badges'));
   assert.strictEqual(b.documents.length, 1); assert.match(b.documents[0].nom, /ATS/); assert.ok(b.now);
   assert.strictEqual(b.demandes, 0);
+  // « nouveau » est conservé côté serveur jusqu'à ce que l'agent ouvre ses documents
+  assert.strictEqual(ok(call(ag, 'badges')).documents.length, 1, 'toujours nouveau tant que l\'agent n\'a pas ouvert la liste');
+  assert.strictEqual(ok(call(ag, 'documentsList')).filter((d) => d.nouveau === '1').length, 1);
+  assert.strictEqual(ok(call(ag, 'documentsLus')).lus, 1);
+  assert.strictEqual(ok(call(ag, 'badges')).documents.length, 0);
+  // dépôt pour un agent sans adresse valide : le dépôt réussit, la raison de l'e-mail manquant est donnée
+  const sans = ok(call(T.admin, 'agentCreate', { nom: 'SANS MAIL', email: 'sansmail@t.fr', role: 'agent', password: 'sansmail12' })).agent;
+  assert.strictEqual(ok(call(T.admin, 'documentUpload', { agent_id: sans.id, type: 'ats', nom: 'ATS_x.pdf', base64: Buffer.from('%PDF-1.4 y').toString('base64') })).mail.ok, true);
+  env.mailFail = true;
+  const echec = ok(call(T.admin, 'documentUpload', { agent_id: sans.id, type: 'ats', nom: 'ATS_z.pdf', base64: Buffer.from('%PDF-1.4 z').toString('base64') }));
+  assert.deepStrictEqual([echec.mail.ok, echec.mail.raison], [false, 'quota'], 'e-mail refusé par Google : le dépôt réussit et la raison est rapportée');
+  env.mailFail = false;
 });
 
 test('titre de congé : date de reprise = départ + durée du repos, dans l\'e-mail et la liste', () => {

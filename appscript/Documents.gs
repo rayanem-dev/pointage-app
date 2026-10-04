@@ -305,7 +305,7 @@ var Documents = (function () {
   // Empreinte du fichier déposé (avant toute conversion) : sert à repérer un même fichier déposé deux fois.
   function hashOf(bytes) { return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, bytes).map(function (b) { return ('0' + ((b + 256) % 256).toString(16)).slice(-2); }).join(''); }
   function docRow(user, agent, type, f, name, file, empreinte) {
-    var d = { id: newId_('G'), agent_id: agent.id, type: type, titre: name.replace(/\.[a-z0-9]{1,8}$/i, ''), file_id: file.getId(), nom_original: name, depose_par: user.nom, date: new Date().toISOString(), code: CODES[type], periode: periodeOf(type, f), dossier: 'Documents/' + label(agent), champs: JSON.stringify(f), empreinte: empreinte || '' };
+    var d = { id: newId_('G'), agent_id: agent.id, type: type, titre: name.replace(/\.[a-z0-9]{1,8}$/i, ''), file_id: file.getId(), nom_original: name, depose_par: user.nom, date: new Date().toISOString(), code: CODES[type], periode: periodeOf(type, f), dossier: 'Documents/' + label(agent), champs: JSON.stringify(f), empreinte: empreinte || '', nouveau: '1' };
     return d;
   }
   function upload(user, data) {
@@ -327,19 +327,23 @@ var Documents = (function () {
     var memeP = tous.filter(function (x) { return x.agent_id === agent.id && x.type === d.type && d.type !== 'autre' && x.periode && x.periode === d.periode; })[0];
     var alerte = (meme ? ' ⚠ Doublon : ce fichier est déjà classé (' + meme.nom_original + ').' : '') + (!meme && memeP ? ' ⚠ Un document du même type et de la même période est déjà classé (' + memeP.nom_original + ').' : '');
     Store.writeTable('Documents', tous.concat([d]));
-    notifyAgent(user, agent, d);
-    var out = pub(d); out.detecte = { type: info.type, source: info.source, avertissement: (info.avertissement + alerte).trim(), original: data.nom };
+    var mail = notifyAgent(user, agent, d);
+    var out = pub(d); out.mail = mail; out.detecte = { type: info.type, source: info.source, avertissement: (info.avertissement + alerte).trim(), original: data.nom };
     return out;
   }
   // Prévient l'agent par e-mail qu'un nouveau document est dans son espace.
-  function notifyAgent(user, agent, d) { notifyMany(user, agent, [d]); }
+  function notifyAgent(user, agent, d) { return notifyMany(user, agent, [d]); }
+  // Retourne { ok, raison } : la raison d'un e-mail non envoyé est montrée à celui qui dépose (adresse absente ou invalide, quota, refus de Google).
   function notifyMany(user, agent, docs) {
+    if (!agent || !docs.length) return { ok: false, raison: 'agent introuvable' };
+    if (agent.id === user.id) return { ok: false, raison: 'dépôt dans votre propre espace' };
+    if (!/^\S+@\S+\.\S+$/.test(agent.email || '')) return { ok: false, raison: 'adresse e-mail absente ou invalide' };
     try {
-      if (!agent || agent.id === user.id || !docs.length || !/^\S+@\S+\.\S+$/.test(agent.email || '')) return;
       var noms = docs.map(function (d) { return d.nom_original; });
       MailApp.sendEmail({ to: agent.email, replyTo: user.email || undefined, subject: 'Nouveau document — ' + noms[0] + (noms.length > 1 ? ' (+' + (noms.length - 1) + ')' : ''),
         body: 'Bonjour ' + agent.nom + ',\n\n' + (noms.length > 1 ? 'Nouveaux documents dans votre espace Sijil :\n - ' + noms.join('\n - ') : 'Nouveau document dans votre espace Sijil : ' + noms[0]) + '\nDéposé par ' + user.nom + '.\n\nConnectez-vous, onglet « Mes documents », pour le télécharger.' });
-    } catch (e) { Logger.log('Document non notifié : ' + e.message); }
+      return { ok: true, raison: '' };
+    } catch (e) { Logger.log('Document non notifié : ' + e.message); return { ok: false, raison: e.message }; }
   }
   // Correction après coup : type et/ou période → le fichier est renommé dans Drive.
   function update(user, id, data) {
@@ -375,6 +379,14 @@ var Documents = (function () {
     try { DriveApp.getFileById(d.file_id).setTrashed(true); } catch (e) { /* déjà supprimé */ }
     Store.writeTable('Documents', all.filter(function (x) { return x.id !== id; }));
   }
+  // L'agent a ouvert « Mes documents » : plus rien n'est « nouveau » pour lui (enregistré côté serveur, donc valable sur tous ses appareils).
+  function marquerLus(user) {
+    var all = Store.readTable('Documents'); var n = 0;
+    all.forEach(function (d) { if (d.agent_id === user.id && d.nouveau === '1') { d.nouveau = ''; n += 1; } });
+    if (n) Store.writeTable('Documents', all);
+    return { lus: n };
+  }
+  function nouveaux(user) { return Store.readTable('Documents').filter(function (d) { return d.agent_id === user.id && d.nouveau === '1'; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; }).slice(0, 20).map(function (d) { return { date: d.date, nom: d.nom_original || d.titre }; }); }
   function count(agentId) { return Store.readTable('Documents').filter(function (d) { return d.agent_id === agentId; }).length; }
   // Vidage : corbeille de tous les fichiers déposés (rangés et en attente de classement).
   function purgeFiles() {
@@ -480,8 +492,8 @@ var Documents = (function () {
     });
     if (docs.length) Store.writeTable('Documents', Store.readTable('Documents').concat(docs));
     Store.writeTable('Depots', all.filter(function (x) { return !done[x.id]; }));
-    Object.keys(parAgent).forEach(function (k) { notifyMany(user, parAgent[k].agent, parAgent[k].docs); });
-    return { valides: docs.length, erreurs: erreurs, noms: docs.map(function (d) { return d.nom_original; }) };
+    var mails = Object.keys(parAgent).map(function (k) { var r = notifyMany(user, parAgent[k].agent, parAgent[k].docs); return { agent: parAgent[k].agent.nom, ok: r.ok, raison: r.raison }; });
+    return { valides: docs.length, erreurs: erreurs, noms: docs.map(function (d) { return d.nom_original; }), mails: mails };
   }
   // Aperçu d'un fichier en attente (avant envoi à l'agent).
   function depotApercu(user, id) {
@@ -498,6 +510,6 @@ var Documents = (function () {
     Store.writeTable('Depots', Store.readTable('Depots').filter(function (x) { return !gone[x.id]; }));
     return { retires: Object.keys(gone).length };
   }
-  return { list: list, upload: upload, update: update, download: download, remove: remove, count: count, purgeFiles: purgeFiles, analyse: function (t) { var ty = detectType(t); return { type: ty, champs: ty ? extract(ty, t) : null }; }, fileName: fileName, nameFor: nameFor, detectType: detectType, extract: extract,
+  return { marquerLus: marquerLus, nouveaux: nouveaux, list: list, upload: upload, update: update, download: download, remove: remove, count: count, purgeFiles: purgeFiles, analyse: function (t) { var ty = detectType(t); return { type: ty, champs: ty ? extract(ty, t) : null }; }, fileName: fileName, nameFor: nameFor, detectType: detectType, extract: extract,
     imageToPdf: imageToPdf, depotAdd: depotAdd, depotList: depotList, depotUpdate: depotUpdate, depotValider: depotValider, depotApercu: depotApercu, depotRejeter: depotRejeter};
 })();

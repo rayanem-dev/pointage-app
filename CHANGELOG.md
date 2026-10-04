@@ -2,6 +2,12 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.24.1 — 2026-10-04 — Notifications de documents fiabilisées
+
+- Le « Nouveau » des documents est conservé par Sijil jusqu'à ce que l'agent ouvre sa liste : il s'affiche même si l'agent se connecte plus tard, sur n'importe quel appareil.
+- Quand l'éditeur ouvre la session d'un agent pour l'aider, les documents ne sont pas marqués comme lus à sa place.
+- Si l'e-mail de notification ne peut pas partir (adresse absente ou invalide, limite d'envoi de Google), la raison est indiquée au moment de l'envoi ; le document est bien dans l'espace de l'agent.
+
 ## 3.24.0 — 2026-10-04 — Détection des doublons
 
 - Un même fichier déposé deux fois est signalé : « Doublon » (déjà classé chez l'agent, ou déjà dans la liste). Son envoi demande une confirmation.

@@ -5573,5 +5573,35 @@
 "Un document du même type et de la même période qu'un document déjà classé (par exemple une 2e fiche de paie de mars) est signalé par un avertissement.",
 "A document of the same type and period as an already filed document (e.g. a second March payslip) is flagged with a warning.",
 "يُنبَّه بتحذير إلى مستند من النوع والفترة نفسيهما لمستند مصنّف بالفعل (مثل كشف راتب ثانٍ لشهر مارس)."
+],
+[
+" ⚠ E-mail non envoyé à ",
+" ⚠ E-mail not sent to ",
+" ⚠ لم يُرسَل البريد إلى "
+],
+[
+" : le document est bien dans son espace.",
+" : the document is in their space.",
+" : المستند موجود في مساحته."
+],
+[
+"Notifications de documents fiabilisées",
+"More reliable document notifications",
+"إشعارات المستندات أكثر موثوقية"
+],
+[
+"Le « Nouveau » des documents est conservé par Sijil jusqu'à ce que l'agent ouvre sa liste : il s'affiche même si l'agent se connecte plus tard, sur n'importe quel appareil.",
+"The \"New\" marker on documents is kept by Sijil until the agent opens the list: it shows even if the agent signs in later, on any device.",
+"يحتفظ Sijil بعلامة «جديد» على المستندات إلى أن يفتح العون القائمة: تظهر حتى لو دخل العون لاحقًا، على أي جهاز."
+],
+[
+"Quand l'éditeur ouvre la session d'un agent pour l'aider, les documents ne sont pas marqués comme lus à sa place.",
+"When the publisher opens an agent's session to help, documents are not marked as read in their place.",
+"عندما يفتح الناشر جلسة عون لمساعدته لا تُعلَّم المستندات كمقروءة مكانه."
+],
+[
+"Si l'e-mail de notification ne peut pas partir (adresse absente ou invalide, limite d'envoi de Google), la raison est indiquée au moment de l'envoi ; le document est bien dans l'espace de l'agent.",
+"If the notification e-mail cannot be sent (missing or invalid address, Google sending limit), the reason is shown at sending time; the document is in the agent's space.",
+"إذا تعذّر إرسال بريد الإشعار (عنوان مفقود أو غير صالح، حد الإرسال لدى Google) يُذكر السبب عند الإرسال؛ والمستند موجود في مساحة العون."
 ]
 ]

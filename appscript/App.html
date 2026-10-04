@@ -319,7 +319,6 @@ function render() {
   var back = S.back ? h('div', { class: 'msg warn', style: 'margin:0;border-radius:0;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap' }, 'Mode support : vous êtes dans l\'espace de « ' + S.back.societe + ' » en tant que ' + S.user.nom + ' (' + tr(ROLE_LIB[S.user.role] || S.user.role) + ').',
     h('button', { type: 'button', class: 'primary', onclick: function () { call('logout').catch(function () {}).then(function () { S.token = S.back.token; setBack(null); S.path = null; try { sessionStorage.setItem('tk', S.token); } catch (e) { /* ignore */ } boot(); }); } }, "‹ Retour à l'administration")) : null;
   root.replaceChildren.apply(root, [back, bar, main, h('footer', { class: 'muted', style: 'text-align:center;padding:14px;font-size:.8rem' }, 'Sijil · ', h('a', { href: '#/nouveautes', onclick: navClick('/nouveautes') }, 'version ' + ((S.info && S.info.version) || '?') + ' (nouveautés)'), h('br'), (S.info && S.info.copyright) || '', ' · ', h('a', { href: '#/confidentialite', onclick: navClick('/confidentialite') }, 'Confidentialité'))].filter(Boolean));
-  if (path === '/documents') markDocsSeen();
   if (S.owner) checkVersion().then(function (r) { var a = document.querySelector('a[data-path="/version"]'); if (a) { a.textContent = tr('Version') + (r.c === 0 ? ' ✓' : r.c === null ? '' : ' ⚠'); a.title = r.c === 0 ? tr('✓ Tout est à jour') : ''; } });
   setTimeout(refreshBadges, 0);
   main.append(ROUTES[path]());
@@ -327,16 +326,9 @@ function render() {
   window.scrollTo(0, 0);
 }
 // ---------- pastilles du menu et notifications ----------
-// Documents : le navigateur retient la date de la dernière visite de « Mes documents » ; ce qui est plus récent est « nouveau ».
-function docsSeenKey() { return 'pt-docs-seen-' + (S.user ? S.user.id : ''); }
-function docsSeen() { try { return localStorage.getItem(docsSeenKey()) || ''; } catch (e) { return ''; } }
-function docsUnread() { var seen = docsSeen(); return (S.badges ? S.badges.documents : []).filter(function (d) { return seen && d.date > seen; }); }
-function markDocsSeen() {
-  S.docsPrev = docsSeen();
-  var now = (S.badges && S.badges.now) || new Date().toISOString();
-  try { localStorage.setItem(docsSeenKey(), now); } catch (e) { /* ignore */ }
-  if (S.badges) S.badges.documents = S.badges.documents.filter(function (d) { return d.date > now; });
-}
+// Documents : « nouveau » = pas encore ouvert par l'agent (état conservé côté serveur : valable sur tous ses appareils, y compris quand l'éditeur ouvre sa session pour le support).
+function docsUnread() { return S.badges ? S.badges.documents : []; }
+function markDocsSeen() { if (S.back) return Promise.resolve(); if (S.badges) S.badges.documents = []; paintBadges(); return call('documentsLus').catch(function () {}); } // en mode support, rien n'est marqué comme lu à la place de l'agent
 function paintBadges() {
   if (!S.user) return;
   var counts = { '/documents': docsUnread().length, '/demandes': S.badges ? S.badges.demandes : 0, '/groupe': S.badges ? S.badges.remarques : 0 };
@@ -357,8 +349,6 @@ function refreshBadges(force) {
   call('badges').then(function (b) {
     if (!S.user) return;
     var first = !S.badges; S.badges = b;
-    if (!docsSeen() && !S.docsPrev) { try { localStorage.setItem(docsSeenKey(), b.now); } catch (e) { /* ignore */ } } // première visite : rien n'est « nouveau »
-    if (S.path === '/documents') markDocsSeen();
     // Notification des documents arrivés depuis la dernière vérification (application ouverte)
     var announced = S.announced = S.announced || {};
     docsUnread().forEach(function (d) { var k = d.date + d.nom; if (!announced[k]) { announced[k] = 1; if (!first) toast(tr('Nouveau document : ') + d.nom); } });
@@ -797,8 +787,9 @@ function DocumentsPage() {
           ok.onclick = function () { act(ok, box, function () { return call('documentUpdate', { id: d.id, type: tsel.value, periode: per.value }); }, 'Document reclassé et renommé').then(function (r) { if (r) loadList(); }); };
           cancel.onclick = function () { editor.hidden = true; };
           var fix = staff ? h('button', null, 'Corriger') : null; if (fix) fix.onclick = function () { editor.hidden = !editor.hidden; };
-          return h('li', null, h('div', null, h('b', null, d.nom_original || d.titre), (!staff && S.docsPrev && d.date > S.docsPrev) ? h('span', { class: 'badge', style: 'background:var(--neg);color:#fff' }, 'Nouveau') : null, h('small', null, (DOC_TYPES[d.type] || d.type) + (d.periode ? ' · ' + d.periode : '') + ' · déposé par ' + d.depose_par + ' le ' + frDateTime(d.date) + (d.dossier ? ' · Drive : ' + d.dossier : '')), editor), h('span', null, pvb, ' ', dl, fix, del));
+          return h('li', null, h('div', null, h('b', null, d.nom_original || d.titre), (!staff && d.nouveau === '1') ? h('span', { class: 'badge', style: 'background:var(--neg);color:#fff' }, 'Nouveau') : null, h('small', null, (DOC_TYPES[d.type] || d.type) + (d.periode ? ' · ' + d.periode : '') + ' · déposé par ' + d.depose_par + ' le ' + frDateTime(d.date) + (d.dossier ? ' · Drive : ' + d.dossier : '')), editor), h('span', null, pvb, ' ', dl, fix, del));
         })) : h('p', { class: 'muted' }, 'Aucun document.'), box);
+      if (!staff && docs.some(function (d) { return d.nouveau === '1'; })) setTimeout(markDocsSeen, 1500); // l'agent a vu la liste : les « Nouveau » s'éteignent pour la prochaine visite
     }).catch(function (e) { list.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
   }
   if (staff) {
@@ -857,7 +848,8 @@ function DocumentsPage() {
       if (!window.confirm(tr('Envoyer ' + items.length + ' document(s) dans l’espace des agents ?\n\n') + resume + (dbl ? tr('\n\n⛔ ' + dbl + ' doublon(s) exact(s) : le même fichier est déjà classé ou listé. Les envoyer quand même ?') : '') + (pdb ? tr('\n\n⚠ ' + pdb + ' document(s) du même type et de la même période qu’un document déjà classé.') : '') + tr('\n\nChaque agent sera prévenu par e-mail.'))) return;
       act(sendBtn, qBox, function () { return call('depotValider', items.map(function (x) { return x.id; }), dbl > 0); }).then(function (r) {
         if (!r) return;
-        qBox.show('✓ ' + r.valides + ' document(s) envoyé(s)' + (r.erreurs.length ? ' · ⚠ ' + r.erreurs.map(function (e) { return e.nom + ' : ' + e.message; }).join(' ; ') : '') + '.', !r.erreurs.length);
+        var mailKo = (r.mails || []).filter(function (m) { return !m.ok; });
+        qBox.show('✓ ' + r.valides + ' document(s) envoyé(s)' + (r.erreurs.length ? ' · ⚠ ' + r.erreurs.map(function (e) { return e.nom + ' : ' + e.message; }).join(' ; ') : '') + '.' + (mailKo.length ? ' ⚠ E-mail non envoyé à ' + mailKo.map(function (m) { return m.agent + ' (' + m.raison + ')'; }).join(', ') + ' : le document est bien dans son espace.' : ''), !r.erreurs.length && !mailKo.length);
         Q = Q.filter(function (x) { return r.noms.length ? !items.some(function (i) { return i.id === x.id && r.erreurs.every(function (e) { return e.id !== i.id; }); }) : true; });
         loadList(); drawQueue();
       });

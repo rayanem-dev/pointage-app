@@ -65,10 +65,9 @@ var HANDLERS = {
   remarqueAdd: { roles: ['client', 'agent'], write: true, fn: function (u, a) { return Remarques.add(u, a[0] || {}); } },
   remarqueTraiter: { roles: STAFF, write: true, fn: function (u, a) { return Remarques.traiter(u, a[0], a[1] || {}); } },
   badges: { fn: function (u) {
-    var docs = Store.readTable('Documents').filter(function (d) { return d.agent_id === u.id; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; }).slice(0, 20)
-      .map(function (d) { return { date: d.date, nom: d.nom_original || d.titre }; });
-    return { now: new Date().toISOString(), documents: docs, demandes: u.role === 'agent' ? 0 : Demandes.counts(u).a_traiter, remarques: Remarques.countNew(u) };
+    return { now: new Date().toISOString(), documents: Documents.nouveaux(u), demandes: u.role === 'agent' ? 0 : Demandes.counts(u).a_traiter, remarques: Remarques.countNew(u) };
   } },
+  documentsLus: { roles: WORKERS, write: true, fn: function (u) { return Documents.marquerLus(u); } },
   params: { fn: function () { return Params.pub(Params.get()); } },
   passwordOwn: { write: true, fn: function (u, a) { Agents.changeOwnPassword(u, a[0], a[1]); return true; } },
   overview: {
