@@ -1220,7 +1220,7 @@ function AProposPage() {
 // ---------- Nouveautés : historique des versions ----------
 function NouveautesPage() {
   return asyncBlock(function () {
-    return call('changelog').then(function (c) {
+    return call(S.owner ? 'changelogEditeur' : 'changelog').then(function (c) {
       return h('section', { class: 'card' }, h('h2', null, 'Nouveautés — historique des versions'),
         c.versions.map(function (v) {
           return h('article', { class: 'release' }, h('h3', null, 'Version ' + v.v, h('small', null, frDate(v.date) + ' · ' + v.titre)), h('ul', null, v.points.map(function (p) { return h('li', null, p); })));

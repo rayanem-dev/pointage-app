@@ -207,3 +207,14 @@ test('support : liste des utilisateurs d\'un client et connexion à la place de 
   assert.ok(ok(call(ed, 'connexions')).journal.some((j) => j[1] === 'ALPHA' && j[2].includes('AGENT ALPHA') && j[3] === 'support'), 'accès journalisé avec le nom de l\'utilisateur');
   assert.ok(adminAlpha.role === 'admin');
 });
+
+test('nouveautés : le public (agents, clients, administrateurs d\'entreprise) ne voit rien du côté éditeur ; l\'éditeur voit tout', () => {
+  const pub = ok(call(null, 'changelog')).versions; const txt = JSON.stringify(pub);
+  assert.ok(!/éditeur|support|Version »|Connexions de toutes/i.test(txt), 'aucun point réservé à l\'éditeur');
+  assert.ok(pub.every((v) => v.points.length && v.points.every((p) => !p.startsWith('§'))));
+  const ed = ok(call(null, 'login', 'editeur@t.fr', 'editeurpw1', 'ADMIN')).token;
+  const full = ok(call(ed, 'changelogEditeur')).versions;
+  assert.ok(full.length > pub.length && /éditeur/i.test(JSON.stringify(full)) && !JSON.stringify(full).includes('§'), 'l\'éditeur voit aussi ses propres nouveautés (marqueur retiré)');
+  const a = ok(call(null, 'login', 'admin@alpha.dz', T.alphaPw, 'ALPHA')).token;
+  assert.strictEqual(JSON.stringify(ok(call(a, 'changelogEditeur')).versions), JSON.stringify(pub), 'un administrateur d\'entreprise voit la version publique');
+});

@@ -2,6 +2,10 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.24.2 — 2026-10-04 — Nouveautés réservées à l'éditeur
+
+- Les nouveautés côté éditeur (console, support, suivi des versions) sont masquées aux utilisateurs des entreprises.
+
 ## 3.24.1 — 2026-10-04 — Notifications de documents fiabilisées
 
 - Le « Nouveau » des documents est conservé par Sijil jusqu'à ce que l'agent ouvre sa liste : il s'affiche même si l'agent se connecte plus tard, sur n'importe quel appareil.

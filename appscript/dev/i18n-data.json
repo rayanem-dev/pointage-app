@@ -5603,5 +5603,30 @@
 "Si l'e-mail de notification ne peut pas partir (adresse absente ou invalide, limite d'envoi de Google), la raison est indiquée au moment de l'envoi ; le document est bien dans l'espace de l'agent.",
 "If the notification e-mail cannot be sent (missing or invalid address, Google sending limit), the reason is shown at sending time; the document is in the agent's space.",
 "إذا تعذّر إرسال بريد الإشعار (عنوان مفقود أو غير صالح، حد الإرسال لدى Google) يُذكر السبب عند الإرسال؛ والمستند موجود في مساحة العون."
+],
+[
+"Remarques des agents sur leur pointage",
+"Agent remarks on their attendance",
+"ملاحظات الأعوان على حضورهم"
+],
+[
+"Documents jusqu'à 10 Mo",
+"Documents up to 10 MB",
+"مستندات حتى 10 ميغابايت"
+],
+[
+"Conversion PDF des grosses photos",
+"PDF conversion of large photos",
+"تحويل الصور الكبيرة إلى PDF"
+],
+[
+"Nouveautés réservées à l'éditeur",
+"Publisher-only news",
+"مستجدات خاصة بالناشر"
+],
+[
+"Les nouveautés côté éditeur (console, support, suivi des versions) sont masquées aux utilisateurs des entreprises.",
+"Publisher-side news (console, support, version tracking) is hidden from company users.",
+"المستجدات الخاصة بالناشر (اللوحة، الدعم، تتبع الإصدارات) مخفية عن مستخدمي الشركات."
 ]
 ]
