@@ -2,6 +2,13 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.21.0 — 2026-10-04 — Dépôt de documents en vrac
+
+- Déposez plusieurs documents d'un coup : Sijil reconnaît l'agent, le type et les dates, et propose le nom (TC_NOM_Prenom_2026-02-14, NOM_Prenom_FDP_Mars2026, contrat, attestations CNAS, attestation de travail, attestation d'émoluments…).
+- Vous vérifiez et corrigez la liste, puis vous l'envoyez : rien n'arrive chez les agents avant votre accord, et chacun reçoit un seul e-mail.
+- Les photos et scans peuvent être convertis en PDF.
+- Nouveaux documents que l'agent peut demander : copie du contrat, attestation CNAS, mise à jour CNAS, attestation d'émoluments.
+
 ## 3.20.0 — 2026-10-04 — Sélecteur d'entreprise pour l'éditeur
 
 - Un sélecteur d'entreprise dans l'en-tête : choisir un client ouvre son espace avec tous les droits de son administrateur (onglets, pointages, mots de passe…).

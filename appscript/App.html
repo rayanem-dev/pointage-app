@@ -673,7 +673,7 @@ function DemandesPage() {
     } }, h('h2', null, 'Nouvelle demande'), h('p', { class: 'muted' }, 'Elle sera transmise ' + dest + '.'),
       h('div', { class: 'row' }, field('Type de demande', type, 'grow2'), field('Du (facultatif)', d1), field('Au (facultatif)', d2)), field('Message', msg), box, btn);
   }
-  function CFG_TYPES() { return { titre_conge: 'Titre de congé', attestation_travail: 'Attestation de travail', ats: 'ATS', fiche_emolument: "Fiche d'émoluments", prolongation_conge: 'Prolongation de congé', prolongation_sejour: 'Prolongation de séjour' }; }
+  function CFG_TYPES() { return { titre_conge: 'Titre de congé', attestation_travail: 'Attestation de travail', ats: 'ATS', fiche_emolument: "Fiche d'émoluments", contrat: 'Copie du contrat', attestation_cnas: 'Attestation CNAS', maj_cnas: 'Mise à jour CNAS', attestation_emoluments: "Attestation d'émoluments", prolongation_conge: 'Prolongation de congé', prolongation_sejour: 'Prolongation de séjour' }; }
 
   // Boîte du chef : demandes en attente regroupées par thème, une seule demande envoyée à la direction.
   function inbox(L) {
@@ -738,7 +738,7 @@ function DemandesPage() {
 }
 
 // ---------- documents ----------
-var DOC_TYPES = { fiche_emolument: "Fiche d'émoluments (FDP)", titre_conge: 'Titre de congé (TC)', attestation_travail: 'Attestation de travail (AT)', ats: 'ATS', autre: 'Autre (DOC)' };
+var DOC_TYPES = { titre_conge: 'Titre de congé (TC)', fiche_emolument: 'Fiche de paie (FDP)', contrat: 'Contrat', attestation_cnas: 'Attestation CNAS', maj_cnas: 'Mise à jour CNAS', attestation_travail: 'Attestation de travail', attestation_emoluments: "Attestation d'émoluments", ats: 'ATS', autre: 'Autre' };
 var DOC_SOURCE = { nom: 'd’après le nom du fichier', contenu: 'd’après le contenu du document', choix: 'type choisi par vous', defaut: 'non reconnu' };
 function DocumentsPage() {
   var staff = S.user.role !== 'agent';
@@ -747,9 +747,9 @@ function DocumentsPage() {
   var sel = h('select'); var box = msgBox();
   function target() { return staff ? sel.value : S.user.id; }
   function loadList() {
-    if (!target()) { list.replaceChildren(h('h2', null, 'Documents'), h('p', { class: 'muted' }, 'Aucun agent.')); return; }
+    if (!target()) { list.replaceChildren(h('h2', null, 'Documents'), staff ? field('Agent', sel) : null, h('p', { class: 'muted' }, 'Aucun agent.')); return; }
     call('documentsList', target()).then(function (docs) {
-      list.replaceChildren(h('h2', null, staff ? "Documents de l'agent" : 'Mes documents'),
+      list.replaceChildren(h('h2', null, staff ? "Documents de l'agent" : 'Mes documents'), staff ? field('Agent', sel) : null,
         docs.length ? h('ul', { class: 'docs' }, docs.map(function (d) {
           var dl = h('button', null, 'Télécharger'); dl.onclick = function () { act(dl, box, function () { return call('documentDownload', d.id).then(saveFile); }); };
           var del = staff ? h('button', { class: 'danger' }, 'Supprimer') : null;
@@ -767,25 +767,87 @@ function DocumentsPage() {
     }).catch(function (e) { list.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
   }
   if (staff) {
-    var type = h('select', null, h('option', { value: 'auto' }, 'Détection automatique (recommandé)'), Object.keys(DOC_TYPES).map(function (k) { return h('option', { value: k }, DOC_TYPES[k]); }));
-    var file = h('input', { type: 'file', required: true });
-    var up = msgBox(); var btn = h('button', { class: 'primary' }, 'Déposer');
-    var form = h('form', { class: 'card', onsubmit: function (ev) {
-      ev.preventDefault();
-      var f = file.files[0]; if (!f) return;
-      up.show('⏳ Lecture et classement du document en cours…', 'warn');
-      act(btn, up, function () { return fileToBase64(f).then(function (b64) { return call('documentUpload', { agent_id: sel.value, type: type.value, nom: f.name, mime: f.type, base64: b64 }); }); }).then(function (r) {
+    var fmtMois = function (k) { return String(k || '').replace(/^([a-z]+)(\d{4})$/, '$1 $2'); };
+    var Q = []; var agentsAll = []; var chk = {};
+    var forceAgent = h('select', null, h('option', { value: '' }, 'Reconnaître l’agent automatiquement'));
+    var pdfChk = h('input', { type: 'checkbox', checked: true });
+    var files = h('input', { type: 'file', multiple: true, accept: '.pdf,.png,.jpg,.jpeg,.gif,.bmp,.doc,.docx,.xls,.xlsx' });
+    var upBox = msgBox(); var go = h('button', { class: 'primary', type: 'button' }, 'Analyser les documents');
+    var queue = h('section', { class: 'card', hidden: true }); var qBox = msgBox();
+    function agentOpts(cur) { return [h('option', { value: '' }, '— choisir l’agent —')].concat(agentsAll.map(function (a) { return h('option', { value: a.id }, a.nom); })); }
+    function upd(it, patch) {
+      return call('depotUpdate', it.id, patch).then(function (r) { Q = Q.map(function (x) { return x.id === r.id ? r : x; }); if (r.pret && chk[r.id] === undefined) chk[r.id] = true; drawQueue(); }).catch(function (e) { qBox.show(e.message, false); drawQueue(); });
+    }
+    function fieldsFor(it) {
+      var c = it.champs; var t = it.type; var inp = function (label, val, type, key, ph) { var el = h('input', { type: type, value: val || '', placeholder: ph || '', style: 'min-width:120px' }); el.onchange = function () { var p = {}; p[key] = el.value; upd(it, { champs: p }); }; return h('label', { class: 'inline' }, h('small', null, label), el); };
+      if (t === 'titre_conge') return [inp('Début du congé', c.date, 'date', 'date')];
+      if (t === 'contrat') return [inp('Début du contrat', c.date, 'date', 'date')];
+      if (t === 'attestation_travail') return [inp('Établie le', c.date, 'date', 'date')];
+      if (t === 'ats') return [inp('Date', c.date, 'date', 'date')];
+      if (t === 'attestation_cnas') return [inp('Date du document', c.date, 'date', 'date'), inp('N° sécurité sociale', c.nss, 'text', 'nss', '9600270193')];
+      if (t === 'fiche_emolument') return [inp('Mois', fmtMois(c.mois), 'text', 'mois', 'mars 2026')];
+      if (t === 'maj_cnas' || t === 'attestation_emoluments') return [inp('De', fmtMois(c.mois), 'text', 'mois', 'janvier 2026'), inp('À', fmtMois(c.mois2), 'text', 'mois2', 'mars 2026')];
+      return [h('small', { class: 'muted' }, 'Aucune date nécessaire')];
+    }
+    function qRow(it) {
+      var cb = h('input', { type: 'checkbox', checked: !!chk[it.id], disabled: !it.pret, title: it.pret ? '' : 'À compléter avant l’envoi', onchange: function () { chk[it.id] = cb.checked; countBtn(); } });
+      var ag = h('select', { style: 'min-width:170px' }, agentOpts()); ag.value = it.agent_id || ''; ag.onchange = function () { upd(it, { agent_id: ag.value }); };
+      var ty = h('select', { style: 'min-width:190px' }, Object.keys(DOC_TYPES).map(function (k) { return h('option', { value: k }, DOC_TYPES[k]); })); ty.value = it.type; ty.onchange = function () { upd(it, { type: ty.value }); };
+      var nm = h('input', { value: it.nom_final, style: 'min-width:240px;width:100%', title: 'Nom final du fichier : modifiable' }); nm.onchange = function () { upd(it, { nom_force: nm.value === it.nom_final ? undefined : nm.value }); };
+      var rm = h('button', { type: 'button', class: 'danger', title: 'Retirer ce document' }, '✕'); rm.onclick = function () { call('depotRejeter', [it.id]).then(function () { Q = Q.filter(function (x) { return x.id !== it.id; }); delete chk[it.id]; drawQueue(); }); };
+      var etat = it.pret ? h('b', { style: 'color:var(--pos,#2e9e4f)' }, '✓ Prêt') : h('b', { style: 'color:#b45309' }, '⚠ ' + (it.agent_id ? 'À compléter' : 'Agent à choisir'));
+      return h('tr', null, h('td', null, cb), h('td', null, h('small', null, it.nom_original)), h('td', null, ag, it.candidats.length > 1 ? h('small', { class: 'muted' }, 'Possibles : ' + it.candidats.map(function (c) { return c.nom; }).join(', ')) : null),
+        h('td', null, ty), h('td', null, h('div', { style: 'display:grid;gap:4px' }, fieldsFor(it))), h('td', null, nm, it.avertissement ? h('small', { class: 'muted', style: 'display:block' }, it.avertissement) : null), h('td', null, etat), h('td', null, rm));
+    }
+    var sendBtn = h('button', { class: 'primary', type: 'button' }, 'Envoyer vers les espaces des agents');
+    function countBtn() { var n = Q.filter(function (x) { return chk[x.id] && x.pret; }).length; sendBtn.textContent = tr('Envoyer vers les espaces des agents') + ' (' + n + ')'; sendBtn.disabled = !n; }
+    function drawQueue() {
+      queue.hidden = !Q.length;
+      if (!Q.length) return;
+      var all = h('input', { type: 'checkbox', title: 'Tout cocher', onchange: function () { Q.forEach(function (x) { if (x.pret) chk[x.id] = all.checked; }); drawQueue(); } });
+      var rmChecked = h('button', { type: 'button' }, 'Retirer les documents cochés');
+      rmChecked.onclick = function () { var ids = Q.filter(function (x) { return chk[x.id]; }).map(function (x) { return x.id; }); if (!ids.length || !window.confirm(tr('Retirer ces documents de la liste ? Ils ne seront pas envoyés.'))) return; call('depotRejeter', ids).then(function () { Q = Q.filter(function (x) { return ids.indexOf(x.id) < 0; }); ids.forEach(function (i) { delete chk[i]; }); drawQueue(); }); };
+      queue.replaceChildren(h('h2', null, 'À vérifier avant envoi (' + Q.length + ')'),
+        h('p', { class: 'muted' }, 'Rien n’est encore dans l’espace des agents. Corrigez si besoin (agent, type, dates, nom), cochez les documents à envoyer, puis envoyez : chaque agent est prévenu par e-mail.'),
+        h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, [all, 'Fichier déposé', 'Agent', 'Type', 'Dates', 'Nom final', 'État', ''].map(function (t) { return h('th', null, t); }))), h('tbody', null, Q.map(qRow)))),
+        qBox, h('div', { class: 'sendbar' }, sendBtn, rmChecked));
+      countBtn();
+    }
+    sendBtn.onclick = function () {
+      var items = Q.filter(function (x) { return chk[x.id] && x.pret; }); if (!items.length) return;
+      var per = {}; items.forEach(function (x) { per[x.agent_nom] = (per[x.agent_nom] || 0) + 1; });
+      var resume = Object.keys(per).map(function (k) { return k + ' : ' + per[k]; }).join('\n');
+      if (!window.confirm(tr('Envoyer ' + items.length + ' document(s) dans l’espace des agents ?\n\n') + resume + tr('\n\nChaque agent sera prévenu par e-mail.'))) return;
+      act(sendBtn, qBox, function () { return call('depotValider', items.map(function (x) { return x.id; })); }).then(function (r) {
         if (!r) return;
-        var det = r.detecte || {};
-        up.show('✓ Classé : ' + r.nom_original + ' — ' + (DOC_TYPES[r.type] || r.type) + (DOC_SOURCE[det.source] ? ' (' + DOC_SOURCE[det.source] + ')' : '') + ' · ' + r.dossier + (det.avertissement ? '  ⚠ ' + det.avertissement : '') + '  Utilisez « Corriger » si besoin.', det.avertissement ? 'warn' : true);
-        file.value = ''; type.value = 'auto'; loadList(); // on garde l'agent choisi : seul le fichier est vidé
+        qBox.show('✓ ' + r.valides + ' document(s) envoyé(s)' + (r.erreurs.length ? ' · ⚠ ' + r.erreurs.map(function (e) { return e.nom + ' : ' + e.message; }).join(' ; ') : '') + '.', !r.erreurs.length);
+        Q = Q.filter(function (x) { return r.noms.length ? !items.some(function (i) { return i.id === x.id && r.erreurs.every(function (e) { return e.id !== i.id; }); }) : true; });
+        loadList(); drawQueue();
       });
-    } }, h('h2', null, 'Déposer un document dans le compte d’un agent'),
-      h('p', { class: 'muted' }, "Le document est reconnu (fiche de paie, titre de congé, attestation, ATS…), renommé — ex. TC_Mahdi_01.03.2026, FDP_Mahdi_mars2026 — et rangé dans Google Drive : « Documents / nom de l'agent » (à côté du classeur)."),
-      h('div', { class: 'row' }, field('Agent', sel, 'grow2'), field('Type', type)), field('Fichier (6 Mo maximum)', file), up, btn);
+    };
+    go.onclick = function () {
+      var fl = Array.prototype.slice.call(files.files); if (!fl.length) { upBox.show('Choisissez un ou plusieurs fichiers.', false); return; }
+      go.disabled = true; var done = 0; var bad = [];
+      var next = function () {
+        if (done >= fl.length) { go.disabled = false; files.value = ''; upBox.show('✓ ' + (fl.length - bad.length) + ' document(s) analysé(s)' + (bad.length ? ' · ⚠ ' + bad.join(' ; ') : '') + '. Vérifiez la liste ci-dessous avant l’envoi.', !bad.length); drawQueue(); return; }
+        var f = fl[done]; upBox.show('⏳ Analyse ' + (done + 1) + '/' + fl.length + ' : ' + f.name + '…', 'warn');
+        fileToBase64(f).then(function (b64) { return call('depotAdd', { nom: f.name, mime: f.type, base64: b64, agent_id: forceAgent.value, pdf: pdfChk.checked }); })
+          .then(function (r) { Q.push(r); if (r.pret) chk[r.id] = true; }).catch(function (e) { bad.push(f.name + ' : ' + e.message); })
+          .then(function () { done += 1; drawQueue(); next(); });
+      };
+      next();
+    };
+    var form = h('section', { class: 'card' }, h('h2', null, 'Déposer des documents en vrac'),
+      h('p', { class: 'muted' }, 'Déposez plusieurs documents à la fois (fiches de paie, titres de congé, contrats, attestations CNAS…). Sijil reconnaît l’agent, le type et les dates, puis propose le nom : TC_NOM_Prenom_2026-02-14, NOM_Prenom_FDP_Mars2026, NOM_Prenom_2026-04-04_Contrat, NOM_Prenom_AttestationCNAS_n°_2026-05-07, NOM_Prenom_MAJCNAS_Janvier2026_Mars2026, NOM_Prenom_AttestationTravail_2026-05-04, NOM_Prenom_AttestationEmoluments_Janvier2026_Mars2026. Vous vérifiez, puis vous envoyez : rien n’arrive chez l’agent avant votre accord.'),
+      h('div', { class: 'row' }, field('Fichiers (6 Mo maximum chacun)', files, 'grow2'), field('Agent pour tous les fichiers (facultatif)', forceAgent)),
+      h('label', { class: 'inline' }, pdfChk, ' Convertir les images (photos, scans JPG ou PNG) en PDF'), upBox, go);
+    wrap.append(form, queue);
     sel.onchange = loadList;
-    wrap.append(form);
-    call('agentsVisible', true).then(function (agents) { sel.replaceChildren.apply(sel, agents.map(function (a) { return h('option', { value: a.id }, a.nom); })); loadList(); });
+    call('agentsVisible', true).then(function (agents) {
+      agentsAll = agents; forceAgent.append.apply(forceAgent, agents.map(function (a) { return h('option', { value: a.id }, a.nom); }));
+      sel.replaceChildren.apply(sel, agents.map(function (a) { return h('option', { value: a.id }, a.nom); })); loadList();
+      call('depotList').then(function (rows) { Q = rows; rows.forEach(function (r) { if (r.pret) chk[r.id] = true; }); drawQueue(); }).catch(function () {});
+    });
   } else loadList();
   wrap.append(list);
   return wrap;

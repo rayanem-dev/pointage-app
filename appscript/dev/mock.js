@@ -81,7 +81,7 @@ function makeEnv() {
   };
   const store = (obj) => ({ get: (k) => (k in obj ? obj[k] : null), put: (k, v) => { obj[k] = String(v); }, remove: (k) => { delete obj[k]; }, setProperty: (k, v) => { obj[k] = String(v); }, getProperty: (k) => (k in obj ? obj[k] : null), getProperties: () => Object.assign({}, obj), deleteProperty: (k) => { delete obj[k]; } });
   const bytesOf = (x) => (Buffer.isBuffer(x) ? x : Array.isArray(x) ? Buffer.from(x.map((n) => n & 255)) : Buffer.from(String(x)));
-  const mkBlob = (bytes, mime, name) => ({ getBytes: () => Array.from(bytesOf(bytes)), getDataAsString: () => bytesOf(bytes).toString('utf8'), getContentType: () => mime, getName: () => name, setName() {} });
+  const mkBlob = (bytes, mime, name) => ({ getBytes: () => Array.from(bytesOf(bytes)), getDataAsString: () => bytesOf(bytes).toString('utf8'), getContentType: () => mime, getName: () => name, setName() {}, getAs: (m) => mkBlob(bytes, m, String(name).replace(/\.[^.]+$/, '') + (m === 'application/pdf' ? '.pdf' : '')) });
   const Utilities = {
     getUuid: () => crypto.randomUUID(),
     computeDigest: (alg, s) => Array.from(crypto.createHash('sha256').update(bytesOf(s)).digest()),
@@ -105,7 +105,7 @@ function makeEnv() {
   env.folderById = {};
   env.rootFolder = new Folder('Mon Drive', null);
   env.sheetFolder = env.rootFolder.createFolder('Dossier du classeur'); // dossier qui contient le Google Sheet
-  const file = (id) => ({ getId: () => id, getBlob: () => env.files[id].blob, setTrashed: (t) => { env.files[id].trashed = t; }, setName: (n) => { env.files[id].name = n; }, getName: () => env.files[id].name, getDateCreated: () => new Date() });
+  const file = (id) => ({ getId: () => id, getBlob: () => env.files[id].blob, setTrashed: (t) => { env.files[id].trashed = t; }, setName: (n) => { env.files[id].name = n; }, moveTo: (folder) => { const f = env.files[id]; if (f.folder) f.folder.ids = f.folder.ids.filter((x) => x !== id); f.folder = folder; folder.ids.push(id); }, getName: () => env.files[id].name, getDateCreated: () => new Date() });
   const DriveApp = {
     createFolder: (n) => env.rootFolder.createFolder(n),
     getFolderById: (id) => { if (!env.folderById[id]) throw new Error('Dossier introuvable'); return env.folderById[id]; },

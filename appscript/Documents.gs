@@ -1,12 +1,18 @@
 /**
- * Documents déposés dans le compte d'un agent (fiches de paie, titres de congé, attestations, ATS…).
- * Rangés dans Drive : « Documents » (à côté du classeur) / un dossier par agent. Le type et la période sont reconnus
- * (nom du fichier, sinon contenu par OCR) puis le fichier est renommé : TC_Mahdi_01.03.2026, FDP_Mahdi_mars2026…
+ * Documents déposés dans le compte d'un agent (fiches de paie, titres de congé, contrats, attestations…).
+ * Rangés dans Drive : « Documents » (à côté du classeur) / un dossier par agent. Le type, l'agent et les dates sont reconnus
+ * (nom du fichier, sinon contenu par OCR) puis le fichier est renommé selon des règles fixes :
+ *   TC_NOM_Prenom_2026-02-14 · NOM_Prenom_FDP_Mars2026 · NOM_Prenom_2026-04-04_Contrat · NOM_Prenom_AttestationCNAS_<n° ss>_2026-05-07
+ *   NOM_Prenom_MAJCNAS_Janvier2026_Mars2026 · NOM_Prenom_AttestationTravail_2026-05-04 · NOM_Prenom_AttestationEmoluments_Janvier2026_Mars2026
+ * Dépôt en vrac : les fichiers sont d'abord classés dans « À classer » avec une proposition ; rien n'est envoyé aux agents avant validation.
  */
 var Documents = (function () {
-  var CODES = { fiche_emolument: 'FDP', titre_conge: 'TC', attestation_travail: 'AT', ats: 'ATS', autre: 'DOC' };
+  var CODES = { titre_conge: 'TC', fiche_emolument: 'FDP', contrat: 'CONTRAT', attestation_cnas: 'ACNAS', maj_cnas: 'MAJCNAS', attestation_travail: 'AT', attestation_emoluments: 'AE', ats: 'ATS', autre: 'DOC' };
   var MOIS = ['janvier', 'fevrier', 'mars', 'avril', 'mai', 'juin', 'juillet', 'aout', 'septembre', 'octobre', 'novembre', 'decembre'];
+  var MOIS_AFF = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
   var MOIS_RE = '(janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)';
+  // Champs obligatoires pour nommer chaque type ; « autre » n'en demande aucun.
+  var REQUIS = { titre_conge: ['date'], fiche_emolument: ['mois'], contrat: ['date'], attestation_cnas: ['date'], maj_cnas: ['mois', 'mois2'], attestation_travail: ['date'], attestation_emoluments: ['mois', 'mois2'], ats: ['date'], autre: [] };
   function n(s) { return Format.norm(s); }
 
   // ----- rangement : Documents/ à côté du classeur, puis un dossier par agent -----
@@ -26,82 +32,206 @@ var Documents = (function () {
   }
   function label(a) { return String(a.nom || '').trim().toLowerCase().replace(/(^|[\s'-])([a-zà-ÿ])/g, function (m, p, c) { return p + c.toUpperCase(); }); }
   function agentFolder(a) { return childFolder(rootFolder(), label(a).replace(/[\\/:*?"<>|]/g, '_') || 'Agent'); }
+  function stagingFolder() { return childFolder(rootFolder(), 'À classer'); }
 
-  // ----- reconnaissance du type et de la période -----
+  // ----- dates et mois -----
   function frDot(iso) { return iso ? iso.slice(8, 10) + '.' + iso.slice(5, 7) + '.' + iso.slice(0, 4) : ''; }
-  function isoOf(d, m, y) { var iso = y + '-' + (m < 10 ? '0' : '') + Number(m) + '-' + (d < 10 ? '0' : '') + Number(d); return Dates.isDate(iso) ? iso : ''; }
-  // t : texte normalisé (minuscules, sans accents). Retourne { type, mois: 'mars2026', date: 'AAAA-MM-JJ' }.
-  function analyse(t) {
-    var out = { type: '', mois: '', date: '' };
-    if (/\bats\b|attestation de travail et de salaire/.test(t)) out.type = 'ats';
-    else if (/titre de conge|titre.?conge|\btc\b/.test(t)) out.type = 'titre_conge';
-    else if (/fiche de paie|bulletin de paie|bulletin de salaire|fiche de salaire|fiche d.?emoluments?|\bfdp\b/.test(t)) out.type = 'fiche_emolument';
-    else if (/attestation de travail|certificat de travail/.test(t)) out.type = 'attestation_travail';
-    var d = /(\d{1,2})[\/.\-](\d{1,2})[\/.\-](20\d{2})/.exec(t);
-    if (d) out.date = isoOf(Number(d[1]), Number(d[2]), d[3]);
-    var m = new RegExp(MOIS_RE + '\\s*(?:de\\s*|du\\s*)?[-_]?\\s*(20\\d{2})').exec(t);
-    if (m) out.mois = m[1] + m[2];
-    else {
-      var sansDates = t.replace(/\d{1,2}[\/.\-]\d{1,2}[\/.\-]20\d{2}/g, ' ');
-      var mm = /\b(0?[1-9]|1[0-2])[\/.\-](20\d{2})\b/.exec(sansDates);
-      if (mm) out.mois = MOIS[Number(mm[1]) - 1] + mm[2];
-      else if (out.date) out.mois = MOIS[Number(out.date.slice(5, 7)) - 1] + out.date.slice(0, 4); // « période du 01/03/2026… » : mois de la 1re date
+  function isoOf(d, m, y) { var iso = y + '-' + (Number(m) < 10 ? '0' : '') + Number(m) + '-' + (Number(d) < 10 ? '0' : '') + Number(d); return Dates.isDate(iso) ? iso : ''; }
+  function moisKey(m, y) { return MOIS[Number(m) - 1] + y; }
+  function moisLabel(k) { var m = /^([a-z]+)(20\d{2})$/.exec(String(k || '')); var i = m ? MOIS.indexOf(m[1]) : -1; return i < 0 ? '' : MOIS_AFF[i] + m[2]; }
+  // Toutes les dates du texte normalisé, dans l'ordre : jj/mm/aaaa, jj-mm-aaaa, aaaa-mm-jj, « 14 fevrier 2026 ».
+  function allDates(t) {
+    var out = []; var re = new RegExp('(\\d{1,2})\\s*[\\/.\\-]\\s*(\\d{1,2})\\s*[\\/.\\-]\\s*(20\\d{2})|(20\\d{2})-(\\d{2})-(\\d{2})|(\\d{1,2})(?:er)?\\s+' + MOIS_RE + '\\s+(20\\d{2})', 'g'); var m;
+    while ((m = re.exec(t))) {
+      var iso = m[1] ? isoOf(m[1], m[2], m[3]) : m[4] ? isoOf(m[6], m[5], m[4]) : isoOf(m[7], MOIS.indexOf(m[8]) + 1, m[9]);
+      if (iso) out.push({ iso: iso, i: m.index, len: m[0].length });
     }
     return out;
   }
-  function periodeLabel(type, mois, date) {
-    if (type === 'fiche_emolument') return mois;
-    return frDot(date);
+  function dateAfter(t, re) { var m = re.exec(t); if (!m) return ''; var rest = t.slice(m.index + m[0].length, m.index + m[0].length + 40); var d = allDates(rest)[0]; return d && d.i < 25 ? d.iso : ''; }
+  function moisOfIso(iso) { return iso ? moisKey(iso.slice(5, 7), iso.slice(0, 4)) : ''; }
+  // Période de mois couverte : « du 01/01/2026 au 31/03/2026 », « de janvier 2026 à mars 2026 », « janvier à mars 2026 », « 01/2026 à 03/2026 ».
+  function moisRange(t) {
+    var ds = allDates(t); var du = /\bdu\b[^0-9a-z]{0,3}$/;
+    for (var i = 0; i + 1 < ds.length; i += 1) {
+      var between = t.slice(ds[i].i + ds[i].len, ds[i + 1].i);
+      if (/^\s*(au|a|-|jusqu\s?au|jusqu a)\s*$/.test(between) && ds[i + 1].iso >= ds[i].iso) return { mois: moisOfIso(ds[i].iso), mois2: moisOfIso(ds[i + 1].iso) };
+    }
+    var r = new RegExp(MOIS_RE + '\\s*(20\\d{2})?\\s*(?:a|au|-|jusqu a|jusqu au|et)\\s*' + MOIS_RE + '\\s*(20\\d{2})').exec(t);
+    if (r) return { mois: r[1] + (r[2] || r[4]), mois2: r[3] + r[4] };
+    var s = /\b(0?[1-9]|1[0-2])\s*[\/.\-]\s*(20\d{2})\s*(?:a|au|-)\s*(0?[1-9]|1[0-2])\s*[\/.\-]\s*(20\d{2})\b/.exec(t);
+    if (s) return { mois: moisKey(s[1], s[2]), mois2: moisKey(s[3], s[4]) };
+    var one = new RegExp(MOIS_RE + '\\s*(?:de\\s*|du\\s*)?[-_]?\\s*(20\\d{2})').exec(t);
+    if (one) return { mois: one[1] + one[2], mois2: one[1] + one[2] };
+    return { mois: '', mois2: '' };
   }
-  function surname(a) { return (n(a.nom).split(' ')[0] || 'agent').replace(/[^a-z0-9]/g, '').replace(/^./, function (c) { return c.toUpperCase(); }); }
-  function fileName(type, a, periode, ext, stem) {
-    var base = (CODES[type] || 'DOC') + '_' + surname(a) + '_' + periode;
-    if (type === 'autre' && stem) base += '_' + stem;
-    return base + (ext ? '.' + ext : '');
+  function moisSeul(t) {
+    var m = new RegExp(MOIS_RE + '\\s*(?:de\\s*|du\\s*)?[-_]?\\s*(20\\d{2})').exec(t);
+    if (m) return m[1] + m[2];
+    var sansDates = t.replace(/\d{1,2}\s*[\/.\-]\s*\d{1,2}\s*[\/.\-]\s*20\d{2}/g, ' ');
+    var mm = /\b(0?[1-9]|1[0-2])\s*[\/.\-]\s*(20\d{2})\b/.exec(sansDates);
+    if (mm) return moisKey(mm[1], mm[2]);
+    var d = allDates(t)[0];
+    return d ? moisOfIso(d.iso) : '';
+  }
+  function nssOf(t) {
+    var m = /(?:immatriculation|securite sociale|n[°o]?\s*ss\b|nss|assure social|n[°o]\s*d.?assure)[^0-9]{0,40}(\d[\d\s]{8,16}\d)/.exec(t);
+    var digits = m ? m[1].replace(/\s+/g, '') : '';
+    if (digits.length >= 9 && digits.length <= 14) return digits;
+    var any = /\b(\d{10,12})\b/.exec(t.replace(/(\d)\s(?=\d{3}\b)/g, '$1'));
+    return any ? any[1] : '';
+  }
+
+  // ----- reconnaissance du type et des champs (t : texte normalisé : minuscules, sans accents) -----
+  function detectType(t) {
+    if (/\bats\b|attestation de travail et de salaire/.test(t)) return 'ats';
+    if (/titre de conge|titre.?conge|\btc\b/.test(t)) return 'titre_conge';
+    if (/(mise a jour|\bmaj\b).{0,40}(cnas|assurances? sociales?|affiliation)|(cnas|affiliation).{0,40}(mise a jour|\bmaj\b)/.test(t)) return 'maj_cnas';
+    if (/attestation d.?affiliation|attestation.{0,10}cnas|\bcnas\b|caisse nationale des assurances sociales/.test(t)) return 'attestation_cnas';
+    if (/attestations? (?:d|des|de)[^a-z]{0,3}emoluments?|attestations? de salaire/.test(t)) return 'attestation_emoluments';
+    if (/fiche de paie|bulletin de paie|bulletin de salaire|fiche de salaire|fiche d.?emoluments?|\bfdp\b/.test(t)) return 'fiche_emolument';
+    if (/attestation de travail|certificat de travail/.test(t)) return 'attestation_travail';
+    if (/contrat de travail|contrat a duree|\bcontrat\b/.test(t)) return 'contrat';
+    return '';
+  }
+  // Champs utiles au type : { date, mois, mois2, nss } (chaînes vides si non lus).
+  function extract(type, t) {
+    var f = { date: '', mois: '', mois2: '', nss: '' }; var first = allDates(t)[0]; first = first ? first.iso : '';
+    if (type === 'titre_conge') f.date = dateAfter(t, /(a compter du|a partir du|depart le|debut(?: du conge)?\s*:?|du)\s*/) || first;
+    else if (type === 'contrat') f.date = dateAfter(t, /(a compter du|prenant effet le|debut(?:ant)? le|date d.?effet|effet le|du)\s*/) || first;
+    else if (type === 'attestation_travail') f.date = dateAfter(t, /(fait a [a-z ]{2,30},? le|delivree? le|etablie? le|alger,? le|le)\s*/) || first;
+    else if (type === 'attestation_cnas') { f.date = dateAfter(t, /(fait a [a-z ]{2,30},? le|delivree? le|etablie? le|edition le|date d.?edition|le)\s*/) || first; f.nss = nssOf(t); }
+    else if (type === 'ats') f.date = first;
+    else if (type === 'fiche_emolument') f.mois = moisSeul(t);
+    else if (type === 'maj_cnas' || type === 'attestation_emoluments') { var r = moisRange(t); f.mois = r.mois; f.mois2 = r.mois2; }
+    return f;
+  }
+  function missing(type, f) { return (REQUIS[type] || []).filter(function (k) { return !f[k]; }); }
+  function merge(a, b) { var o = {}; ['date', 'mois', 'mois2', 'nss'].forEach(function (k) { o[k] = a[k] || b[k] || ''; }); return o; }
+  // « 1er mars → mois seul / période » : adapte les champs d'un type à l'autre (changement de type après coup).
+  function adapt(type, f) {
+    var o = merge(f, {});
+    if (!o.mois && o.date) o.mois = moisOfIso(o.date);
+    if (!o.mois2) o.mois2 = o.mois;
+    if (!o.date && o.mois) { var m = /^([a-z]+)(20\d{2})$/.exec(o.mois); if (m) o.date = isoOf(1, MOIS.indexOf(m[1]) + 1, m[2]); }
+    return o;
+  }
+
+  // ----- nom final : NOM_Prenom et règles par type -----
+  function noAccents(s) { try { return String(s).normalize('NFD').replace(/[̀-ͯ]/g, ''); } catch (e) { return String(s); } }
+  function whoOf(a) {
+    var toks = noAccents(a.nom || 'agent').trim().split(/\s+/).filter(Boolean);
+    var nom = (toks.shift() || 'AGENT').toUpperCase();
+    var pre = toks.map(function (x) { return x.charAt(0).toUpperCase() + x.slice(1).toLowerCase(); }).join('-');
+    return (nom + (pre ? '_' + pre : '')).replace(/[^A-Za-z0-9_-]/g, '');
   }
   function stemOf(nom) { return String(nom || '').replace(/\.[a-z0-9]+$/i, '').replace(/[^A-Za-z0-9À-ÿ]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40); }
   function extOf(nom) { return ((/\.([a-z0-9]{1,8})$/i.exec(String(nom || '')) || [])[1] || '').toLowerCase(); }
+  function nameFor(type, agent, f, stem) {
+    var who = whoOf(agent); var today = Dates.today();
+    var date = f.date || today; var m1 = moisLabel(f.mois) || moisLabel(moisOfIso(today)); var m2 = moisLabel(f.mois2) || m1;
+    switch (type) {
+      case 'titre_conge': return 'TC_' + who + '_' + date;
+      case 'fiche_emolument': return who + '_FDP_' + m1;
+      case 'contrat': return who + '_' + date + '_Contrat';
+      case 'attestation_cnas': return who + '_AttestationCNAS_' + (f.nss ? f.nss + '_' : '') + date;
+      case 'maj_cnas': return who + '_MAJCNAS_' + m1 + '_' + m2;
+      case 'attestation_travail': return who + '_AttestationTravail_' + date;
+      case 'attestation_emoluments': return who + '_AttestationEmoluments_' + m1 + '_' + m2;
+      case 'ats': return who + '_ATS_' + date;
+      default: return who + '_' + (stem || 'Document');
+    }
+  }
+  function fileName(type, agent, f, ext, stem) { return nameFor(type, agent, f, stem) + (ext ? '.' + ext : ''); }
+  // Texte affiché pour la période du document.
+  function periodeOf(type, f) {
+    if (type === 'fiche_emolument') return moisLabel(f.mois);
+    if (type === 'maj_cnas' || type === 'attestation_emoluments') return moisLabel(f.mois) + (f.mois2 && f.mois2 !== f.mois ? ' → ' + moisLabel(f.mois2) : '');
+    if (type === 'attestation_cnas') return (f.nss ? f.nss + ' · ' : '') + (f.date || '');
+    return f.date || '';
+  }
   function uniqueName(folder, name) {
     var ext = extOf(name); var base = ext ? name.slice(0, -(ext.length + 1)) : name; var k = 1; var cur = name;
     while (folder.getFilesByName(cur).hasNext()) { k += 1; cur = base + '_' + k + (ext ? '.' + ext : ''); }
     return cur;
   }
+  // Période saisie à la main (correction) : lue selon le type.
+  function parsePeriode(type, text) {
+    var f = extract(type, n(text));
+    if (type === 'fiche_emolument' && !f.mois) throw httpErr_('Période : indiquez un mois et une année (ex. mars 2026 ou 03/2026)');
+    if ((type === 'maj_cnas' || type === 'attestation_emoluments') && !(f.mois && f.mois2)) throw httpErr_('Période : indiquez deux mois (ex. janvier 2026 à mars 2026)');
+    if (REQUIS[type] && REQUIS[type].indexOf('date') >= 0 && !f.date) throw httpErr_('Date : jj/mm/aaaa');
+    return f;
+  }
 
-  // Type et période d'un fichier déposé : nom du fichier d'abord, contenu (OCR) seulement si nécessaire.
-  function detect(data, chosen, agent) {
-    var fromName = analyse(n(String(data.nom || '').replace(/\.[a-z0-9]+$/i, '').replace(/_/g, ' ')));
-    var type = chosen || fromName.type; var source = chosen ? 'choix' : (fromName.type ? 'nom' : '');
-    var mois = fromName.mois; var date = fromName.date; var avert = []; var text = '';
-    var besoin = !type || (type === 'fiche_emolument' && !fromName.mois) || (type !== 'fiche_emolument' && !fromName.date);
+  // ----- reconnaissance de l'agent concerné (parmi ceux que l'utilisateur peut voir) -----
+  function findAgents(t, agents) {
+    var words = {}; t.split(/[^a-z0-9]+/).forEach(function (w) { if (w) words[w] = true; });
+    var scored = agents.map(function (a) {
+      var toks = n(a.nom).split(' ').filter(function (x) { return x.length >= 2; });
+      var hit = toks.filter(function (x) { return words[x]; }).length;
+      return { a: a, toks: toks.length, hit: hit };
+    }).filter(function (s) { return s.hit > 0 && s.hit === s.toks && s.toks >= 2; }); // nom ET prénom présents
+    var partial = agents.filter(function (a) { var toks = n(a.nom).split(' '); return toks.length >= 2 && words[toks[0]] && !scored.some(function (s) { return s.a.id === a.id; }); });
+    return scored.length ? scored.map(function (s) { return s.a; }) : partial;
+  }
+
+  // Type et champs d'un fichier : nom du fichier d'abord, contenu (OCR) seulement si nécessaire.
+  function detect(data, chosen, agent, agents) {
+    var base = String(data.nom || '').replace(/\.[a-z0-9]+$/i, '').replace(/_/g, ' ');
+    var tn = n(base); var type = chosen || detectType(tn); var source = chosen ? 'choix' : (type ? 'nom' : '');
+    var f = type ? extract(type, tn) : { date: '', mois: '', mois2: '', nss: '' };
+    var cands = agent ? [agent] : findAgents(tn, agents || []); var avert = [];
+    var besoin = !type || missing(type, f).length > 0 || (!agent && cands.length !== 1);
     if (besoin) {
-      try { text = n(Bordereau.ocrText(data)); } catch (e) { avert.push('Lecture automatique impossible (' + e.message + ').'); }
+      var text = '';
+      try { text = n(Bordereau.ocrText(data)).slice(0, 12000); } catch (e) { avert.push('Lecture automatique impossible (' + e.message + ').'); }
       if (text) {
-        var fromText = analyse(text);
-        if (!type && fromText.type) { type = fromText.type; source = 'contenu'; }
-        if (!mois) mois = fromText.mois; if (!date) date = fromText.date;
-        // le texte parle-t-il d'un autre agent que celui choisi ?
-        var autre = Agents.list().filter(function (x) { return x.id !== agent.id && Agents.isPerson(x) && n(x.nom).indexOf(' ') > 0 && text.indexOf(n(x.nom)) >= 0; })[0];
-        if (autre && text.indexOf(n(agent.nom)) < 0) avert.push('Ce document semble concerner ' + autre.nom + ', pas ' + agent.nom + '.');
+        if (!type) { var tt = detectType(text); if (tt) { type = tt; source = 'contenu'; } }
+        if (type) f = merge(f, extract(type, text));
+        if (!agent && cands.length !== 1) { var byText = findAgents(text, agents || []); if (byText.length) cands = byText; }
+        if (agent) {
+          var autre = (agents || Agents.list()).filter(function (x) { return x.id !== agent.id && Agents.isPerson(x) && n(x.nom).indexOf(' ') > 0 && text.indexOf(n(x.nom)) >= 0; })[0];
+          if (autre && text.indexOf(n(agent.nom)) < 0) avert.push('Ce document semble concerner ' + autre.nom + ', pas ' + agent.nom + '.');
+        }
       }
     }
     if (!type) { type = 'autre'; source = 'defaut'; avert.push('Type non reconnu : classé « Autre » (corrigeable).'); }
-    var today = Dates.today();
-    if (!mois) mois = MOIS[Number(today.slice(5, 7)) - 1] + today.slice(0, 4);
-    if (!date) date = today;
-    return { type: type, source: source, mois: mois, date: date, avertissement: avert.join(' ') };
+    var manque = missing(type, f);
+    if (manque.length) avert.push('À compléter : ' + manque.map(function (k) { return { date: 'date', mois: 'mois', mois2: 'mois de fin' }[k] || k; }).join(', ') + '.');
+    if (type === 'attestation_cnas' && !f.nss) avert.push('N° de sécurité sociale non lu : à compléter si besoin.');
+    return { type: type, source: source, champs: f, avertissement: avert.join(' '), candidats: cands };
   }
 
   // ----- API -----
   function canSee(user, agentId) {
     return user.role === 'admin' || user.id === agentId || Agents.visibleTo(user).some(function (a) { return a.id === agentId; });
   }
-  function pub(d) { var o = {}; Object.keys(d).forEach(function (k) { if (k !== 'file_id') o[k] = d[k]; }); return o; }
+  function pub(d) { var o = {}; Object.keys(d).forEach(function (k) { if (k !== 'file_id' && k !== 'champs') o[k] = d[k]; }); return o; }
 
   function list(user, agentId) {
     agentId = agentId || user.id;
     if (!canSee(user, agentId)) throw httpErr_('Accès refusé', 'FORBIDDEN');
     return Store.readTable('Documents').filter(function (d) { return d.agent_id === agentId; })
       .sort(function (a, b) { return a.date < b.date ? 1 : -1; }).map(pub);
+  }
+  function readBytes(data) {
+    if (!data.base64 || !data.nom) throw httpErr_('Fichier manquant');
+    var bytes = Utilities.base64Decode(data.base64);
+    if (bytes.length > CFG.MAX_UPLOAD_BYTES) throw httpErr_('Fichier trop volumineux (6 Mo maximum)');
+    return bytes;
+  }
+  // Une image peut être convertie en PDF (option « convertir en PDF ») ; les autres formats restent tels quels.
+  function maybePdf(data, bytes) {
+    var ext = extOf(data.nom);
+    if (data.pdf && ['jpg', 'jpeg', 'png', 'gif', 'bmp'].indexOf(ext) >= 0) {
+      try { var b = Utilities.newBlob(bytes, data.mime || 'image/' + (ext === 'jpg' ? 'jpeg' : ext), data.nom).getAs('application/pdf'); return { bytes: b.getBytes(), mime: 'application/pdf', ext: 'pdf', converti: true }; } catch (e) { Logger.log('Conversion PDF impossible : ' + e.message); }
+    }
+    return { bytes: bytes, mime: data.mime || 'application/octet-stream', ext: ext, converti: false };
+  }
+  function docRow(user, agent, type, f, name, file, extra) {
+    var d = { id: newId_('G'), agent_id: agent.id, type: type, titre: name.replace(/\.[a-z0-9]{1,8}$/i, ''), file_id: file.getId(), nom_original: name, depose_par: user.nom, date: new Date().toISOString(), code: CODES[type], periode: periodeOf(type, f), dossier: 'Documents/' + label(agent), champs: JSON.stringify(f) };
+    return d;
   }
   function upload(user, data) {
     if (user.role === 'agent') throw httpErr_('Accès refusé', 'FORBIDDEN');
@@ -110,26 +240,26 @@ var Documents = (function () {
     if (agent && agent.type === 'vehicule') throw httpErr_("Un véhicule n'a pas de dossier de documents");
     var chosen = CFG.TYPES_DOC[data.type] ? data.type : ''; // « auto » (ou vide) = reconnaissance automatique
     if (data.type && data.type !== 'auto' && !CFG.TYPES_DOC[data.type]) throw httpErr_('Type de document invalide');
-    if (!data.base64 || !data.nom) throw httpErr_('Fichier manquant');
-    var bytes = Utilities.base64Decode(data.base64);
-    if (bytes.length > CFG.MAX_UPLOAD_BYTES) throw httpErr_('Fichier trop volumineux (6 Mo maximum)');
-    var info = detect(data, chosen, agent);
-    var periode = periodeLabel(info.type, info.mois, info.date);
+    var bytes = readBytes(data);
+    var info = detect(data, chosen, agent, null);
+    var conv = maybePdf(data, bytes);
     var folder = agentFolder(agent);
-    var name = uniqueName(folder, fileName(info.type, agent, periode, extOf(data.nom), stemOf(data.nom)));
-    var file = folder.createFile(Utilities.newBlob(bytes, data.mime || 'application/octet-stream', name));
-    var d = { id: newId_('G'), agent_id: data.agent_id, type: info.type, titre: name.replace(/\.[a-z0-9]{1,8}$/i, ''), file_id: file.getId(), nom_original: name, depose_par: user.nom, date: new Date().toISOString(), code: CODES[info.type], periode: periode, dossier: 'Documents/' + label(agent) };
+    var name = uniqueName(folder, fileName(info.type, agent, info.champs, conv.ext, stemOf(data.nom)));
+    var file = folder.createFile(Utilities.newBlob(conv.bytes, conv.mime, name));
+    var d = docRow(user, agent, info.type, info.champs, name, file);
     Store.writeTable('Documents', Store.readTable('Documents').concat([d]));
     notifyAgent(user, agent, d);
     var out = pub(d); out.detecte = { type: info.type, source: info.source, avertissement: info.avertissement, original: data.nom };
     return out;
   }
   // Prévient l'agent par e-mail qu'un nouveau document est dans son espace.
-  function notifyAgent(user, agent, d) {
+  function notifyAgent(user, agent, d) { notifyMany(user, agent, [d]); }
+  function notifyMany(user, agent, docs) {
     try {
-      if (!agent || agent.id === user.id || !/^\S+@\S+\.\S+$/.test(agent.email || '')) return;
-      MailApp.sendEmail({ to: agent.email, replyTo: user.email || undefined, subject: 'Nouveau document — ' + d.nom_original,
-        body: 'Bonjour ' + agent.nom + ',\n\nNouveau document dans votre espace Sijil : ' + d.nom_original + '\nDéposé par ' + user.nom + '.\n\nConnectez-vous, onglet « Mes documents », pour le télécharger.' });
+      if (!agent || agent.id === user.id || !docs.length || !/^\S+@\S+\.\S+$/.test(agent.email || '')) return;
+      var noms = docs.map(function (d) { return d.nom_original; });
+      MailApp.sendEmail({ to: agent.email, replyTo: user.email || undefined, subject: 'Nouveau document — ' + noms[0] + (noms.length > 1 ? ' (+' + (noms.length - 1) + ')' : ''),
+        body: 'Bonjour ' + agent.nom + ',\n\n' + (noms.length > 1 ? 'Nouveaux documents dans votre espace Sijil :\n - ' + noms.join('\n - ') : 'Nouveau document dans votre espace Sijil : ' + noms[0]) + '\nDéposé par ' + user.nom + '.\n\nConnectez-vous, onglet « Mes documents », pour le télécharger.' });
     } catch (e) { Logger.log('Document non notifié : ' + e.message); }
   }
   // Correction après coup : type et/ou période → le fichier est renommé dans Drive.
@@ -140,22 +270,16 @@ var Documents = (function () {
     if (!d || !canSee(user, d.agent_id)) throw httpErr_('Document introuvable', 'FORBIDDEN');
     var agent = Agents.get(d.agent_id);
     var type = data.type && CFG.TYPES_DOC[data.type] ? data.type : d.type;
-    var periode = d.periode;
-    if (data.periode !== undefined && String(data.periode).trim() !== '') {
-      var a = analyse(n(data.periode));
-      var p = type === 'fiche_emolument' ? a.mois : frDot(a.date);
-      if (!p) throw httpErr_(type === 'fiche_emolument' ? 'Période : indiquez un mois et une année (ex. mars 2026 ou 03/2026)' : 'Date : jj/mm/aaaa');
-      periode = p;
-    } else if (type !== d.type) { // changement de type : la période garde son sens (mois ↔ date)
-      var m = n(d.periode); var asDate = /^\d{2}\.\d{2}\.\d{4}$/.test(d.periode);
-      if (type === 'fiche_emolument' && asDate) periode = MOIS[Number(d.periode.slice(3, 5)) - 1] + d.periode.slice(6);
-      else if (type !== 'fiche_emolument' && !asDate) { var mi = MOIS.indexOf(m.replace(/\d+/g, '')); periode = '01.' + (mi < 9 ? '0' : '') + (mi + 1) + '.' + m.replace(/\D+/g, ''); }
-    }
+    var f; try { f = JSON.parse(d.champs || ''); } catch (e) { f = null; }
+    if (!f) f = extract(d.type, n(String(d.periode || '').replace(/\./g, '/')));
+    if (data.periode !== undefined && String(data.periode).trim() !== '') f = parsePeriode(type, data.periode);
+    else if (type !== d.type) f = adapt(type, f);
     var file = DriveApp.getFileById(d.file_id);
     var folder = agentFolder(agent);
-    var name = fileName(type, agent, periode, extOf(d.nom_original), '');
+    var who = whoOf(agent) + '_'; var reste = String(d.nom_original || '').replace(/\.[a-z0-9]{1,8}$/i, '');
+    var name = fileName(type, agent, f, extOf(d.nom_original), reste.indexOf(who) === 0 ? reste.slice(who.length) : stemOf(reste));
     if (name !== d.nom_original) { name = uniqueName(folder, name); file.setName(name); }
-    d.type = type; d.code = CODES[type]; d.periode = periode; d.nom_original = name; d.titre = name.replace(/\.[a-z0-9]{1,8}$/i, '');
+    d.type = type; d.code = CODES[type]; d.periode = periodeOf(type, f); d.champs = JSON.stringify(f); d.nom_original = name; d.titre = name.replace(/\.[a-z0-9]{1,8}$/i, '');
     Store.writeTable('Documents', all);
     return pub(d);
   }
@@ -173,9 +297,97 @@ var Documents = (function () {
     Store.writeTable('Documents', all.filter(function (x) { return x.id !== id; }));
   }
   function count(agentId) { return Store.readTable('Documents').filter(function (d) { return d.agent_id === agentId; }).length; }
-  // Vidage : corbeille de tous les fichiers déposés.
+  // Vidage : corbeille de tous les fichiers déposés (rangés et en attente de classement).
   function purgeFiles() {
     Store.readTable('Documents').forEach(function (d) { try { DriveApp.getFileById(d.file_id).setTrashed(true); } catch (e) { /* ignore */ } });
+    Store.readTable('Depots').forEach(function (d) { try { DriveApp.getFileById(d.file_id).setTrashed(true); } catch (e) { /* ignore */ } });
   }
-  return { list: list, upload: upload, update: update, download: download, remove: remove, count: count, purgeFiles: purgeFiles, analyse: analyse, fileName: fileName };
+
+  // ----- dépôt en vrac : analyse, vérification, puis envoi vers l'espace de chaque agent -----
+  function visibles(user) { return Agents.visibleTo(user).filter(function (a) { return Agents.isPerson(a) && a.type !== 'vehicule'; }); }
+  function champsOf(r) { try { return merge(JSON.parse(r.champs || '{}'), {}); } catch (e) { return merge({}, {}); } }
+  function depotPub(r, byId) {
+    var f = champsOf(r); var a = byId[r.agent_id] || null; var ids = []; try { ids = JSON.parse(r.candidats || '[]'); } catch (e) { ids = []; }
+    var manque = missing(r.type, f); var ext = r.ext;
+    return { id: r.id, nom_original: r.nom_original, agent_id: r.agent_id, agent_nom: a ? a.nom : '', type: r.type, type_label: CFG.TYPES_DOC[r.type] || r.type, champs: f,
+      nom_final: r.nom_force ? r.nom_force + (ext ? '.' + ext : '') : (a ? fileName(r.type, a, f, ext, stemOf(r.nom_original)) : ''), force: !!r.nom_force,
+      avertissement: r.avert, source: r.source, candidats: ids.map(function (id) { return byId[id] ? { id: id, nom: byId[id].nom } : null; }).filter(Boolean),
+      manque: manque, pret: !!a && !manque.length, date_depot: r.date_depot };
+  }
+  function depotRows(user) {
+    var rows = Store.readTable('Depots');
+    return user.role === 'admin' ? rows : rows.filter(function (r) { return r.depose_id === user.id; });
+  }
+  function depotList(user) {
+    if (user.role === 'agent') throw httpErr_('Accès refusé', 'FORBIDDEN');
+    var by = {}; visibles(user).forEach(function (a) { by[a.id] = a; });
+    return depotRows(user).sort(function (a, b) { return a.date_depot < b.date_depot ? -1 : 1; }).map(function (r) { return depotPub(r, by); });
+  }
+  function depotAdd(user, data) {
+    if (user.role === 'agent') throw httpErr_('Accès refusé', 'FORBIDDEN');
+    var bytes = readBytes(data); var agents = visibles(user); var forced = null;
+    if (data.agent_id) { forced = agents.filter(function (a) { return a.id === data.agent_id; })[0]; if (!forced) throw httpErr_("Cet agent n'est pas dans votre groupe", 'FORBIDDEN'); }
+    var chosen = CFG.TYPES_DOC[data.type] ? data.type : '';
+    var info = detect(data, chosen, forced, agents);
+    var agent = forced || (info.candidats.length === 1 ? info.candidats[0] : null);
+    if (!agent && info.candidats.length > 1) info.avertissement = (info.avertissement + ' Plusieurs agents possibles : choisissez.').trim();
+    if (!agent && !info.candidats.length) info.avertissement = (info.avertissement + ' Agent non reconnu : choisissez-le.').trim();
+    var conv = maybePdf(data, bytes);
+    var file = stagingFolder().createFile(Utilities.newBlob(conv.bytes, conv.mime, String(data.nom)));
+    var row = { id: newId_('Q'), nom_original: String(data.nom).slice(0, 120), file_id: file.getId(), ext: conv.ext, agent_id: agent ? agent.id : '', type: info.type, champs: JSON.stringify(info.champs), nom_force: '',
+      source: info.source, avert: info.avertissement + (conv.converti ? ' (converti en PDF)' : ''), depose_par: user.nom, depose_id: user.id, date_depot: new Date().toISOString(), candidats: JSON.stringify(info.candidats.map(function (a) { return a.id; })) };
+    Store.writeTable('Depots', Store.readTable('Depots').concat([row]));
+    var by = {}; agents.forEach(function (a) { by[a.id] = a; });
+    return depotPub(row, by);
+  }
+  function depotUpdate(user, id, patch) {
+    if (user.role === 'agent') throw httpErr_('Accès refusé', 'FORBIDDEN');
+    patch = patch || {};
+    var all = Store.readTable('Depots'); var r = depotRows(user).filter(function (x) { return x.id === id; })[0];
+    if (!r) throw httpErr_('Document en attente introuvable');
+    r = all.filter(function (x) { return x.id === id; })[0]; var agents = visibles(user);
+    if (patch.agent_id !== undefined) { if (patch.agent_id && !agents.some(function (a) { return a.id === patch.agent_id; })) throw httpErr_("Cet agent n'est pas dans votre groupe", 'FORBIDDEN'); r.agent_id = patch.agent_id; }
+    if (patch.type !== undefined) { if (!CFG.TYPES_DOC[patch.type]) throw httpErr_('Type de document invalide'); if (patch.type !== r.type) { r.champs = JSON.stringify(adapt(patch.type, champsOf(r))); r.type = patch.type; } }
+    if (patch.champs) {
+      var f = champsOf(r); var p = patch.champs;
+      if (p.date !== undefined) { if (p.date && !Dates.isDate(p.date)) throw httpErr_('Date invalide'); f.date = p.date; }
+      ['mois', 'mois2'].forEach(function (k) { if (p[k] !== undefined) { var v = String(p[k] || ''); if (v && !/^[a-z]+20\d{2}$/.test(v)) { var x = moisSeul(n(v)); if (!x) throw httpErr_('Mois invalide (ex. mars 2026)'); v = x; } f[k] = v; } });
+      if (p.nss !== undefined) { var s = String(p.nss || '').replace(/\s+/g, ''); if (s && !/^\d{6,14}$/.test(s)) throw httpErr_('N° de sécurité sociale : chiffres uniquement'); f.nss = s; }
+      r.champs = JSON.stringify(f);
+    }
+    if (patch.nom_force !== undefined) r.nom_force = String(patch.nom_force || '').replace(/\.[a-z0-9]{1,8}$/i, '').replace(/[\\/:*?"<>|]/g, '_').slice(0, 120);
+    Store.writeTable('Depots', all);
+    var by = {}; agents.forEach(function (a) { by[a.id] = a; });
+    return depotPub(r, by);
+  }
+  // Après vérification : chaque fichier est renommé et rangé dans le dossier de son agent, qui est prévenu (un e-mail par agent).
+  function depotValider(user, ids) {
+    if (user.role === 'agent') throw httpErr_('Accès refusé', 'FORBIDDEN');
+    var all = Store.readTable('Depots'); var mine = depotRows(user); var agents = visibles(user); var by = {}; agents.forEach(function (a) { by[a.id] = a; });
+    var docs = []; var done = {}; var erreurs = []; var parAgent = {};
+    (ids || []).filter(function (x, i, a) { return a.indexOf(x) === i; }).forEach(function (id) {
+      var r = mine.filter(function (x) { return x.id === id; })[0]; if (!r) return;
+      var pubr = depotPub(r, by);
+      if (!pubr.pret) { erreurs.push({ id: id, nom: r.nom_original, message: !by[r.agent_id] ? 'Agent à choisir' : 'À compléter : ' + pubr.manque.join(', ') }); return; }
+      try {
+        var agent = by[r.agent_id]; var folder = agentFolder(agent); var file = DriveApp.getFileById(r.file_id);
+        var name = uniqueName(folder, pubr.nom_final); file.setName(name); file.moveTo(folder);
+        var d = docRow(user, agent, r.type, champsOf(r), name, file); docs.push(d); done[id] = true;
+        (parAgent[agent.id] = parAgent[agent.id] || { agent: agent, docs: [] }).docs.push(d);
+      } catch (e) { erreurs.push({ id: id, nom: r.nom_original, message: e.message }); }
+    });
+    if (docs.length) Store.writeTable('Documents', Store.readTable('Documents').concat(docs));
+    Store.writeTable('Depots', all.filter(function (x) { return !done[x.id]; }));
+    Object.keys(parAgent).forEach(function (k) { notifyMany(user, parAgent[k].agent, parAgent[k].docs); });
+    return { valides: docs.length, erreurs: erreurs, noms: docs.map(function (d) { return d.nom_original; }) };
+  }
+  function depotRejeter(user, ids) {
+    if (user.role === 'agent') throw httpErr_('Accès refusé', 'FORBIDDEN');
+    var mine = depotRows(user); var gone = {};
+    (ids || []).forEach(function (id) { var r = mine.filter(function (x) { return x.id === id; })[0]; if (r) { try { DriveApp.getFileById(r.file_id).setTrashed(true); } catch (e) { /* déjà supprimé */ } gone[id] = true; } });
+    Store.writeTable('Depots', Store.readTable('Depots').filter(function (x) { return !gone[x.id]; }));
+    return { retires: Object.keys(gone).length };
+  }
+  return { list: list, upload: upload, update: update, download: download, remove: remove, count: count, purgeFiles: purgeFiles, analyse: function (t) { var ty = detectType(t); return { type: ty, champs: ty ? extract(ty, t) : null }; }, fileName: fileName, nameFor: nameFor, detectType: detectType, extract: extract,
+    depotAdd: depotAdd, depotList: depotList, depotUpdate: depotUpdate, depotValider: depotValider, depotRejeter: depotRejeter};
 })();

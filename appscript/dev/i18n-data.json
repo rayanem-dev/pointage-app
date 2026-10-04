@@ -5098,5 +5098,250 @@
 "« À propos » n'apparaît plus dans le menu de l'éditeur.",
 "\"About\" no longer appears in the publisher's menu.",
 "لم تعد «حول» تظهر في قائمة الناشر."
+],
+[
+"Période : indiquez deux mois (ex. janvier 2026 à mars 2026)",
+"Period: enter two months (e.g. January 2026 to March 2026)",
+"الفترة: أدخل شهرين (مثال: جانفي 2026 إلى مارس 2026)"
+],
+[
+"Document en attente introuvable",
+"Pending document not found",
+"المستند قيد الانتظار غير موجود"
+],
+[
+"Mois invalide (ex. mars 2026)",
+"Invalid month (e.g. March 2026)",
+"شهر غير صالح (مثال: مارس 2026)"
+],
+[
+"N° de sécurité sociale : chiffres uniquement",
+"Social security no.: digits only",
+"رقم الضمان الاجتماعي: أرقام فقط"
+],
+[
+"Fiche de paie (FDP)",
+"Payslip (FDP)",
+"كشف الراتب (FDP)"
+],
+[
+"Attestation CNAS",
+"CNAS certificate",
+"شهادة الضمان الاجتماعي (CNAS)"
+],
+[
+"Mise à jour CNAS",
+"CNAS update",
+"تحديث الضمان الاجتماعي (CNAS)"
+],
+[
+"Attestation d'émoluments",
+"Earnings certificate",
+"شهادة الأجر"
+],
+[
+"Autre",
+"Other",
+"أخرى"
+],
+[
+"Copie du contrat",
+"Copy of the contract",
+"نسخة من العقد"
+],
+[
+"Reconnaître l’agent automatiquement",
+"Recognise the agent automatically",
+"التعرّف على العون تلقائيًا"
+],
+[
+"— choisir l’agent —",
+"— choose the agent —",
+"— اختر العون —"
+],
+[
+"Début du congé",
+"Leave start",
+"بداية العطلة"
+],
+[
+"Établie le",
+"Issued on",
+"صدرت في"
+],
+[
+"Date du document",
+"Document date",
+"تاريخ المستند"
+],
+[
+"N° sécurité sociale",
+"Social security no.",
+"رقم الضمان الاجتماعي"
+],
+[
+"De",
+"From",
+"من"
+],
+[
+"À",
+"To",
+"إلى"
+],
+[
+"Aucune date nécessaire",
+"No date needed",
+"لا حاجة لتاريخ"
+],
+[
+"Nom final du fichier : modifiable",
+"Final file name: editable",
+"الاسم النهائي للملف: قابل للتعديل"
+],
+[
+"Retirer ce document",
+"Remove this document",
+"إزالة هذا المستند"
+],
+[
+"✓ Prêt",
+"✓ Ready",
+"✓ جاهز"
+],
+[
+"⚠ Agent à choisir",
+"⚠ Choose the agent",
+"⚠ اختر العون"
+],
+[
+"⚠ À compléter",
+"⚠ To complete",
+"⚠ يجب الاستكمال"
+],
+[
+"Envoyer vers les espaces des agents",
+"Send to the agents' spaces",
+"إرسال إلى مساحات الأعوان"
+],
+[
+"Retirer ces documents de la liste ? Ils ne seront pas envoyés.",
+"Remove these documents from the list? They will not be sent.",
+"إزالة هذه المستندات من القائمة؟ لن يتم إرسالها."
+],
+[
+"Retirer les documents cochés",
+"Remove the ticked documents",
+"إزالة المستندات المحدّدة"
+],
+[
+"Tout cocher",
+"Tick all",
+"تحديد الكل"
+],
+[
+"À compléter avant l’envoi",
+"To complete before sending",
+"يجب الاستكمال قبل الإرسال"
+],
+[
+"Rien n’est encore dans l’espace des agents. Corrigez si besoin (agent, type, dates, nom), cochez les documents à envoyer, puis envoyez : chaque agent est prévenu par e-mail.",
+"Nothing is in the agents' spaces yet. Correct if needed (agent, type, dates, name), tick the documents to send, then send: each agent is notified by e-mail.",
+"لا شيء في مساحات الأعوان بعد. صحّح عند الحاجة (العون، النوع، التواريخ، الاسم)، حدّد المستندات المراد إرسالها ثم أرسل: يُبلَّغ كل عون بالبريد."
+],
+[
+"Fichier déposé",
+"Uploaded file",
+"الملف المودَع"
+],
+[
+"Dates",
+"Dates",
+"التواريخ"
+],
+[
+"Nom final",
+"Final name",
+"الاسم النهائي"
+],
+[
+"À vérifier avant envoi (",
+"To check before sending (",
+"للتحقق قبل الإرسال ("
+],
+[
+"Déposer des documents en vrac",
+"Upload documents in bulk",
+"إيداع مستندات دفعة واحدة"
+],
+[
+"Déposez plusieurs documents à la fois (fiches de paie, titres de congé, contrats, attestations CNAS…). Sijil reconnaît l’agent, le type et les dates, puis propose le nom : TC_NOM_Prenom_2026-02-14, NOM_Prenom_FDP_Mars2026, NOM_Prenom_2026-04-04_Contrat, NOM_Prenom_AttestationCNAS_n°_2026-05-07, NOM_Prenom_MAJCNAS_Janvier2026_Mars2026, NOM_Prenom_AttestationTravail_2026-05-04, NOM_Prenom_AttestationEmoluments_Janvier2026_Mars2026. Vous vérifiez, puis vous envoyez : rien n’arrive chez l’agent avant votre accord.",
+"Upload several documents at once (payslips, leave certificates, contracts, CNAS certificates…). Sijil recognises the agent, type and dates, then proposes the name: TC_NAME_Firstname_2026-02-14, NAME_Firstname_FDP_Mars2026, NAME_Firstname_2026-04-04_Contrat, NAME_Firstname_AttestationCNAS_no_2026-05-07, NAME_Firstname_MAJCNAS_Janvier2026_Mars2026, NAME_Firstname_AttestationTravail_2026-05-04, NAME_Firstname_AttestationEmoluments_Janvier2026_Mars2026. You check, then send: nothing reaches the agent before your approval.",
+"أودِع عدة مستندات دفعة واحدة (كشوف الرواتب، شهادات العطلة، العقود، شهادات CNAS…). يتعرّف Sijil على العون والنوع والتواريخ ثم يقترح الاسم: TC_NOM_Prenom_2026-02-14 وNOM_Prenom_FDP_Mars2026 وNOM_Prenom_2026-04-04_Contrat وNOM_Prenom_AttestationCNAS_n°_2026-05-07 وNOM_Prenom_MAJCNAS_Janvier2026_Mars2026 وNOM_Prenom_AttestationTravail_2026-05-04 وNOM_Prenom_AttestationEmoluments_Janvier2026_Mars2026. تتحقق ثم ترسل: لا يصل شيء إلى العون قبل موافقتك."
+],
+[
+"Fichiers (6 Mo maximum chacun)",
+"Files (6 MB maximum each)",
+"الملفات (6 ميغابايت كحد أقصى لكل ملف)"
+],
+[
+"Agent pour tous les fichiers (facultatif)",
+"Agent for all files (optional)",
+"العون لكل الملفات (اختياري)"
+],
+[
+"Convertir les images (photos, scans JPG ou PNG) en PDF",
+" Convert images (photos, JPG or PNG scans) to PDF",
+"تحويل الصور (JPG أو PNG) إلى PDF"
+],
+[
+"Analyser les documents",
+"Analyse the documents",
+"تحليل المستندات"
+],
+[
+"Choisissez un ou plusieurs fichiers.",
+"Choose one or more files.",
+"اختر ملفًا واحدًا أو أكثر."
+],
+[
+"Envoyer ",
+"Send ",
+"إرسال "
+],
+[
+"document(s) dans l’espace des agents ?\n\n",
+"document(s) to the agents' spaces?\n\n",
+"مستند(ات) إلى مساحات الأعوان؟\n\n"
+],
+[
+"\n\nChaque agent sera prévenu par e-mail.",
+"\n\nEach agent will be notified by e-mail.",
+"\n\nسيُبلَّغ كل عون بالبريد الإلكتروني."
+],
+[
+"Dépôt de documents en vrac",
+"Bulk document upload",
+"إيداع المستندات دفعة واحدة"
+],
+[
+"Déposez plusieurs documents d'un coup : Sijil reconnaît l'agent, le type et les dates, et propose le nom (TC_NOM_Prenom_2026-02-14, NOM_Prenom_FDP_Mars2026, contrat, attestations CNAS, attestation de travail, attestation d'émoluments…).",
+"Upload several documents at once: Sijil recognises the agent, type and dates, and proposes the name (TC_NAME_Firstname_2026-02-14, NAME_Firstname_FDP_Mars2026, contract, CNAS certificates, employment certificate, earnings certificate…).",
+"أودِع عدة مستندات دفعة واحدة: يتعرّف Sijil على العون والنوع والتواريخ ويقترح الاسم (TC_NOM_Prenom_2026-02-14، NOM_Prenom_FDP_Mars2026، العقد، شهادات CNAS، شهادة العمل، شهادة الأجر…)."
+],
+[
+"Vous vérifiez et corrigez la liste, puis vous l'envoyez : rien n'arrive chez les agents avant votre accord, et chacun reçoit un seul e-mail.",
+"You check and correct the list, then send it: nothing reaches the agents before your approval, and each gets a single e-mail.",
+"تراجع القائمة وتصحّحها ثم ترسلها: لا يصل شيء إلى الأعوان قبل موافقتك، ويتلقى كل منهم بريدًا واحدًا."
+],
+[
+"Les photos et scans peuvent être convertis en PDF.",
+"Photos and scans can be converted to PDF.",
+"يمكن تحويل الصور والمسح الضوئي إلى PDF."
+],
+[
+"Nouveaux documents que l'agent peut demander : copie du contrat, attestation CNAS, mise à jour CNAS, attestation d'émoluments.",
+"New documents an agent can request: copy of the contract, CNAS certificate, CNAS update, earnings certificate.",
+"مستندات جديدة يمكن للعون طلبها: نسخة من العقد، شهادة CNAS، تحديث CNAS، شهادة الأجر."
 ]
 ]

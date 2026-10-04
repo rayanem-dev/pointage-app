@@ -62,7 +62,7 @@ var Setup = (function () {
     if (confirm !== 'VIDER') throw httpErr_('Confirmation incorrecte : tapez VIDER');
     Documents.purgeFiles();
     Store.listTabs().filter(function (t) { return Dates.isMonthKey(t) || t === 'Global'; }).forEach(Store.deleteTab);
-    ['Demandes', 'Envois', 'Documents', 'Attachements', 'AttachementsValides'].forEach(function (n) { Store.writeTable(n, []); });
+    ['Demandes', 'Envois', 'Documents', 'Depots', 'Attachements', 'AttachementsValides'].forEach(function (n) { Store.writeTable(n, []); });
     Store.writeTable('Agents', Agents.list().filter(function (a) { return a.role === 'admin' || a.role === 'client'; }));
     if (mode === 'tout') { Store.writeTable('Agents', Agents.list().filter(function (a) { return a.role === 'admin'; })); Store.writeTable('Params', []); Store.writeTable('Contrats', []); Store.writeTable('Fonctions', []); Params.set({}); }
     Store.reset();

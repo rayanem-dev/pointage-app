@@ -113,8 +113,8 @@ test('situation du jour : prévisions T puis congé R, et jours restants', () =>
   assert.strictEqual(run(`Cycle.dayInfo(${tl([])}, ${P}, '2026-10-02')`), null);
 });
 
-test('demandes : 6 types, regroupement par thème par le chef, une seule demande à la direction', () => {
-  assert.deepStrictEqual(Object.keys(run('CFG.TYPES_DEMANDE')), ['titre_conge', 'attestation_travail', 'ats', 'fiche_emolument', 'prolongation_conge', 'prolongation_sejour']);
+test('demandes : 10 types, regroupement par thème par le chef, une seule demande à la direction', () => {
+  assert.deepStrictEqual(Object.keys(run('CFG.TYPES_DEMANDE')), ['titre_conge', 'attestation_travail', 'ats', 'fiche_emolument', 'contrat', 'attestation_cnas', 'maj_cnas', 'attestation_emoluments', 'prolongation_conge', 'prolongation_sejour']);
   fail(call(T.ag, 'demandeCreate', { type: 'autre', objet: 'x' }), /Type/);
   fail(call(T.ag, 'demandeCreate', { type: 'titre_conge', date_debut: '2026-10-10', date_fin: '2026-10-01' }), /fin/);
   fail(call(T.admin, 'demandeCreate', { type: 'ats' }), /administrateur/);
@@ -390,48 +390,48 @@ test('documents : rangés dans Documents/<agent> à côté du classeur, type et 
   // 1. nom explicite : pas besoin de lire le contenu
   const avant = ocrUploads();
   const fdp = up('fiche de paie mars 2026.pdf');
-  assert.deepStrictEqual([fdp.type, fdp.code, fdp.periode, fdp.nom_original, fdp.dossier, fdp.detecte.source], ['fiche_emolument', 'FDP', 'mars2026', 'FDP_Mahdi_mars2026.pdf', 'Documents/Mahdi Lyes', 'nom']);
+  assert.deepStrictEqual([fdp.type, fdp.code, fdp.periode, fdp.nom_original, fdp.dossier, fdp.detecte.source], ['fiche_emolument', 'FDP', 'Mars2026', 'MAHDI_Lyes_FDP_Mars2026.pdf', 'Documents/Mahdi Lyes', 'nom']);
   assert.strictEqual(ocrUploads(), avant, 'pas d\'OCR quand le nom suffit');
   // rangement : Documents/ est créé À CÔTÉ du classeur, avec un dossier par agent
   const racine = env.sheetFolder.folders.find((f) => f.name === 'Documents');
   assert.ok(racine, 'dossier Documents dans le dossier du classeur');
   const dossierAgent = racine.folders.find((f) => f.name === 'Mahdi Lyes');
-  assert.ok(dossierAgent && dossierAgent.getFilesByName('FDP_Mahdi_mars2026.pdf').hasNext(), 'fichier rangé et renommé dans Drive');
+  assert.ok(dossierAgent && dossierAgent.getFilesByName('MAHDI_Lyes_FDP_Mars2026.pdf').hasNext(), 'fichier rangé et renommé dans Drive');
   assert.ok(!env.rootFolder.folders.some((f) => f.name.startsWith('Pointage')), 'plus de dossier à la racine du Drive');
   // 2. titre de congé : date jj.mm.aaaa
-  assert.strictEqual(up('TC 01-03-2026.pdf').nom_original, 'TC_Mahdi_01.03.2026.pdf');
+  assert.strictEqual(up('TC 01-03-2026.pdf').nom_original, 'TC_MAHDI_Lyes_2026-03-01.pdf');
   // 3. nom quelconque : reconnu par le contenu (OCR)
   const tc = up('scan0001.pdf', {}, 'TITRE DE CONGÉ\nM. Mahdi Lyes\ndu 15/03/2026 au 12/04/2026');
-  assert.deepStrictEqual([tc.nom_original, tc.detecte.source, tc.type], ['TC_Mahdi_15.03.2026.pdf', 'contenu', 'titre_conge']);
-  assert.strictEqual(up('scan0002.pdf', {}, 'BULLETIN DE PAIE\nPériode : Février 2026').nom_original, 'FDP_Mahdi_fevrier2026.pdf');
-  assert.strictEqual(up('scan0003.pdf', {}, 'Fiche de paie du mois de 01/2026').nom_original, 'FDP_Mahdi_janvier2026.pdf');
+  assert.deepStrictEqual([tc.nom_original, tc.detecte.source, tc.type], ['TC_MAHDI_Lyes_2026-03-15.pdf', 'contenu', 'titre_conge']);
+  assert.strictEqual(up('scan0002.pdf', {}, 'BULLETIN DE PAIE\nPériode : Février 2026').nom_original, 'MAHDI_Lyes_FDP_Fevrier2026.pdf');
+  assert.strictEqual(up('scan0003.pdf', {}, 'Fiche de paie du mois de 01/2026').nom_original, 'MAHDI_Lyes_FDP_Janvier2026.pdf');
   // 4. ATS ≠ attestation de travail
-  assert.strictEqual(up('attestation de travail et de salaire 12-02-2026.pdf').nom_original, 'ATS_Mahdi_12.02.2026.pdf');
+  assert.strictEqual(up('attestation de travail et de salaire 12-02-2026.pdf').nom_original, 'MAHDI_Lyes_ATS_2026-02-12.pdf');
   const at = up('attestation de travail.pdf');
-  assert.strictEqual(at.nom_original, `AT_Mahdi_${dot(TODAY)}.pdf`, 'sans date lisible : date du dépôt');
+  assert.strictEqual(at.nom_original, `MAHDI_Lyes_AttestationTravail_${TODAY}.pdf`, 'sans date lisible : date du dépôt');
   // 5. type inconnu : classé DOC avec avertissement
   const inconnu = up('photo.jpg');
-  assert.deepStrictEqual([inconnu.type, inconnu.nom_original], ['autre', `DOC_Mahdi_${dot(TODAY)}_photo.jpg`]);
+  assert.deepStrictEqual([inconnu.type, inconnu.nom_original], ['autre', 'MAHDI_Lyes_photo.jpg']);
   assert.match(inconnu.detecte.avertissement, /non reconnu/);
   // 6. doublon : suffixe
-  assert.strictEqual(up('fiche de paie mars 2026.pdf').nom_original, 'FDP_Mahdi_mars2026_2.pdf');
+  assert.strictEqual(up('fiche de paie mars 2026.pdf').nom_original, 'MAHDI_Lyes_FDP_Mars2026_2.pdf');
   // 7. type choisi à la main : prioritaire, la période vient du contenu
   const choisi = up('scan0004.pdf', { type: 'attestation_travail' }, 'Fait le 02/04/2026');
-  assert.deepStrictEqual([choisi.type, choisi.detecte.source, choisi.nom_original], ['attestation_travail', 'choix', 'AT_Mahdi_02.04.2026.pdf']);
+  assert.deepStrictEqual([choisi.type, choisi.detecte.source, choisi.nom_original], ['attestation_travail', 'choix', 'MAHDI_Lyes_AttestationTravail_2026-04-02.pdf']);
   fail(call(T.chef, 'documentUpload', { agent_id: mez, type: 'nimporte', nom: 'a.pdf', base64: b64 }), /Type/);
   // 8. le texte parle d'un autre agent : avertissement
   const autre = up('scan0005.pdf', {}, 'Attestation de travail délivrée à CHEF UN');
   assert.match(autre.detecte.avertissement, /semble concerner CHEF UN/);
   // 9. correction après coup : type et période, le fichier est renommé dans Drive
   const corr = ok(call(T.chef, 'documentUpdate', { id: fdp.id, type: 'titre_conge', periode: '20/03/2026' }));
-  assert.deepStrictEqual([corr.nom_original, corr.code], ['TC_Mahdi_20.03.2026.pdf', 'TC']);
-  assert.ok(dossierAgent.getFilesByName('TC_Mahdi_20.03.2026.pdf').hasNext() && !dossierAgent.getFilesByName('FDP_Mahdi_mars2026.pdf').hasNext());
-  assert.strictEqual(ok(call(T.chef, 'documentUpdate', { id: corr.id, type: 'fiche_emolument' })).nom_original, 'FDP_Mahdi_mars2026.pdf', 'retour au type FDP : la période devient mars 2026');
+  assert.deepStrictEqual([corr.nom_original, corr.code], ['TC_MAHDI_Lyes_2026-03-20.pdf', 'TC']);
+  assert.ok(dossierAgent.getFilesByName('TC_MAHDI_Lyes_2026-03-20.pdf').hasNext() && !dossierAgent.getFilesByName('MAHDI_Lyes_FDP_Mars2026.pdf').hasNext());
+  assert.strictEqual(ok(call(T.chef, 'documentUpdate', { id: corr.id, type: 'fiche_emolument' })).nom_original, 'MAHDI_Lyes_FDP_Mars2026.pdf', 'retour au type FDP : la période devient mars 2026');
   fail(call(T.chef, 'documentUpdate', { id: corr.id, periode: 'n\'importe quoi' }), /Période/);
   fail(call(T.ag, 'documentUpdate', { id: corr.id, type: 'autre' }), /refusé/);
   // 10. téléchargement : nom reclassé
   const dl = ok(call(T.chef, 'documentDownload', corr.id));
-  assert.strictEqual(dl.nom, 'FDP_Mahdi_mars2026.pdf');
+  assert.strictEqual(dl.nom, 'MAHDI_Lyes_FDP_Mars2026.pdf');
   assert.strictEqual(Buffer.from(dl.base64, 'base64').toString(), '%PDF-doc');
   assert.ok(ok(call(T.chef, 'documentsList', mez)).length >= 10);
   env.fetchHandler = null;
