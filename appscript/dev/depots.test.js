@@ -8,6 +8,7 @@ const ok = (r) => { assert.strictEqual(r.ok, true, JSON.stringify(r)); return r.
 const fail = (r, msg) => { assert.strictEqual(r.ok, false, 'devait échouer'); if (msg) assert.match(r.error, msg); return r; };
 const T = {};
 let ocr = '';
+const JPG = '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA0JCgsKCA0LCgsODg0PEyAVExISEyccHhcgLikxMC4pLSwzOko+MzZGNywtQFdBRkxOUlNSMj5aYVpQYEpRUk//2wBDAQ4ODhMREyYVFSZPNS01T09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0//wAARCAAGAAgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDDoooryD9FP//Z'; const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAGCAIAAABxZ0isAAAAFElEQVR4nGP8xcXFgA0wYRWlkwQAoSIBGmQ5qnUAAAAASUVORK5CYII='; const RGBA = 'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAGCAYAAAD+Bd/7AAAAFklEQVR4nGP8xcX1nwEPYMInOVgUAACWXwIZGOXdkwAAAABJRU5ErkJggg==';
 const b64 = Buffer.from('%PDF-1.4 test').toString('base64');
 let cpt = 0; const unique = () => Buffer.from('%PDF-1.4 test ' + (cpt += 1)).toString('base64');
 const add = (nom, texte = '', extra = {}) => { ocr = texte; return ok(call(T.admin, 'depotAdd', { nom, mime: 'application/pdf', base64: unique(), ...extra })); };
@@ -70,13 +71,23 @@ test('dépôt en vrac : agent inconnu ou ambigu, correction, puis validation ava
   assert.match(env.mails.find((m) => m.to === 'kadri@t.fr').body, /MAJCNAS/);
 });
 
-test('dépôt en vrac : conversion des images en PDF, rejet, droits', () => {
+test('dépôt en vrac : conversion des images en PDF à l\'envoi (aperçu = image d\'origine), repli, rejet, droits', () => {
   ocr = '';
-  const img = ok(call(T.admin, 'depotAdd', { nom: 'KADRI_Sofiane_Contrat_2026-04-05.jpg', mime: 'image/jpeg', base64: b64, pdf: true }));
-  assert.strictEqual(img.nom_final, 'KADRI_Sofiane_2026-04-05_Contrat.pdf'); assert.match(img.avertissement, /converti en PDF/);
-  const png = ok(call(T.admin, 'depotAdd', { nom: 'KADRI_Sofiane_Contrat_2026-04-06.png', mime: 'image/png', base64: b64, pdf: false }));
+  const img = ok(call(T.admin, 'depotAdd', { nom: 'KADRI_Sofiane_Contrat_2026-04-05.jpg', mime: 'image/jpeg', base64: JPG, pdf: true }));
+  assert.strictEqual(img.nom_final, 'KADRI_Sofiane_2026-04-05_Contrat.pdf'); assert.match(img.avertissement, /sera converti en PDF/);
+  const ap = ok(call(T.admin, 'depotApercu', img.id));
+  assert.strictEqual(ap.base64, JPG, 'l\'aperçu montre l\'image d\'origine, lisible par le navigateur');
+  const png = ok(call(T.admin, 'depotAdd', { nom: 'KADRI_Sofiane_Contrat_2026-04-06.png', mime: 'image/png', base64: PNG, pdf: false }));
   assert.strictEqual(png.nom_final, 'KADRI_Sofiane_2026-04-06_Contrat.png', 'sans conversion : format conservé');
-  assert.deepStrictEqual(ok(call(T.admin, 'depotRejeter', [img.id, png.id])), { retires: 2 });
+  const alpha = ok(call(T.admin, 'depotAdd', { nom: 'KADRI_Sofiane_Contrat_2026-04-07.png', mime: 'image/png', base64: RGBA, pdf: true }));
+  assert.strictEqual(alpha.nom_final, 'KADRI_Sofiane_2026-04-07_Contrat.png'); assert.match(alpha.avertissement, /Conversion PDF impossible/);
+  const v = ok(call(T.admin, 'depotValider', [img.id]));
+  assert.strictEqual(v.valides, 1, JSON.stringify(v.erreurs));
+  const dossier = env.sheetFolder.folders.find((f) => f.name === 'Documents').folders.find((f) => f.name === 'Kadri Sofiane');
+  assert.ok(dossier.getFilesByName('KADRI_Sofiane_2026-04-05_Contrat.pdf').hasNext(), 'fichier .pdf rangé chez l\'agent');
+  const doc = ok(call(T.admin, 'documentsList', T.kadri)).find((d) => d.nom_original === 'KADRI_Sofiane_2026-04-05_Contrat.pdf');
+  assert.ok(Buffer.from(ok(call(T.admin, 'documentDownload', doc.id)).base64, 'base64').toString('latin1').startsWith('%PDF-1.5'), 'contenu = PDF fabriqué');
+  assert.deepStrictEqual(ok(call(T.admin, 'depotRejeter', [png.id, alpha.id])), { retires: 2 });
   assert.strictEqual(ok(call(T.admin, 'depotList')).length, 0);
   const ag = ok(call(null, 'login', 'kadri@t.fr', 'kadripw12')).token;
   fail(call(ag, 'depotAdd', { nom: 'a.pdf', base64: b64 }), /refusé/); fail(call(ag, 'depotList'), /refusé/);
@@ -85,7 +96,6 @@ test('dépôt en vrac : conversion des images en PDF, rejet, droits', () => {
 });
 
 test('conversion image → PDF fabriquée sur place : JPEG et PNG valides (xref cohérente), alpha refusé proprement', () => {
-  const JPG = '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA0JCgsKCA0LCgsODg0PEyAVExISEyccHhcgLikxMC4pLSwzOko+MzZGNywtQFdBRkxOUlNSMj5aYVpQYEpRUk//2wBDAQ4ODhMREyYVFSZPNS01T09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0//wAARCAAGAAgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDDoooryD9FP//Z'; const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAGCAIAAABxZ0isAAAAFElEQVR4nGP8xcXFgA0wYRWlkwQAoSIBGmQ5qnUAAAAASUVORK5CYII='; const RGBA = 'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAGCAYAAAD+Bd/7AAAAFklEQVR4nGP8xcX1nwEPYMInOVgUAACWXwIZGOXdkwAAAABJRU5ErkJggg==';
   const pdfOf = (b64) => Buffer.from(app.run('Utilitaire = null; Utilities.base64Encode(Documents.imageToPdf(Utilities.base64Decode(' + JSON.stringify(b64) + ')))'), 'base64');
   for (const [b64, filtre] of [[JPG, '/DCTDecode'], [PNG, '/FlateDecode']]) {
     const pdf = pdfOf(b64); const txt = pdf.toString('latin1');
@@ -95,13 +105,6 @@ test('conversion image → PDF fabriquée sur place : JPEG et PNG valides (xref 
   }
   assert.strictEqual(app.run('Documents.imageToPdf(Utilities.base64Decode(' + JSON.stringify(RGBA) + '))'), null, 'PNG avec transparence : non géré (le fichier est conservé tel quel)');
   assert.strictEqual(app.run('Documents.imageToPdf(Utilities.base64Decode("aGVsbG8="))'), null);
-  // dépôt d'une vraie photo avec conversion
-  ocr = '';
-  const r = ok(call(T.admin, 'depotAdd', { nom: 'KADRI_Sofiane_Contrat_2026-05-01.jpg', mime: 'image/jpeg', base64: JPG, pdf: true }));
-  assert.strictEqual(r.nom_final, 'KADRI_Sofiane_2026-05-01_Contrat.pdf'); assert.match(r.avertissement, /converti en PDF/);
-  const rgb = ok(call(T.admin, 'depotAdd', { nom: 'KADRI_Sofiane_Contrat_2026-05-02.png', mime: 'image/png', base64: RGBA, pdf: true }));
-  assert.ok(rgb.nom_final.endsWith('.pdf') || /conservé/.test(rgb.avertissement), 'repli : conversion Google ou fichier conservé');
-  ok(call(T.admin, 'depotRejeter', [r.id, rgb.id]));
 });
 
 test('aperçu d\'un document en attente : le fichier est lisible avant envoi ; réservé au personnel', () => {
@@ -147,5 +150,20 @@ test('doublons : même fichier déjà classé ou déjà listé, même type et m�
   // dépôt simple : avertissement
   const u = ok(call(T.admin, 'documentUpload', { agent_id: T.benali, type: 'fiche_emolument', nom: 'BENALI_Nadia_FDP_avril_2026.pdf', mime: 'application/pdf', base64: contenu }));
   assert.match(u.detecte.avertissement, /Doublon/);
+  env.fetchHandler = null;
+});
+
+test('mois en abrégé et année sur 2 chiffres dans le nom du fichier (FEVR 26, JANV 26, dec 25) ; le nom prime sur le contenu', () => {
+  env.fetchHandler = (url) => { if (url.startsWith('https://www.googleapis.com/upload/drive/v3/files')) return { code: 200, body: JSON.stringify({ id: 'ocr1' }) }; if (url.includes('/files/ocr1/export')) return { code: 200, body: ocr }; return null; };
+  const nom = (n, texte = '') => { ocr = texte; return ok(call(T.admin, 'depotAdd', { nom: n, mime: 'image/jpeg', base64: unique() })); };
+  assert.strictEqual(nom('FDP KADRI SOFIANE FEVR 26 .jpg').nom_final, 'KADRI_Sofiane_FDP_Fevrier2026.jpg');
+  assert.strictEqual(nom('FDP KADRI SOFIANE JANV 26 .jpg').nom_final, 'KADRI_Sofiane_FDP_Janvier2026.jpg');
+  assert.strictEqual(nom('FDP KADRI SOFIANE MARS 26 .jpg').nom_final, 'KADRI_Sofiane_FDP_Mars2026.jpg');
+  assert.strictEqual(nom('FDP KADRI SOFIANE dec 25.jpg').nom_final, 'KADRI_Sofiane_FDP_Decembre2025.jpg');
+  const avecTexte = nom('FDP KADRI SOFIANE AVR 26.jpg', 'Date d\'entrée : juin 2025\nBulletin de paie — Période : avril 2026');
+  assert.strictEqual(avecTexte.nom_final, 'KADRI_Sofiane_FDP_Avril2026.jpg', 'le mois du nom de fichier prime');
+  // contenu seul : le mois de la période (mot-clé « période ») et non la première date venue
+  const contenu = nom('scan_x.jpg', 'KADRI SOFIANE bulletin de paie\nEmbauché en juin 2025\nPériode : février 2026');
+  assert.strictEqual(contenu.champs.mois, 'fevrier2026'); assert.match(contenu.avertissement, /lues dans le contenu/);
   env.fetchHandler = null;
 });

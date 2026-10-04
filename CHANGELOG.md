@@ -2,6 +2,12 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.25.0 — 2026-10-04 — Dépôt de documents : mois abrégés, aperçu des photos
+
+- Le mois est reconnu même abrégé dans le nom du fichier : « FEVR 26 », « JANV 26 », « dec 25 » (février 2026, janvier 2026, décembre 2025). Le mois du nom du fichier prime sur celui lu dans le document, et un avertissement signale les dates lues dans le contenu.
+- Les photos et scans JPG ou PNG sont convertis en PDF au moment de l'envoi : l'aperçu montre l'image d'origine, qui s'affiche toujours.
+- Aperçu d'un PDF : si la zone reste vide, « Ouvrir dans un onglet » l'affiche avec le lecteur du navigateur.
+
 ## 3.24.2 — 2026-10-04 — Nouveautés réservées à l'éditeur
 
 - Les nouveautés côté éditeur (console, support, suivi des versions) sont masquées aux utilisateurs des entreprises.

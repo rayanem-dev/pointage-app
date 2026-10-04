@@ -5633,5 +5633,45 @@
 "Déposez plusieurs documents à la fois (fiches de paie, titres de congé, contrats, attestations CNAS…). Sijil reconnaît l’agent, le type et les dates, puis propose le nom. Vous vérifiez, puis vous envoyez : rien n’arrive chez l’agent avant votre accord.",
 "Upload several documents at once (payslips, leave certificates, contracts, CNAS certificates…). Sijil recognises the agent, type and dates, then proposes the name. You check, then send: nothing reaches the agent before your approval.",
 "أودِع عدة مستندات دفعة واحدة (كشوف الرواتب، شهادات العطلة، العقود، شهادات CNAS…). يتعرّف Sijil على العون والنوع والتواريخ ثم يقترح الاسم. تتحقق ثم ترسل: لا يصل شيء إلى العون قبل موافقتك."
+],
+[
+" (sera converti en PDF à l'envoi)",
+" (will be converted to PDF when sent)",
+" (سيُحوَّل إلى PDF عند الإرسال)"
+],
+[
+"Dates lues dans le contenu du document : à vérifier.",
+"Dates read from the document content: please check.",
+"تواريخ مقروءة من محتوى المستند: يرجى التحقق."
+],
+[
+" ⚠ Conversion PDF impossible (format d'image non géré : PNG avec transparence, GIF, BMP ou JPEG CMJN) : fichier conservé tel quel.",
+" ⚠ PDF conversion impossible (unsupported image format: PNG with transparency, GIF, BMP or CMYK JPEG): file kept as is.",
+" ⚠ تعذّر التحويل إلى PDF (صيغة صورة غير مدعومة: PNG بشفافية أو GIF أو BMP أو JPEG CMYK): يُحفظ الملف كما هو."
+],
+[
+"Zone vide ? Cliquez sur « Ouvrir dans un onglet ».",
+"Blank area? Click \"Open in a tab\".",
+"المنطقة فارغة؟ انقر «فتح في علامة تبويب»."
+],
+[
+"Dépôt de documents : mois abrégés, aperçu des photos",
+"Document upload: abbreviated months, photo preview",
+"إيداع المستندات: أشهر مختصرة ومعاينة الصور"
+],
+[
+"Le mois est reconnu même abrégé dans le nom du fichier : « FEVR 26 », « JANV 26 », « dec 25 » (février 2026, janvier 2026, décembre 2025). Le mois du nom du fichier prime sur celui lu dans le document, et un avertissement signale les dates lues dans le contenu.",
+"The month is recognised even when abbreviated in the file name: \"FEVR 26\", \"JANV 26\", \"dec 25\" (February 2026, January 2026, December 2025). The month in the file name takes precedence over the one read in the document, and a warning flags dates read from the content.",
+"يُتعرَّف على الشهر حتى لو كان مختصرًا في اسم الملف: «FEVR 26» و«JANV 26» و«dec 25» (فبراير 2026 وجانفي 2026 وديسمبر 2025). يتقدّم شهر اسم الملف على المقروء في المستند، ويُنبّه تحذير إلى التواريخ المقروءة من المحتوى."
+],
+[
+"Les photos et scans JPG ou PNG sont convertis en PDF au moment de l'envoi : l'aperçu montre l'image d'origine, qui s'affiche toujours.",
+"JPG or PNG photos and scans are converted to PDF at sending time: the preview shows the original image, which always displays.",
+"تُحوَّل صور JPG وPNG والمسح الضوئي إلى PDF لحظة الإرسال: تعرض المعاينة الصورة الأصلية التي تظهر دائمًا."
+],
+[
+"Aperçu d'un PDF : si la zone reste vide, « Ouvrir dans un onglet » l'affiche avec le lecteur du navigateur.",
+"PDF preview: if the area stays blank, \"Open in a tab\" shows it with the browser's viewer.",
+"معاينة PDF: إذا بقيت المنطقة فارغة فإن «فتح في علامة تبويب» يعرضه بقارئ المتصفح."
 ]
 ]

@@ -79,6 +79,7 @@ function previewFile(r) {
   else if (isPdf) body.append(h('iframe', { src: url, title: r.nom }));
   else body.append(h('p', { class: 'muted', style: 'padding:24px' }, 'Aperçu indisponible pour ce format : ouvrez ou téléchargez le fichier.'));
   var open = h('a', { href: url, target: '_blank', rel: 'noopener', class: 'btnlike' }, 'Ouvrir dans un onglet');
+  if (isPdf) body.append(h('p', { class: 'muted', style: 'position:absolute;margin:8px 16px;font-size:.8rem' }, 'Zone vide ? Cliquez sur « Ouvrir dans un onglet ».'));
   var dl = h('button', { type: 'button', onclick: function () { saveFile(r); } }, 'Télécharger');
   var x = h('button', { type: 'button', class: 'primary', onclick: close }, 'Fermer');
   var m = h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', onclick: function (e) { if (e.target === m) close(); } },

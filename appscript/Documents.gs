@@ -10,7 +10,11 @@ var Documents = (function () {
   var CODES = { titre_conge: 'TC', fiche_emolument: 'FDP', contrat: 'CONTRAT', attestation_cnas: 'ACNAS', maj_cnas: 'MAJCNAS', attestation_travail: 'AT', attestation_emoluments: 'AE', ats: 'ATS', autre: 'DOC' };
   var MOIS = ['janvier', 'fevrier', 'mars', 'avril', 'mai', 'juin', 'juillet', 'aout', 'septembre', 'octobre', 'novembre', 'decembre'];
   var MOIS_AFF = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
-  var MOIS_RE = '(janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)';
+  // Noms de mois acceptés : complets ou abrégés (janv, fevr, avr, juil, sept, dec…), année sur 4 ou 2 chiffres (« FEVR 26 » = février 2026).
+  var MOIS_RE = '\\b(janvier|janv|jan|fevrier|fevr|fev|mars|mar|avril|avr|mai|juin|juillet|juil|aout|aou|septembre|sept|sep|octobre|oct|novembre|nov|decembre|dec)\\b\\.?';
+  var ANNEE_RE = '(20\\d{2}|\\d{2})(?!\\d)';
+  var ALIAS = { jan: 1, janv: 1, janvier: 1, fev: 2, fevr: 2, fevrier: 2, mar: 3, mars: 3, avr: 4, avril: 4, mai: 5, juin: 6, juil: 7, juillet: 7, aou: 8, aout: 8, sep: 9, sept: 9, septembre: 9, oct: 10, octobre: 10, nov: 11, novembre: 11, dec: 12, decembre: 12 };
+  function an4(y) { return String(y).length === 2 ? '20' + y : String(y); }
   // Champs obligatoires pour nommer chaque type ; « autre » n'en demande aucun.
   var REQUIS = { titre_conge: ['date'], fiche_emolument: ['mois'], contrat: ['date'], attestation_cnas: ['date'], maj_cnas: ['mois', 'mois2'], attestation_travail: ['date'], attestation_emoluments: ['mois', 'mois2'], ats: ['date'], autre: [] };
   function n(s) { return Format.norm(s); }
@@ -43,36 +47,39 @@ var Documents = (function () {
   function allDates(t) {
     var out = []; var re = new RegExp('(\\d{1,2})\\s*[\\/.\\-]\\s*(\\d{1,2})\\s*[\\/.\\-]\\s*(20\\d{2})|(20\\d{2})-(\\d{2})-(\\d{2})|(\\d{1,2})(?:er)?\\s+' + MOIS_RE + '\\s+(20\\d{2})', 'g'); var m;
     while ((m = re.exec(t))) {
-      var iso = m[1] ? isoOf(m[1], m[2], m[3]) : m[4] ? isoOf(m[6], m[5], m[4]) : isoOf(m[7], MOIS.indexOf(m[8]) + 1, m[9]);
+      var iso = m[1] ? isoOf(m[1], m[2], m[3]) : m[4] ? isoOf(m[6], m[5], m[4]) : isoOf(m[7], ALIAS[m[8]], an4(m[9]));
       if (iso) out.push({ iso: iso, i: m.index, len: m[0].length });
     }
     return out;
   }
   function dateAfter(t, re) { var m = re.exec(t); if (!m) return ''; var rest = t.slice(m.index + m[0].length, m.index + m[0].length + 40); var d = allDates(rest)[0]; return d && d.i < 25 ? d.iso : ''; }
   function moisOfIso(iso) { return iso ? moisKey(iso.slice(5, 7), iso.slice(0, 4)) : ''; }
-  // Période de mois couverte : « du 01/01/2026 au 31/03/2026 », « de janvier 2026 à mars 2026 », « janvier à mars 2026 », « 01/2026 à 03/2026 ».
+  // Période de mois couverte : « du 01/01/2026 au 31/03/2026 », « de janvier 2026 à mars 2026 », « janv à mars 26 », « 01/2026 à 03/2026 ».
+  function mk(nom, an) { return MOIS[ALIAS[nom] - 1] + an4(an); }
   function moisRange(t) {
-    var ds = allDates(t); var du = /\bdu\b[^0-9a-z]{0,3}$/;
+    var ds = allDates(t);
     for (var i = 0; i + 1 < ds.length; i += 1) {
       var between = t.slice(ds[i].i + ds[i].len, ds[i + 1].i);
       if (/^\s*(au|a|-|jusqu\s?au|jusqu a)\s*$/.test(between) && ds[i + 1].iso >= ds[i].iso) return { mois: moisOfIso(ds[i].iso), mois2: moisOfIso(ds[i + 1].iso) };
     }
-    var r = new RegExp(MOIS_RE + '\\s*(20\\d{2})?\\s*(?:a|au|-|jusqu a|jusqu au|et)\\s*' + MOIS_RE + '\\s*(20\\d{2})').exec(t);
-    if (r) return { mois: r[1] + (r[2] || r[4]), mois2: r[3] + r[4] };
-    var s = /\b(0?[1-9]|1[0-2])\s*[\/.\-]\s*(20\d{2})\s*(?:a|au|-)\s*(0?[1-9]|1[0-2])\s*[\/.\-]\s*(20\d{2})\b/.exec(t);
-    if (s) return { mois: moisKey(s[1], s[2]), mois2: moisKey(s[3], s[4]) };
-    var one = new RegExp(MOIS_RE + '\\s*(?:de\\s*|du\\s*)?[-_]?\\s*(20\\d{2})').exec(t);
-    if (one) return { mois: one[1] + one[2], mois2: one[1] + one[2] };
-    return { mois: '', mois2: '' };
+    var r = new RegExp(MOIS_RE + '\\s*(?:' + ANNEE_RE + ')?\\s*(?:a|au|-|jusqu a|jusqu au|et)\\s*' + MOIS_RE + '\\s*' + ANNEE_RE).exec(t);
+    if (r) return { mois: mk(r[1], r[2] || r[4]), mois2: mk(r[3], r[4]) };
+    var s2 = /\b(0?[1-9]|1[0-2])\s*[\/.\-]\s*(20\d{2})\s*(?:a|au|-)\s*(0?[1-9]|1[0-2])\s*[\/.\-]\s*(20\d{2})\b/.exec(t);
+    if (s2) return { mois: moisKey(s2[1], s2[2]), mois2: moisKey(s2[3], s2[4]) };
+    var one = moisSeul(t);
+    return one ? { mois: one, mois2: one } : { mois: '', mois2: '' };
   }
+  // Un seul mois : d'abord près d'un mot-clé (« période », « mois de »), sinon le plus récent trouvé ; abréviations et années sur 2 chiffres acceptées.
   function moisSeul(t) {
-    var m = new RegExp(MOIS_RE + '\\s*(?:de\\s*|du\\s*)?[-_]?\\s*(20\\d{2})').exec(t);
-    if (m) return m[1] + m[2];
+    var cle = new RegExp('(?:periode|mois d[eu]|mois|paie d[eu]|au titre d[eu])[^a-z0-9]{0,8}(?:d[eu]\\s*)?' + MOIS_RE + '\\s*[-_/.]?\\s*' + ANNEE_RE).exec(t);
+    if (cle) return mk(cle[1], cle[2]);
+    var all = []; var re = new RegExp(MOIS_RE + '\\s*(?:d[eu]\\s*)?[-_/.]?\\s*' + ANNEE_RE, 'g'); var m;
+    while ((m = re.exec(t))) all.push(mk(m[1], m[2]));
     var sansDates = t.replace(/\d{1,2}\s*[\/.\-]\s*\d{1,2}\s*[\/.\-]\s*20\d{2}/g, ' ');
-    var mm = /\b(0?[1-9]|1[0-2])\s*[\/.\-]\s*(20\d{2})\b/.exec(sansDates);
-    if (mm) return moisKey(mm[1], mm[2]);
-    var d = allDates(t)[0];
-    return d ? moisOfIso(d.iso) : '';
+    var re2 = /\b(0?[1-9]|1[0-2])\s*[\/.\-]\s*(20\d{2})\b/g; while ((m = re2.exec(sansDates))) all.push(moisKey(m[1], m[2]));
+    if (!all.length) { var d = allDates(t)[0]; return d ? moisOfIso(d.iso) : ''; }
+    var rang = function (k) { var x = /^([a-z]+)(20\d{2})$/.exec(k); return Number(x[2]) * 12 + MOIS.indexOf(x[1]); };
+    return all.sort(function (p, q) { return rang(q) - rang(p); })[0]; // le plus récent
   }
   function nssOf(t) {
     var m = /(?:immatriculation|securite sociale|n[°o]?\s*ss\b|nss|assure social|n[°o]\s*d.?assure)[^0-9]{0,40}(\d[\d\s]{8,16}\d)/.exec(t);
@@ -188,7 +195,7 @@ var Documents = (function () {
       try { text = n(Bordereau.ocrText(data)).slice(0, 12000); } catch (e) { avert.push('Lecture automatique impossible (' + e.message + ').'); }
       if (text) {
         if (!type) { var tt = detectType(text); if (tt) { type = tt; source = 'contenu'; } }
-        if (type) f = merge(f, extract(type, text));
+        if (type) { var avant = merge(f, {}); f = merge(f, extract(type, text)); if (['date', 'mois', 'mois2'].some(function (k) { return f[k] && !avant[k]; })) avert.push('Dates lues dans le contenu du document : à vérifier.'); }
         if (!agent && cands.length !== 1) { var byText = findAgents(text, agents || []); if (byText.length) cands = byText; }
         if (agent) {
           var autre = (agents || Agents.list()).filter(function (x) { return x.id !== agent.id && Agents.isPerson(x) && n(x.nom).indexOf(' ') > 0 && text.indexOf(n(x.nom)) >= 0; })[0];
@@ -292,6 +299,7 @@ var Documents = (function () {
     add(tab + 'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF\n');
     return [].concat.apply([], segs);
   }
+  function convertible(bytes) { return !!(jpegInfo(bytes) || pngInfo(bytes)); }
   // Une image peut être convertie en PDF (option « convertir en PDF ») ; les autres formats restent tels quels. Le motif d'un échec est conservé pour être affiché.
   function maybePdf(data, bytes) {
     var ext = extOf(data.nom); var motif = '';
@@ -445,10 +453,12 @@ var Documents = (function () {
     var agent = forced || (info.candidats.length === 1 ? info.candidats[0] : null);
     if (!agent && info.candidats.length > 1) info.avertissement = (info.avertissement + ' Plusieurs agents possibles : choisissez.').trim();
     if (!agent && !info.candidats.length) info.avertissement = (info.avertissement + ' Agent non reconnu : choisissez-le.').trim();
-    var conv = maybePdf(data, bytes);
-    var file = stagingFolder().createFile(Utilities.newBlob(conv.bytes, conv.mime, String(data.nom)));
-    var row = { id: newId_('Q'), nom_original: String(data.nom).slice(0, 120), file_id: file.getId(), ext: conv.ext, agent_id: agent ? agent.id : '', type: info.type, champs: JSON.stringify(info.champs), nom_force: '',
-      source: info.source, avert: info.avertissement + (conv.converti ? ' (converti en PDF)' : '') + (conv.echec ? ' ⚠ Conversion PDF impossible (' + conv.echec + ') : fichier conservé tel quel.' : ''), depose_par: user.nom, depose_id: user.id, date_depot: new Date().toISOString(), candidats: JSON.stringify(info.candidats.map(function (a) { return a.id; })), empreinte: hashOf(bytes) };
+    // La conversion en PDF se fait à l'envoi : en attendant, l'image reste telle quelle et peut être consultée dans l'aperçu.
+    var ext0 = extOf(data.nom); var estImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp'].indexOf(ext0) >= 0; var convertir = !!data.pdf && estImage && convertible(bytes);
+    var file = stagingFolder().createFile(Utilities.newBlob(bytes, data.mime || 'application/octet-stream', String(data.nom)));
+    var note = convertir ? ' (sera converti en PDF à l\'envoi)' : (data.pdf && estImage ? ' ⚠ Conversion PDF impossible (format d\'image non géré : PNG avec transparence, GIF, BMP ou JPEG CMJN) : fichier conservé tel quel.' : '');
+    var row = { id: newId_('Q'), nom_original: String(data.nom).slice(0, 120), file_id: file.getId(), ext: convertir ? 'pdf' : ext0, agent_id: agent ? agent.id : '', type: info.type, champs: JSON.stringify(info.champs), nom_force: '',
+      source: info.source, avert: (info.avertissement + note).trim(), depose_par: user.nom, depose_id: user.id, date_depot: new Date().toISOString(), candidats: JSON.stringify(info.candidats.map(function (a) { return a.id; })), empreinte: hashOf(bytes), convertir: convertir ? '1' : '', ext_orig: ext0 };
     Store.writeTable('Depots', Store.readTable('Depots').concat([row]));
     var by = {}; agents.forEach(function (a) { by[a.id] = a; });
     return depotPub(row, by);
@@ -485,7 +495,11 @@ var Documents = (function () {
       if (!pubr.pret) { erreurs.push({ id: id, nom: r.nom_original, message: !by[r.agent_id] ? 'Agent à choisir' : 'À compléter : ' + pubr.manque.join(', ') }); return; }
       try {
         var agent = by[r.agent_id]; var folder = agentFolder(agent); var file = DriveApp.getFileById(r.file_id);
-        var name = uniqueName(folder, pubr.nom_final); file.setName(name); file.moveTo(folder);
+        var name = uniqueName(folder, pubr.nom_final);
+        if (r.convertir === '1') {
+          try { var pdf = imageToPdf(file.getBlob().getBytes()); var nf = folder.createFile(Utilities.newBlob(pdf, 'application/pdf', name)); file.setTrashed(true); file = nf; }
+          catch (ce) { Logger.log('Conversion PDF impossible à l\'envoi : ' + ce.message); name = uniqueName(folder, name.replace(/\.pdf$/i, '.' + (r.ext_orig || 'jpg'))); file.setName(name); file.moveTo(folder); } // repli : l'image est rangée telle quelle
+        } else { file.setName(name); file.moveTo(folder); }
         var d = docRow(user, agent, r.type, champsOf(r), name, file, r.empreinte); docs.push(d); done[id] = true;
         (parAgent[agent.id] = parAgent[agent.id] || { agent: agent, docs: [] }).docs.push(d);
       } catch (e) { erreurs.push({ id: id, nom: r.nom_original, message: e.message }); }

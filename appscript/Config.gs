@@ -4,7 +4,7 @@ var CFG = {
   CODE_EDITEUR: 'ADMIN', // code réservé : connexion à la console de l'éditeur (gestion des clients)
   APP_SHELL_URL: 'https://rayanem-dev.github.io/pointage-app/', // page d'accueil installable (liens d'invitation ?c=CODE)
   COPYRIGHT: '© 2026 Rayane M. — Tous droits réservés', // propriétaire du logiciel : à modifier ici, affiché sur toutes les pages
-  VERSION: '3.24.2',
+  VERSION: '3.25.0',
   TABLES: {
     Params: ['cle', 'valeur'],
     Agents: ['id', 'nom', 'fonction', 'affectation', 'contrat', 'email', 'role', 'chef_id', 'actif', 'acces_setup', 'password_hash', 'salt', 'date_entree', 'type', 'rotation', 'acces_exports'],
@@ -19,7 +19,7 @@ var CFG = {
   Prospects: ['id', 'date', 'societe', 'nom', 'email', 'tel', 'message', 'statut', 'note', 'client'], // demandes d'essai reçues depuis la page d'accueil (classeur principal) // annuaire des clients (classeur principal uniquement)
   Remarques: ['id', 'agent_id', 'date', 'texte', 'auteur_id', 'auteur_nom', 'contrat', 'date_creation', 'statut', 'reponse', 'date_reponse'],
   Documents: ['id', 'agent_id', 'type', 'titre', 'file_id', 'nom_original', 'depose_par', 'date', 'code', 'periode', 'dossier', 'champs', 'empreinte', 'nouveau'],
-  Depots: ['id', 'nom_original', 'file_id', 'ext', 'agent_id', 'type', 'champs', 'nom_force', 'source', 'avert', 'depose_par', 'depose_id', 'date_depot', 'candidats', 'empreinte']
+  Depots: ['id', 'nom_original', 'file_id', 'ext', 'agent_id', 'type', 'champs', 'nom_force', 'source', 'avert', 'depose_par', 'depose_id', 'date_depot', 'candidats', 'empreinte', 'convertir', 'ext_orig']
   },
   // Colonnes masquées dans le classeur (données techniques)
   HIDDEN: { Agents: ['password_hash', 'salt'] },
