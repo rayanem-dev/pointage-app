@@ -71,7 +71,7 @@ pic(s, os.path.join(ROOT, 'brand', 'logo-sijil-complet.png'), 0.9, 1.15, h=5.1, 
 text(s, 5.6, 1.9, 7.2, 1.4, 'Gestion du temps de travail', size=40, color=NAVY, bold=True)
 text(s, 5.6, 3.55, 7.0, 1.2, "La mise à disposition et le personnel de prestation de services, de A à Z : du bordereau des prix jusqu'à l'attachement et à la facture.", size=20, color=INK)
 text(s, 5.6, 5.4, 7, 0.5, 'En français, en arabe et en anglais · sur ordinateur et sur téléphone', size=16, color=BLUE, bold=True)
-text(s, 5.6, 6.6, 7, 0.4, "Version 3.22 · Octobre 2026 · Captures : entreprise fictive", size=11, color=GREY)
+text(s, 5.6, 6.6, 7, 0.4, "Version 3.23 · Octobre 2026 · Captures : entreprise fictive", size=11, color=GREY)
 
 # 2 problème
 s = new(); title(s, "Un personnel en rotation, c'est vite le désordre", "Fichiers Excel, messages, papiers : chacun a sa version")

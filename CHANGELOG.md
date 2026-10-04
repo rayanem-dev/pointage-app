@@ -2,6 +2,12 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.23.0 — 2026-10-04 — Connexion par utilisateur et carte Version
+
+- L'éditeur choisit une entreprise puis un utilisateur de cette entreprise pour se connecter à sa place et intervenir directement. Chaque accès est noté dans le journal.
+- Une carte « Version » compare le site et le serveur : « Tout est à jour » ou ce qu'il reste à publier.
+- Les documents peuvent peser jusqu'à 10 Mo.
+
 ## 3.22.0 — 2026-10-04 — Aperçu des documents
 
 - Un bouton « Aperçu » permet de voir un document avant de l'envoyer à l'agent, et aussi dans la liste des documents déjà rangés. Il montre les PDF et les images, avec un accès pour l'ouvrir dans un onglet ou le télécharger.

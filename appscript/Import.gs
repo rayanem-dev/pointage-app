@@ -103,7 +103,7 @@ var PointageImport = (function () {
     var name = String(o.nom || 'pointage'); var ext = ((/\.([a-z0-9]+)$/i.exec(name) || [])[1] || '').toLowerCase();
     var bytes = Utilities.base64Decode(o.base64 || '');
     if (!bytes.length) throw httpErr_('Fichier vide');
-    if (bytes.length > CFG.MAX_UPLOAD_BYTES) throw httpErr_('Fichier trop volumineux (6 Mo maximum)');
+    if (bytes.length > CFG.MAX_UPLOAD_BYTES) throw httpErr_('Fichier trop volumineux (10 Mo maximum)');
     if (ext === 'csv') {
       var text = Utilities.newBlob(bytes).getDataAsString('UTF-8');
       var sep = text.indexOf(';') >= 0 ? ';' : text.indexOf('\t') >= 0 ? '\t' : ',';

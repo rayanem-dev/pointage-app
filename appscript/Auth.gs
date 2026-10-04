@@ -13,12 +13,12 @@ var Auth = (function () {
   function journalAdd(code, agent) {
     var props = PropertiesService.getScriptProperties(); var list = [];
     try { list = JSON.parse(props.getProperty('LOG_ALL') || '[]'); } catch (e) { list = []; }
-    list.unshift([new Date().toISOString(), code || '', String(agent.nom || '').slice(0, 28), agent.role || '']);
+    list.unshift([new Date().toISOString(), code || '', String(agent.nom || '').slice(0, 40), agent.role || '']);
     list = list.slice(0, 60); var s = JSON.stringify(list);
     while (s.length > 8500 && list.length > 5) { list.pop(); s = JSON.stringify(list); }
     props.setProperty('LOG_ALL', s);
   }
-  function journalSupport(code, user) { try { journalAdd(code, { nom: 'Support : ' + (user && user.nom || 'éditeur'), role: 'support' }); } catch (e) { Logger.log('Accès support non journalisé : ' + e.message); } }
+  function journalSupport(code, user, cible) { try { journalAdd(code, { nom: 'Support → ' + (cible && cible.nom || user && user.nom || 'éditeur'), role: 'support' }); } catch (e) { Logger.log('Accès support non journalisé : ' + e.message); } }
   function journal() { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('LOG_ALL') || '[]'); } catch (e) { return []; } }
   function noteLogin(code, agent) {
     var agentId = agent.id;

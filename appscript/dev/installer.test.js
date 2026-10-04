@@ -79,3 +79,11 @@ test('jeton GitHub facultatif : API authentifiée ; menu de mise à jour présen
   assert.ok(seen.length > 5 && seen.every((a) => a === 'Bearer ghp_x'));
   assert.match(fs.readFileSync(path.join(DIR, 'Setup.gs'), 'utf8'), /Mettre à jour le code depuis GitHub', 'installerDepuisGitHub'/);
 });
+
+test('version.json (lu par la carte « Version ») correspond à CFG.VERSION : lancez node dev/gen-version.js après un changement de version', () => {
+  const fs = require('fs'); const path = require('path');
+  const { loadApp } = require('./load');
+  const v = loadApp().run('CFG.VERSION');
+  const j = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'version.json'), 'utf8'));
+  assert.strictEqual(j.version, v);
+});

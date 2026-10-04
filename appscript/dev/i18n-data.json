@@ -1570,9 +1570,9 @@
 "كشوف الأجور والشهادات وATS…"
 ],
 [
-"Fichier (6 Mo maximum)",
-"File (6 MB maximum)",
-"الملف (6 ميغابايت كحد أقصى)"
+"Fichier (10 Mo maximum)",
+"File (10 MB maximum)",
+"الملف (10 ميغابايت كحد أقصى)"
 ],
 [
 "Fichier généré",
@@ -3115,9 +3115,9 @@
 "ملف فارغ"
 ],
 [
-"Fichier trop volumineux (6 Mo maximum)",
-"File too large (6 MB maximum)",
-"الملف كبير جدًا (6 ميغابايت كحد أقصى)"
+"Fichier trop volumineux (10 Mo maximum)",
+"File too large (10 MB maximum)",
+"الملف كبير جدًا (10 ميغابايت كحد أقصى)"
 ],
 [
 "Format non pris en charge (PDF, image, Excel ou CSV)",
@@ -5280,9 +5280,9 @@
 "أودِع عدة مستندات دفعة واحدة (كشوف الرواتب، شهادات العطلة، العقود، شهادات CNAS…). يتعرّف Sijil على العون والنوع والتواريخ ثم يقترح الاسم: TC_NOM_Prenom_2026-02-14 وNOM_Prenom_FDP_Mars2026 وNOM_Prenom_2026-04-04_Contrat وNOM_Prenom_AttestationCNAS_n°_2026-05-07 وNOM_Prenom_MAJCNAS_Janvier2026_Mars2026 وNOM_Prenom_AttestationTravail_2026-05-04 وNOM_Prenom_AttestationEmoluments_Janvier2026_Mars2026. تتحقق ثم ترسل: لا يصل شيء إلى العون قبل موافقتك."
 ],
 [
-"Fichiers (6 Mo maximum chacun)",
-"Files (6 MB maximum each)",
-"الملفات (6 ميغابايت كحد أقصى لكل ملف)"
+"Fichiers (10 Mo maximum chacun)",
+"Files (10 MB maximum each)",
+"الملفات (10 ميغابايت كحد أقصى لكل ملف)"
 ],
 [
 "Agent pour tous les fichiers (facultatif)",
@@ -5388,5 +5388,105 @@
 "Un bouton « Aperçu » permet de voir un document avant de l'envoyer à l'agent, et aussi dans la liste des documents déjà rangés. Il montre les PDF et les images, avec un accès pour l'ouvrir dans un onglet ou le télécharger.",
 "A \"Preview\" button lets you see a document before sending it to the agent, and also in the list of filed documents. It shows PDFs and images, with a way to open it in a tab or download it.",
 "يتيح زر «معاينة» رؤية المستند قبل إرساله إلى العون، وأيضًا في قائمة المستندات المحفوظة. يعرض ملفات PDF والصور مع إمكانية فتحه في علامة تبويب أو تنزيله."
+],
+[
+"Se connecter comme cet utilisateur",
+"Sign in as this user",
+"الدخول كهذا المستخدم"
+],
+[
+"Utilisateur",
+"User",
+"المستخدم"
+],
+[
+" » en tant que ",
+" » as ",
+" » بصفة "
+],
+[
+"Utilisateur introuvable",
+"User not found",
+"المستخدم غير موجود"
+],
+[
+"Version",
+"Version",
+"الإصدار"
+],
+[
+"Site : ",
+"Site: ",
+"الموقع: "
+],
+[
+"Serveur : v",
+"Server: v",
+"الخادم: v"
+],
+[
+"Vérification…",
+"Checking…",
+"جارٍ التحقق…"
+],
+[
+"✓ Tout est à jour",
+"✓ Everything is up to date",
+"✓ كل شيء محدّث"
+],
+[
+"⚠ Le serveur est en retard : v",
+"⚠ The server is behind: v",
+"⚠ الخادم متأخر: v"
+],
+[
+" au lieu de v",
+" instead of v",
+" بدل v"
+],
+[
+". À déployer.",
+". To deploy.",
+". يجب النشر."
+],
+[
+"⚠ Le site est en retard : v",
+"⚠ The site is behind: v",
+"⚠ الموقع متأخر: v"
+],
+[
+". À publier (patientez 1 à 2 minutes).",
+". To publish (wait 1 to 2 minutes).",
+". يجب النشر (انتظر دقيقة إلى دقيقتين)."
+],
+[
+"Impossible de lire la version du site.",
+"Unable to read the site version.",
+"تعذّرت قراءة إصدار الموقع."
+],
+[
+"indisponible",
+"unavailable",
+"غير متاح"
+],
+[
+"Connexion par utilisateur et carte Version",
+"Sign-in by user and Version card",
+"الدخول حسب المستخدم وبطاقة الإصدار"
+],
+[
+"L'éditeur choisit une entreprise puis un utilisateur de cette entreprise pour se connecter à sa place et intervenir directement. Chaque accès est noté dans le journal.",
+"The publisher picks a company, then one of its users, to sign in as them and act directly. Every access is recorded in the log.",
+"يختار الناشر شركة ثم أحد مستخدميها للدخول مكانه والتدخل مباشرة. يُسجَّل كل دخول في السجل."
+],
+[
+"Une carte « Version » compare le site et le serveur : « Tout est à jour » ou ce qu'il reste à publier.",
+"A \"Version\" card compares the site and the server: \"Everything is up to date\" or what is left to publish.",
+"تقارن بطاقة «الإصدار» الموقع والخادم: «كل شيء محدّث» أو ما بقي للنشر."
+],
+[
+"Les documents peuvent peser jusqu'à 10 Mo.",
+"Documents can weigh up to 10 MB.",
+"يمكن أن يصل حجم المستندات إلى 10 ميغابايت."
 ]
 ]

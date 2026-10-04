@@ -212,15 +212,28 @@ var Tenants = (function () {
     save(list().filter(function (x) { return x.code !== c.code; }));
     return { supprime: c.code };
   }
-  // Accès direct à l'espace d'un client EN ESSAI (démonstration, support) : session de son administrateur, sans mot de passe.
-  function access(user, code) {
+  // Accès direct à l'espace d'un client (support) : session de son administrateur, ou de l'utilisateur choisi, sans mot de passe.
+  function access(user, code, userId) {
     requireOwner(user);
     var c = mustFind(code);
     checkLicense(c); // un client suspendu ou à licence expirée doit d'abord être réactivé (Statut / Fin de licence)
-    var admin = inClient(c, function () { return Store.readTable('Agents').filter(function (a) { return a.role === 'admin' && a.actif === '1'; })[0]; });
-    if (!admin) throw httpErr_('Aucun administrateur actif dans ce classeur');
-    Auth.journalSupport(c.code, user);
-    return Object.assign({ code: c.code, societe: c.nom, statut: c.statut }, Auth.openSession(c.code, admin));
+    var cible = inClient(c, function () {
+      var actifs = Store.readTable('Agents').filter(function (a) { return a.actif === '1' && a.type !== 'vehicule'; });
+      return userId ? actifs.filter(function (a) { return a.id === userId; })[0] : actifs.filter(function (a) { return a.role === 'admin'; })[0];
+    });
+    if (!cible) throw httpErr_(userId ? 'Utilisateur introuvable' : 'Aucun administrateur actif dans ce classeur');
+    Auth.journalSupport(c.code, user, cible);
+    return Object.assign({ code: c.code, societe: c.nom, statut: c.statut }, Auth.openSession(c.code, cible));
+  }
+  // Utilisateurs actifs d'un client (pour se connecter à leur place) : administrateurs, responsables, agents, comptes client.
+  function users(user, code) {
+    requireOwner(user);
+    var ordre = { admin: 1, chef: 2, agent: 3, client: 4 };
+    return inClient(mustFind(code), function () {
+      return Store.readTable('Agents').filter(function (a) { return a.actif === '1' && a.type !== 'vehicule'; })
+        .map(function (a) { return { id: a.id, nom: a.nom, role: a.role, contrat: a.contrat, email: a.email }; })
+        .sort(function (x, y) { return ((ordre[x.role] || 9) - (ordre[y.role] || 9)) || String(x.nom).localeCompare(String(y.nom), 'fr', { sensitivity: 'base' }); });
+    });
   }
   // Contact de l'éditeur, montré aux clients (onglet « À propos ») : propriétés du script.
   function contact() {
@@ -277,5 +290,5 @@ var Tenants = (function () {
     var m = list().filter(function (r) { return !r.classeur_id; })[0];
     return m ? m.code : '';
   }
-  return { activityAll: activityAll, codeActuel: codeActuel, lien: lien, envoyerMessage: envoyerMessage, vitrine: vitrine, access: access, admins: admins, adminUpdate: adminUpdate, remove: remove, contact: contact, setContact: setContact, apropos: apropos, commentaire: commentaire, normCode: normCode, multi: multi, use: use, isOwner: isOwner, requireOwner: requireOwner, clients: clients, create: create, update: update, resolve: resolve, test: test, find: find, list: list };
+  return { users: users, activityAll: activityAll, codeActuel: codeActuel, lien: lien, envoyerMessage: envoyerMessage, vitrine: vitrine, access: access, admins: admins, adminUpdate: adminUpdate, remove: remove, contact: contact, setContact: setContact, apropos: apropos, commentaire: commentaire, normCode: normCode, multi: multi, use: use, isOwner: isOwner, requireOwner: requireOwner, clients: clients, create: create, update: update, resolve: resolve, test: test, find: find, list: list };
 })();

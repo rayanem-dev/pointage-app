@@ -266,7 +266,7 @@ var Bordereau = (function () {
     ext = ext.toLowerCase();
     var bytes = Utilities.base64Decode(o.base64 || '');
     if (!bytes.length) throw httpErr_('Fichier vide');
-    if (bytes.length > CFG.MAX_UPLOAD_BYTES) throw httpErr_('Fichier trop volumineux (6 Mo maximum)');
+    if (bytes.length > CFG.MAX_UPLOAD_BYTES) throw httpErr_('Fichier trop volumineux (10 Mo maximum)');
     if (ext === 'csv' || ext === 'txt') {
       var text = Utilities.newBlob(bytes).getDataAsString('UTF-8');
       var sep = text.indexOf(';') >= 0 ? ';' : text.indexOf('\t') >= 0 ? '\t' : ',';

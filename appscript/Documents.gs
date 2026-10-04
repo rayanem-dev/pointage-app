@@ -218,7 +218,7 @@ var Documents = (function () {
   function readBytes(data) {
     if (!data.base64 || !data.nom) throw httpErr_('Fichier manquant');
     var bytes = Utilities.base64Decode(data.base64);
-    if (bytes.length > CFG.MAX_UPLOAD_BYTES) throw httpErr_('Fichier trop volumineux (6 Mo maximum)');
+    if (bytes.length > CFG.MAX_UPLOAD_BYTES) throw httpErr_('Fichier trop volumineux (10 Mo maximum)');
     return bytes;
   }
   // ----- image → PDF : fabriqué ici (JPEG et PNG sans alpha), sans service externe ; l'orientation EXIF des photos est respectée -----

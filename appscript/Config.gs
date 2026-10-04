@@ -4,7 +4,7 @@ var CFG = {
   CODE_EDITEUR: 'ADMIN', // code réservé : connexion à la console de l'éditeur (gestion des clients)
   APP_SHELL_URL: 'https://rayanem-dev.github.io/pointage-app/', // page d'accueil installable (liens d'invitation ?c=CODE)
   COPYRIGHT: '© 2026 Rayane M. — Tous droits réservés', // propriétaire du logiciel : à modifier ici, affiché sur toutes les pages
-  VERSION: '3.22.0',
+  VERSION: '3.23.0',
   TABLES: {
     Params: ['cle', 'valeur'],
     Agents: ['id', 'nom', 'fonction', 'affectation', 'contrat', 'email', 'role', 'chef_id', 'actif', 'acces_setup', 'password_hash', 'salt', 'date_entree', 'type', 'rotation', 'acces_exports'],
@@ -45,7 +45,7 @@ var CFG = {
   MONTH: { C_DAY0: 2, C_ID: 40, HEADER_ROW: 4, WIDTH: 41 },
   SESSION_SECONDS: 21600,
   REMEMBER_DAYS: 30, // « Rester connecté » : durée de la reconnexion automatique
-  MAX_UPLOAD_BYTES: 6 * 1024 * 1024
+  MAX_UPLOAD_BYTES: 10 * 1024 * 1024
 };
 
 function httpErr_(message, code) { var e = new Error(message); e.code = code || 'ERR'; return e; }

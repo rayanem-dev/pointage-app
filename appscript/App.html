@@ -258,28 +258,43 @@ var ROUTES = {
 // un lien « #/page » ouvrirait la fenêtre entière sur une page blanche).
 function go(path) { S.path = path; try { history.replaceState(null, '', '#' + path); } catch (e) { /* cadre isolé : sans importance */ } render(); }
 function navClick(path) { return function (ev) { ev.preventDefault(); go(path); }; }
-// Éditeur : sélecteur d'entreprise. Choisir un client ouvre son espace avec tous les droits de son administrateur (onglets, pointages, mots de passe…) ; « Mon espace » ramène à la console.
+// Éditeur : sélecteur d'entreprise puis d'utilisateur. Choisir un client ouvre son espace (administrateur par défaut) ; choisir un utilisateur ouvre sa session, pour voir et agir comme lui.
+// « Mon espace » ramène à la console. Chaque accès est noté dans le journal.
+var ROLE_LIB = { admin: 'Administrateur', chef: 'Responsable d’équipe', agent: 'Agent', client: 'Client' };
+function enterClient(code, userId) {
+  var ownerTok = S.back ? S.back.token : S.token;
+  var quitter = S.back ? call('logout').catch(function () {}) : Promise.resolve();
+  quitter.then(function () {
+    S.token = ownerTok; try { sessionStorage.setItem('tk', ownerTok); } catch (e) { /* ignore */ }
+    if (!code) { setBack(null); S.path = null; boot(); return; }
+    call('clientAcces', code, userId || '').then(function (r) {
+      setBack({ token: ownerTok, societe: r.societe, code: r.code }); S.token = r.token; S.owner = false; S.path = null; try { sessionStorage.setItem('tk', r.token); } catch (e) { /* ignore */ }
+      boot();
+    }).catch(function (e) { setBack(null); toast(e.message); boot(); });
+  });
+}
 function entSelect() {
   if (!S.owner && !S.back) return null;
   if (S.owner && !S.clientsFetched && !S.clientsLoading) { S.clientsLoading = true; call('clients').then(function (r) { S.clientsFetched = true; S.clientsList = r.clients.map(function (c) { return { code: c.code, nom: c.nom }; }); try { sessionStorage.setItem('cl', JSON.stringify(S.clientsList)); } catch (e) { /* ignore */ } S.clientsLoading = false; render(); }).catch(function () { S.clientsLoading = false; }); }
   var cur = S.back ? S.back.code : '';
   var sel = h('select', { class: 'entsel', title: 'Changer d’entreprise', 'aria-label': 'Entreprise' }, h('option', { value: '' }, 'Mon espace (éditeur)'),
     (S.clientsList || (S.back ? [{ code: S.back.code, nom: S.back.societe }] : [])).map(function (c) { return h('option', { value: c.code }, c.nom + ' (' + c.code + ')'); }));
-  sel.value = cur;
-  sel.onchange = function () {
-    var code = sel.value;
-    var ownerTok = S.back ? S.back.token : S.token;
-    var quitter = S.back ? call('logout').catch(function () {}) : Promise.resolve();
-    quitter.then(function () {
-      S.token = ownerTok; try { sessionStorage.setItem('tk', ownerTok); } catch (e) { /* ignore */ }
-      if (!code) { setBack(null); S.path = null; boot(); return; }
-      call('clientAcces', code).then(function (r) {
-        setBack({ token: ownerTok, societe: r.societe, code: r.code }); S.token = r.token; S.owner = false; S.path = null; try { sessionStorage.setItem('tk', r.token); } catch (e) { /* ignore */ }
-        boot();
-      }).catch(function (e) { setBack(null); toast(e.message); boot(); });
-    });
-  };
-  return sel;
+  sel.value = cur; sel.onchange = function () { enterClient(sel.value, ''); };
+  if (!S.back) return sel;
+  // Deuxième liste : les utilisateurs de l'entreprise (chargée avec la session de l'éditeur, conservée pour revenir).
+  var usel = h('select', { class: 'entsel', title: 'Se connecter comme cet utilisateur', 'aria-label': 'Utilisateur' });
+  function fill(list) {
+    usel.replaceChildren.apply(usel, list.map(function (u) { return h('option', { value: u.id }, u.nom + ' — ' + tr(ROLE_LIB[u.role] || u.role)); }));
+    if (S.user && list.some(function (u) { return u.id === S.user.id; })) usel.value = S.user.id;
+  }
+  S.usersByCode = S.usersByCode || {};
+  fill(S.usersByCode[S.back.code] || (S.user ? [{ id: S.user.id, nom: S.user.nom, role: S.user.role }] : []));
+  if (!S.usersByCode[S.back.code]) {
+    new Promise(function (resolve, reject) { google.script.run.withSuccessHandler(function (r) { return r && r.ok ? resolve(r.data) : reject(new Error('x')); }).withFailureHandler(reject).rpc(S.back.token, 'clientUtilisateurs', [S.back.code]); })
+      .then(function (list) { S.usersByCode[S.back.code] = list; fill(list); }).catch(function () { /* liste indisponible : l'administrateur reste sélectionné */ });
+  }
+  usel.onchange = function () { if (usel.value && (!S.user || usel.value !== S.user.id)) enterClient(S.back.code, usel.value); };
+  return h('span', { class: 'entwrap' }, sel, usel);
 }
 function render() {
   var root = $app();
@@ -301,7 +316,7 @@ function render() {
       h('a', { href: '#/motdepasse', onclick: navClick('/motdepasse') }, 'Mot de passe'),
       h('button', { class: 'link', onclick: logoutNow }, 'Déconnexion')));
   var main = h('main', null);
-  var back = S.back ? h('div', { class: 'msg warn', style: 'margin:0;border-radius:0;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap' }, 'Mode support : vous êtes dans l\'espace de « ' + S.back.societe + ' » avec tous les droits de son administrateur.',
+  var back = S.back ? h('div', { class: 'msg warn', style: 'margin:0;border-radius:0;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap' }, 'Mode support : vous êtes dans l\'espace de « ' + S.back.societe + ' » en tant que ' + S.user.nom + ' (' + tr(ROLE_LIB[S.user.role] || S.user.role) + ').',
     h('button', { type: 'button', class: 'primary', onclick: function () { call('logout').catch(function () {}).then(function () { S.token = S.back.token; setBack(null); S.path = null; try { sessionStorage.setItem('tk', S.token); } catch (e) { /* ignore */ } boot(); }); } }, "‹ Retour à l'administration")) : null;
   root.replaceChildren.apply(root, [back, bar, main, h('footer', { class: 'muted', style: 'text-align:center;padding:14px;font-size:.8rem' }, 'Sijil · ', h('a', { href: '#/nouveautes', onclick: navClick('/nouveautes') }, 'version ' + ((S.info && S.info.version) || '?') + ' (nouveautés)'), h('br'), (S.info && S.info.copyright) || '', ' · ', h('a', { href: '#/confidentialite', onclick: navClick('/confidentialite') }, 'Confidentialité'))].filter(Boolean));
   if (path === '/documents') markDocsSeen();
@@ -859,7 +874,7 @@ function DocumentsPage() {
     };
     var form = h('section', { class: 'card' }, h('h2', null, 'Déposer des documents en vrac'),
       h('p', { class: 'muted' }, 'Déposez plusieurs documents à la fois (fiches de paie, titres de congé, contrats, attestations CNAS…). Sijil reconnaît l’agent, le type et les dates, puis propose le nom : TC_NOM_Prenom_2026-02-14, NOM_Prenom_FDP_Mars2026, NOM_Prenom_2026-04-04_Contrat, NOM_Prenom_AttestationCNAS_n°_2026-05-07, NOM_Prenom_MAJCNAS_Janvier2026_Mars2026, NOM_Prenom_AttestationTravail_2026-05-04, NOM_Prenom_AttestationEmoluments_Janvier2026_Mars2026. Vous vérifiez, puis vous envoyez : rien n’arrive chez l’agent avant votre accord.'),
-      h('div', { class: 'row' }, field('Fichiers (6 Mo maximum chacun)', files, 'grow2'), field('Agent pour tous les fichiers (facultatif)', forceAgent)),
+      h('div', { class: 'row' }, field('Fichiers (10 Mo maximum chacun)', files, 'grow2'), field('Agent pour tous les fichiers (facultatif)', forceAgent)),
       h('label', { class: 'inline' }, pdfChk, ' Convertir les images (photos, scans JPG ou PNG) en PDF'), upBox, go);
     wrap.append(form, queue);
     sel.onchange = loadList;
@@ -1155,7 +1170,7 @@ function ClientsPage() {
       cardContact.replaceChildren(h('h2', null, 'Mon contact (affiché à mes clients)'), h('p', { class: 'muted' }, "Les clients voient ce contact dans leur onglet « À propos » et vous écrivent à cette adresse e-mail."),
         h('div', { class: 'row' }, field('Nom', nom), field('E-mail', mail, 'grow2'), field('Téléphone', tel)), cbox, sv);
     }).catch(function (e) { cardContact.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
-    wrap.replaceChildren(form, res, h('section', { class: 'card' }, h('h2', null, 'Clients (' + data.clients.length + ')'),
+    wrap.replaceChildren(VersionCard(), form, res, h('section', { class: 'card' }, h('h2', null, 'Clients (' + data.clients.length + ')'),
       h('p', { class: 'muted' }, "Suspendre ou laisser expirer la licence bloque aussitôt la connexion et les sessions ouvertes de ce client, sans toucher aux autres. Le lien d'invitation fonctionne aussi en QR code."),
       h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Code', 'Société', 'Statut', 'Fin de licence', 'Vitrine', 'Adresse /exec dédiée (facultatif)', 'Actions'].map(function (t) { return h('th', null, t); }))), h('tbody', null, rows)))), cardContact);
   }
@@ -1164,6 +1179,21 @@ function ClientsPage() {
 }
 
 // ---------- À propos : licence, contact de l'éditeur, commentaire par e-mail ----------
+// Carte « Version » (éditeur) : compare la version du site (page d'accueil) et celle du serveur pour savoir si tout est à jour.
+function cmpVer(a, b) { var x = String(a).split('.').map(Number); var y = String(b).split('.').map(Number); for (var i = 0; i < 3; i += 1) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0) ? 1 : -1; } return 0; }
+function VersionCard() {
+  var srv = (S.info && S.info.version) || '?'; var site = h('span', null, '…'); var verdict = h('p', { class: 'muted' }, 'Vérification…');
+  var card = h('section', { class: 'card' }, h('h2', null, 'Version'), h('p', { class: 'muted' }, 'Site : ', site), h('p', { class: 'muted' }, 'Serveur : v' + srv), verdict);
+  var base = (S.info && S.info.shell) || '';
+  fetch(base + 'version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
+    var v = String(j.version || '?'); site.textContent = 'v' + v;
+    var c = cmpVer(srv, v);
+    if (c === 0) { verdict.className = ''; verdict.style.color = 'var(--pos)'; verdict.textContent = tr('✓ Tout est à jour'); }
+    else if (c < 0) { verdict.className = 'msg warn'; verdict.textContent = tr('⚠ Le serveur est en retard : v' + srv + ' au lieu de v' + v + '. À déployer.'); }
+    else { verdict.className = 'msg warn'; verdict.textContent = tr('⚠ Le site est en retard : v' + v + ' au lieu de v' + srv + '. À publier (patientez 1 à 2 minutes).'); }
+  }).catch(function () { site.textContent = 'indisponible'; verdict.textContent = tr('Impossible de lire la version du site.'); });
+  return card;
+}
 function AProposPage() {
   return asyncBlock(function () {
     return call('apropos').then(function (a) {

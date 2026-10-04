@@ -191,3 +191,19 @@ test('connexions : l\'éditeur voit l\'activité de toutes les entreprises et le
   const own = ok(call(a, 'connexions'));
   assert.ok(own.gens && !own.entreprises && !own.journal, 'un client ne voit que ses propres utilisateurs');
 });
+
+test('support : liste des utilisateurs d\'un client et connexion à la place de l\'un d\'eux (journalisée), sans droits d\'éditeur', () => {
+  const ed = ok(call(null, 'login', 'editeur@t.fr', 'editeurpw1', 'ADMIN')).token;
+  const adm = ok(call(ed, 'clientAcces', 'ALPHA')); const adminAlpha = ok(call(adm.token, 'me')).user;
+  const ag = ok(call(adm.token, 'agentCreate', { nom: 'AGENT ALPHA', email: 'ag@alpha.dz', role: 'agent', password: 'agalpha12' })).agent;
+  const liste = ok(call(ed, 'clientUtilisateurs', 'ALPHA'));
+  assert.deepStrictEqual(liste.map((u) => u.role).slice(0, 2), ['admin', 'agent']); assert.ok(liste.some((u) => u.id === ag.id && u.email === 'ag@alpha.dz'));
+  assert.ok(!liste.some((u) => 'password_hash' in u || 'salt' in u), 'aucun secret dans la liste');
+  const s = ok(call(ed, 'clientAcces', 'ALPHA', ag.id)); const me = ok(call(s.token, 'me'));
+  assert.deepStrictEqual([me.user.id, me.user.role, me.code, me.owner, me.canSetup], [ag.id, 'agent', 'ALPHA', false, false], 'session de l\'agent choisi : vue et droits de l\'agent, jamais éditeur');
+  fail(call(ed, 'clientAcces', 'ALPHA', 'A-inconnu'), /introuvable/);
+  fail(call(s.token, 'clientUtilisateurs', 'ALPHA'), /éditeur|refusé/i);
+  fail(call(adm.token, 'clientAcces', 'ALPHA', ag.id), /refusé|éditeur/i);
+  assert.ok(ok(call(ed, 'connexions')).journal.some((j) => j[1] === 'ALPHA' && j[2].includes('AGENT ALPHA') && j[3] === 'support'), 'accès journalisé avec le nom de l\'utilisateur');
+  assert.ok(adminAlpha.role === 'admin');
+});
