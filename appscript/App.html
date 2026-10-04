@@ -252,7 +252,7 @@ var ROUTES = {
   '/demandes': function () { return DemandesPage(); }, '/documents': function () { return DocumentsPage(); },
   '/pointer': function () { return PointerPage(); }, '/groupe': function () { return GroupePage(); },
   '/agents': function () { return AgentsPage(); }, '/setup': function () { return SetupPage(); },
-  '/connexions': function () { return ConnexionsPage(); }, '/exports': function () { return ExportsPage(); }, '/contrats': function () { return ContratsPage(); }, '/motdepasse': function () { return PasswordPage(); }, '/nouveautes': function () { return NouveautesPage(); }, '/confidentialite': function () { return CharteBlock(); }, '/clients': function () { return ClientsPage(); }, '/prospects': function () { return ProspectsPage(); }, '/apropos': function () { return AProposPage(); }, '/aide': function () { return HelpPage(); }
+  '/version': function () { return VersionPage(); }, '/connexions': function () { return ConnexionsPage(); }, '/exports': function () { return ExportsPage(); }, '/contrats': function () { return ContratsPage(); }, '/motdepasse': function () { return PasswordPage(); }, '/nouveautes': function () { return NouveautesPage(); }, '/confidentialite': function () { return CharteBlock(); }, '/clients': function () { return ClientsPage(); }, '/prospects': function () { return ProspectsPage(); }, '/apropos': function () { return AProposPage(); }, '/aide': function () { return HelpPage(); }
 };
 // Navigation interne : on ne laisse pas le navigateur suivre les liens (dans le cadre isolé d'Apps Script,
 // un lien « #/page » ouvrirait la fenêtre entière sur une page blanche).
@@ -303,7 +303,7 @@ function render() {
   // Compte de l'éditeur : son espace normal + onglets « Clients » et « Prospects ». Espace d'un client : l'application seule.
   var links = NAV[role].filter(function (l) { return !(S.canSetup && l[0] === '#/contrats'); }); // le contrat est dans Setup pour qui y a accès
   if (S.canSetup) links.push(['#/setup', 'Setup']);
-  if (S.owner) { links = links.filter(function (l) { return l[0] !== '#/apropos'; }); links.push(['#/clients', 'Clients'], ['#/prospects', 'Prospects']); } // l'éditeur n'a pas besoin de « À propos » // compte unique de l'éditeur : sa société + la console
+  if (S.owner) { links = links.filter(function (l) { return l[0] !== '#/apropos'; }); links.push(['#/clients', 'Clients'], ['#/prospects', 'Prospects'], ['#/version', 'Version']); } // l'éditeur n'a pas besoin de « À propos » // compte unique de l'éditeur : sa société + la console
   var path = S.path || (location.hash.replace(/^#/, '') || '/');
   var allowed = links.map(function (l) { return l[0].replace('#', ''); }).concat(['/motdepasse', '/nouveautes', '/confidentialite']);
   if (allowed.indexOf(path) < 0) path = role === 'admin' ? '/pointer' : role === 'client' ? '/groupe' : '/';
@@ -320,6 +320,7 @@ function render() {
     h('button', { type: 'button', class: 'primary', onclick: function () { call('logout').catch(function () {}).then(function () { S.token = S.back.token; setBack(null); S.path = null; try { sessionStorage.setItem('tk', S.token); } catch (e) { /* ignore */ } boot(); }); } }, "‹ Retour à l'administration")) : null;
   root.replaceChildren.apply(root, [back, bar, main, h('footer', { class: 'muted', style: 'text-align:center;padding:14px;font-size:.8rem' }, 'Sijil · ', h('a', { href: '#/nouveautes', onclick: navClick('/nouveautes') }, 'version ' + ((S.info && S.info.version) || '?') + ' (nouveautés)'), h('br'), (S.info && S.info.copyright) || '', ' · ', h('a', { href: '#/confidentialite', onclick: navClick('/confidentialite') }, 'Confidentialité'))].filter(Boolean));
   if (path === '/documents') markDocsSeen();
+  if (S.owner) checkVersion().then(function (r) { var a = document.querySelector('a[data-path="/version"]'); if (a) { a.textContent = tr('Version') + (r.c === 0 ? ' ✓' : r.c === null ? '' : ' ⚠'); a.title = r.c === 0 ? tr('✓ Tout est à jour') : ''; } });
   setTimeout(refreshBadges, 0);
   main.append(ROUTES[path]());
   paintBadges();
@@ -1170,7 +1171,7 @@ function ClientsPage() {
       cardContact.replaceChildren(h('h2', null, 'Mon contact (affiché à mes clients)'), h('p', { class: 'muted' }, "Les clients voient ce contact dans leur onglet « À propos » et vous écrivent à cette adresse e-mail."),
         h('div', { class: 'row' }, field('Nom', nom), field('E-mail', mail, 'grow2'), field('Téléphone', tel)), cbox, sv);
     }).catch(function (e) { cardContact.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
-    wrap.replaceChildren(VersionCard(), form, res, h('section', { class: 'card' }, h('h2', null, 'Clients (' + data.clients.length + ')'),
+    wrap.replaceChildren(form, res, h('section', { class: 'card' }, h('h2', null, 'Clients (' + data.clients.length + ')'),
       h('p', { class: 'muted' }, "Suspendre ou laisser expirer la licence bloque aussitôt la connexion et les sessions ouvertes de ce client, sans toucher aux autres. Le lien d'invitation fonctionne aussi en QR code."),
       h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Code', 'Société', 'Statut', 'Fin de licence', 'Vitrine', 'Adresse /exec dédiée (facultatif)', 'Actions'].map(function (t) { return h('th', null, t); }))), h('tbody', null, rows)))), cardContact);
   }
@@ -1179,19 +1180,24 @@ function ClientsPage() {
 }
 
 // ---------- À propos : licence, contact de l'éditeur, commentaire par e-mail ----------
-// Carte « Version » (éditeur) : compare la version du site (page d'accueil) et celle du serveur pour savoir si tout est à jour.
+// Version (éditeur) : compare la version du site (page d'accueil) et celle du serveur pour savoir si tout est à jour. Entrée « Version » du menu + page.
 function cmpVer(a, b) { var x = String(a).split('.').map(Number); var y = String(b).split('.').map(Number); for (var i = 0; i < 3; i += 1) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0) ? 1 : -1; } return 0; }
-function VersionCard() {
-  var srv = (S.info && S.info.version) || '?'; var site = h('span', null, '…'); var verdict = h('p', { class: 'muted' }, 'Vérification…');
+function checkVersion(force) {
+  if (!force && S.verCheck && Date.now() - S.verCheck.t < 120000) return S.verCheck.p;
+  var srv = (S.info && S.info.version) || '?'; var base = (S.info && S.info.shell) || '';
+  var p = fetch(base + 'version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) { var v = String(j.version || '?'); return { srv: srv, site: v, c: cmpVer(srv, v) }; }).catch(function () { return { srv: srv, site: '', c: null }; });
+  S.verCheck = { t: Date.now(), p: p }; return p;
+}
+function VersionPage() {
+  var site = h('span', null, '…'); var verdict = h('p', { class: 'muted' }, 'Vérification…'); var srv = (S.info && S.info.version) || '?';
   var card = h('section', { class: 'card' }, h('h2', null, 'Version'), h('p', { class: 'muted' }, 'Site : ', site), h('p', { class: 'muted' }, 'Serveur : v' + srv), verdict);
-  var base = (S.info && S.info.shell) || '';
-  fetch(base + 'version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
-    var v = String(j.version || '?'); site.textContent = 'v' + v;
-    var c = cmpVer(srv, v);
-    if (c === 0) { verdict.className = ''; verdict.style.color = 'var(--pos)'; verdict.textContent = tr('✓ Tout est à jour'); }
-    else if (c < 0) { verdict.className = 'msg warn'; verdict.textContent = tr('⚠ Le serveur est en retard : v' + srv + ' au lieu de v' + v + '. À déployer.'); }
-    else { verdict.className = 'msg warn'; verdict.textContent = tr('⚠ Le site est en retard : v' + v + ' au lieu de v' + srv + '. À publier (patientez 1 à 2 minutes).'); }
-  }).catch(function () { site.textContent = 'indisponible'; verdict.textContent = tr('Impossible de lire la version du site.'); });
+  checkVersion(true).then(function (r) {
+    if (r.c === null) { site.textContent = 'indisponible'; verdict.textContent = tr('Impossible de lire la version du site.'); return; }
+    site.textContent = 'v' + r.site;
+    if (r.c === 0) { verdict.className = ''; verdict.style.color = 'var(--pos)'; verdict.textContent = tr('✓ Tout est à jour'); }
+    else if (r.c < 0) { verdict.className = 'msg warn'; verdict.textContent = tr('⚠ Le serveur est en retard : v' + r.srv + ' au lieu de v' + r.site + '. À déployer.'); }
+    else { verdict.className = 'msg warn'; verdict.textContent = tr('⚠ Le site est en retard : v' + r.site + ' au lieu de v' + r.srv + '. À publier (patientez 1 à 2 minutes).'); }
+  });
   return card;
 }
 function AProposPage() {

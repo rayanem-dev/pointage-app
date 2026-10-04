@@ -112,3 +112,11 @@ test('aperçu d\'un document en attente : le fichier est lisible avant envoi ; r
   const ag = ok(call(null, 'login', 'kadri@t.fr', 'kadripw12')).token; fail(call(ag, 'depotApercu', r.id), /refusé/);
   ok(call(T.admin, 'depotRejeter', [r.id]));
 });
+
+test('conversion PDF d\'une grosse image (plusieurs Mo) : pas de dépassement de pile', () => {
+  const grand = Buffer.alloc(3 * 1024 * 1024, 7); // faux JPEG volumineux : en-tête valide, corps quelconque
+  const tete = Buffer.from('ffd8ffe000104a46494600010100000100010000ffc0000b080064006401011100ffd9', 'hex');
+  const jpg = Buffer.concat([tete.subarray(0, tete.length - 2), grand, tete.subarray(tete.length - 2)]).toString('base64');
+  const taille = app.run('var p = Documents.imageToPdf(Utilities.base64Decode(' + JSON.stringify(jpg) + ')); p.length');
+  assert.ok(taille > 3 * 1024 * 1024, 'PDF fabriqué sans erreur : ' + taille + ' octets');
+});

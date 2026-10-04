@@ -2,6 +2,11 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.23.1 — 2026-10-04 — Conversion PDF des grosses photos et menu Version
+
+- La conversion en PDF fonctionne aussi pour les photos de plusieurs Mo (elle échouait sur les vraies photos de téléphone). Si une image ne peut pas être convertie, la raison est indiquée.
+- « Version » est maintenant dans le menu de l'éditeur, avec ✓ quand le site et le serveur sont à jour.
+
 ## 3.23.0 — 2026-10-04 — Connexion par utilisateur et carte Version
 
 - L'éditeur choisit une entreprise puis un utilisateur de cette entreprise pour se connecter à sa place et intervenir directement. Chaque accès est noté dans le journal.

@@ -5488,5 +5488,35 @@
 "Les documents peuvent peser jusqu'à 10 Mo.",
 "Documents can weigh up to 10 MB.",
 "يمكن أن يصل حجم المستندات إلى 10 ميغابايت."
+],
+[
+"Conversion PDF des grosses photos et menu Version",
+"PDF conversion of large photos and Version menu",
+"تحويل الصور الكبيرة إلى PDF وقائمة الإصدار"
+],
+[
+"La conversion en PDF fonctionne aussi pour les photos de plusieurs Mo (elle échouait sur les vraies photos de téléphone). Si une image ne peut pas être convertie, la raison est indiquée.",
+"PDF conversion also works for photos of several MB (it failed on real phone photos). If an image cannot be converted, the reason is shown.",
+"يعمل التحويل إلى PDF الآن أيضًا للصور ذات الحجم الكبير (كان يفشل مع صور الهاتف الحقيقية). إذا تعذّر تحويل صورة يُذكر السبب."
+],
+[
+"« Version » est maintenant dans le menu de l'éditeur, avec ✓ quand le site et le serveur sont à jour.",
+"\"Version\" is now in the publisher's menu, with ✓ when the site and the server are up to date.",
+"أصبحت «الإصدار» في قائمة الناشر مع ✓ عندما يكون الموقع والخادم محدّثين."
+],
+[
+" Conversion PDF impossible (",
+" PDF conversion impossible (",
+" تعذّر التحويل إلى PDF ("
+],
+[
+"⚠ Conversion PDF impossible (",
+"⚠ PDF conversion impossible (",
+"⚠ تعذّر التحويل إلى PDF ("
+],
+[
+"converti en PDF",
+"converted to PDF",
+"تم التحويل إلى PDF"
 ]
 ]
