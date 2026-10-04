@@ -20,6 +20,14 @@ main { max-width: 1280px; margin: 0 auto; padding: 16px; display: grid; gap: 16p
 h1, h2, h3 { margin: 0 0 8px; } h2 { font-size: 1.15rem; } h3 { font-size: 1rem; }
 small { display: block; color: var(--muted); font-size: .8rem; } .muted { color: var(--muted); } .center { text-align: center; padding: 40px; }
 .top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 16px; background: linear-gradient(100deg, #16598D, #0E4377); color: #fff; position: sticky; top: 0; z-index: 20; }
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 60; display: flex; align-items: center; justify-content: center; padding: 12px; }
+.modal .mbox { background: var(--card); color: var(--ink); border-radius: 12px; width: min(980px, 96vw); height: min(92vh, 940px); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,.35); }
+.modal .mhead { display: flex; gap: 8px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.btnlike { display: inline-block; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); text-decoration: none; font-size: .9rem; }
+.modal .mhead b { flex: 1; min-width: 160px; word-break: break-all; }
+.modal .mbody { flex: 1; overflow: auto; background: var(--head); display: flex; align-items: flex-start; justify-content: center; }
+.modal .mbody iframe, .modal .mbody embed { width: 100%; height: 100%; border: 0; background: #fff; }
+.modal .mbody img { max-width: 100%; height: auto; margin: auto; }
 .entsel { max-width: 210px; padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.12); color: #fff; font-size: .85rem; } .entsel option { color: #12263A; background: #fff; }
 .brand { font: 400 .95rem 'Michroma', 'Eurostile', Arial, sans-serif; letter-spacing: .04em; } .top nav { display: flex; gap: 4px; flex-wrap: wrap; flex: 1; }
 .top a, .top button.link { color: #cfe0ff; text-decoration: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; } .top a.on { background: rgba(255,255,255,.14); box-shadow: inset 0 -3px 0 var(--teal); color: #fff; } .brandwrap { display: inline-flex; align-items: center; gap: 8px; } .brandwrap .logo { background: #f5f3ec; border-radius: 8px; padding: 2px; }

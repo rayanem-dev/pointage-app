@@ -448,6 +448,14 @@ var Documents = (function () {
     Object.keys(parAgent).forEach(function (k) { notifyMany(user, parAgent[k].agent, parAgent[k].docs); });
     return { valides: docs.length, erreurs: erreurs, noms: docs.map(function (d) { return d.nom_original; }) };
   }
+  // Aperçu d'un fichier en attente (avant envoi à l'agent).
+  function depotApercu(user, id) {
+    if (user.role === 'agent') throw httpErr_('Accès refusé', 'FORBIDDEN');
+    var r = depotRows(user).filter(function (x) { return x.id === id; })[0];
+    if (!r) throw httpErr_('Document en attente introuvable');
+    var blob = DriveApp.getFileById(r.file_id).getBlob();
+    return { nom: r.nom_original, mime: blob.getContentType(), base64: Utilities.base64Encode(blob.getBytes()) };
+  }
   function depotRejeter(user, ids) {
     if (user.role === 'agent') throw httpErr_('Accès refusé', 'FORBIDDEN');
     var mine = depotRows(user); var gone = {};
@@ -456,5 +464,5 @@ var Documents = (function () {
     return { retires: Object.keys(gone).length };
   }
   return { list: list, upload: upload, update: update, download: download, remove: remove, count: count, purgeFiles: purgeFiles, analyse: function (t) { var ty = detectType(t); return { type: ty, champs: ty ? extract(ty, t) : null }; }, fileName: fileName, nameFor: nameFor, detectType: detectType, extract: extract,
-    imageToPdf: imageToPdf, depotAdd: depotAdd, depotList: depotList, depotUpdate: depotUpdate, depotValider: depotValider, depotRejeter: depotRejeter};
+    imageToPdf: imageToPdf, depotAdd: depotAdd, depotList: depotList, depotUpdate: depotUpdate, depotValider: depotValider, depotApercu: depotApercu, depotRejeter: depotRejeter};
 })();

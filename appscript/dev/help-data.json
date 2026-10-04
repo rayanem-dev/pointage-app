@@ -417,6 +417,18 @@
      "If the recognition is wrong, \"Correct\" changes the type or the period: the file is renamed in Drive.",
      "إن أخطأ التعرّف فإن «تصحيح» يغيّر النوع أو الفترة ويُعاد تسمية الملف في Drive."
     ]
+   },
+   {
+    "t": [
+     "Voir un document avant de l'envoyer",
+     "Preview a document before sending",
+     "معاينة مستند قبل إرساله"
+    ],
+    "x": [
+     "Dans « À vérifier avant envoi », le bouton « Aperçu » ouvre le document (PDF ou image) dans une fenêtre pour vérifier que c'est le bon agent et le bon document ; « Ouvrir dans un onglet » l'agrandit, « Télécharger » l'enregistre. Le même bouton existe dans la liste des documents déjà rangés. Les formats Word et Excel n'ont pas d'aperçu : ouvrez-les ou téléchargez-les.",
+     "In \"To check before sending\", the \"Preview\" button opens the document (PDF or image) in a window so you can check it is the right agent and document; \"Open in a tab\" enlarges it, \"Download\" saves it. The same button exists in the list of filed documents. Word and Excel formats have no preview: open or download them.",
+     "في «للتحقق قبل الإرسال» يفتح زر «معاينة» المستند (PDF أو صورة) في نافذة للتأكد من العون والمستند؛ و«فتح في علامة تبويب» يكبّره و«تنزيل» يحفظه. الزر نفسه موجود في قائمة المستندات المحفوظة. صيغتا Word وExcel بلا معاينة: افتحهما أو نزّلهما."
+    ]
    }
   ]
  },

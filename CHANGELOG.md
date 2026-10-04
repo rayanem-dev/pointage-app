@@ -2,6 +2,10 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.22.0 — 2026-10-04 — Aperçu des documents
+
+- Un bouton « Aperçu » permet de voir un document avant de l'envoyer à l'agent, et aussi dans la liste des documents déjà rangés. Il montre les PDF et les images, avec un accès pour l'ouvrir dans un onglet ou le télécharger.
+
 ## 3.21.1 — 2026-10-04 — Conversion en PDF corrigée
 
 - La conversion des photos et scans (JPEG, PNG) en PDF fonctionne : une page par image, et les photos prises au téléphone gardent le bon sens. Si un format d'image ne peut pas être converti, le fichier est gardé tel quel et la liste vous le signale.

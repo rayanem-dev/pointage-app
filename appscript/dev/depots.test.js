@@ -102,3 +102,13 @@ test('conversion image → PDF fabriquée sur place : JPEG et PNG valides (xref 
   assert.ok(rgb.nom_final.endsWith('.pdf') || /conservé/.test(rgb.avertissement), 'repli : conversion Google ou fichier conservé');
   ok(call(T.admin, 'depotRejeter', [r.id, rgb.id]));
 });
+
+test('aperçu d\'un document en attente : le fichier est lisible avant envoi ; réservé au personnel', () => {
+  ocr = '';
+  const r = ok(call(T.admin, 'depotAdd', { nom: 'KADRI_Sofiane_Contrat_2026-06-01.pdf', mime: 'application/pdf', base64: b64 }));
+  const ap = ok(call(T.admin, 'depotApercu', r.id));
+  assert.strictEqual(ap.nom, 'KADRI_Sofiane_Contrat_2026-06-01.pdf'); assert.strictEqual(Buffer.from(ap.base64, 'base64').toString(), '%PDF-1.4 test');
+  fail(call(T.admin, 'depotApercu', 'inconnu'), /introuvable/);
+  const ag = ok(call(null, 'login', 'kadri@t.fr', 'kadripw12')).token; fail(call(ag, 'depotApercu', r.id), /refusé/);
+  ok(call(T.admin, 'depotRejeter', [r.id]));
+});

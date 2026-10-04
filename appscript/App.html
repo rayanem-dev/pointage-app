@@ -67,6 +67,24 @@ function saveFile(r) {
   var a = h('a', { href: URL.createObjectURL(new Blob([bytes], { type: r.mime })), download: r.nom });
   document.body.append(a); a.click(); a.remove();
 }
+// Aperçu d'un fichier (PDF ou image) dans une fenêtre ; boutons pour l'ouvrir dans un onglet ou le télécharger.
+function previewFile(r) {
+  var bin = atob(r.base64); var bytes = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+  var mime = r.mime || ''; var isPdf = /pdf/i.test(mime) || /\.pdf$/i.test(r.nom); var isImg = /^image\//i.test(mime);
+  var url = URL.createObjectURL(new Blob([bytes], { type: isPdf ? 'application/pdf' : mime }));
+  var close = function () { URL.revokeObjectURL(url); m.remove(); document.removeEventListener('keydown', esc); };
+  var esc = function (e) { if (e.key === 'Escape') close(); };
+  var body = h('div', { class: 'mbody' });
+  if (isImg) body.append(h('img', { src: url, alt: r.nom }));
+  else if (isPdf) body.append(h('iframe', { src: url, title: r.nom }));
+  else body.append(h('p', { class: 'muted', style: 'padding:24px' }, 'Aperçu indisponible pour ce format : ouvrez ou téléchargez le fichier.'));
+  var open = h('a', { href: url, target: '_blank', rel: 'noopener', class: 'btnlike' }, 'Ouvrir dans un onglet');
+  var dl = h('button', { type: 'button', onclick: function () { saveFile(r); } }, 'Télécharger');
+  var x = h('button', { type: 'button', class: 'primary', onclick: close }, 'Fermer');
+  var m = h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', onclick: function (e) { if (e.target === m) close(); } },
+    h('div', { class: 'mbox' }, h('div', { class: 'mhead' }, h('b', null, r.nom), open, dl, x), body));
+  document.addEventListener('keydown', esc); document.body.append(m);
+}
 function fileToBase64(file) {
   return new Promise(function (resolve, reject) {
     var fr = new FileReader();
@@ -751,6 +769,7 @@ function DocumentsPage() {
     call('documentsList', target()).then(function (docs) {
       list.replaceChildren(h('h2', null, staff ? "Documents de l'agent" : 'Mes documents'), staff ? field('Agent', sel) : null,
         docs.length ? h('ul', { class: 'docs' }, docs.map(function (d) {
+          var pvb = h('button', null, 'Aperçu'); pvb.onclick = function () { act(pvb, box, function () { return call('documentDownload', d.id).then(previewFile); }); };
           var dl = h('button', null, 'Télécharger'); dl.onclick = function () { act(dl, box, function () { return call('documentDownload', d.id).then(saveFile); }); };
           var del = staff ? h('button', { class: 'danger' }, 'Supprimer') : null;
           if (del) del.onclick = function () { if (window.confirm('Supprimer « ' + (d.nom_original || d.titre) + ' » ?')) act(del, box, function () { return call('documentDelete', d.id); }).then(loadList); };
@@ -762,7 +781,7 @@ function DocumentsPage() {
           ok.onclick = function () { act(ok, box, function () { return call('documentUpdate', { id: d.id, type: tsel.value, periode: per.value }); }, 'Document reclassé et renommé').then(function (r) { if (r) loadList(); }); };
           cancel.onclick = function () { editor.hidden = true; };
           var fix = staff ? h('button', null, 'Corriger') : null; if (fix) fix.onclick = function () { editor.hidden = !editor.hidden; };
-          return h('li', null, h('div', null, h('b', null, d.nom_original || d.titre), (!staff && S.docsPrev && d.date > S.docsPrev) ? h('span', { class: 'badge', style: 'background:var(--neg);color:#fff' }, 'Nouveau') : null, h('small', null, (DOC_TYPES[d.type] || d.type) + (d.periode ? ' · ' + d.periode : '') + ' · déposé par ' + d.depose_par + ' le ' + frDateTime(d.date) + (d.dossier ? ' · Drive : ' + d.dossier : '')), editor), h('span', null, dl, fix, del));
+          return h('li', null, h('div', null, h('b', null, d.nom_original || d.titre), (!staff && S.docsPrev && d.date > S.docsPrev) ? h('span', { class: 'badge', style: 'background:var(--neg);color:#fff' }, 'Nouveau') : null, h('small', null, (DOC_TYPES[d.type] || d.type) + (d.periode ? ' · ' + d.periode : '') + ' · déposé par ' + d.depose_par + ' le ' + frDateTime(d.date) + (d.dossier ? ' · Drive : ' + d.dossier : '')), editor), h('span', null, pvb, ' ', dl, fix, del));
         })) : h('p', { class: 'muted' }, 'Aucun document.'), box);
     }).catch(function (e) { list.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
   }
@@ -794,10 +813,11 @@ function DocumentsPage() {
       var ag = h('select', { style: 'min-width:170px' }, agentOpts()); ag.value = it.agent_id || ''; ag.onchange = function () { upd(it, { agent_id: ag.value }); };
       var ty = h('select', { style: 'min-width:190px' }, Object.keys(DOC_TYPES).map(function (k) { return h('option', { value: k }, DOC_TYPES[k]); })); ty.value = it.type; ty.onchange = function () { upd(it, { type: ty.value }); };
       var nm = h('input', { value: it.nom_final, style: 'min-width:240px;width:100%', title: 'Nom final du fichier : modifiable' }); nm.onchange = function () { upd(it, { nom_force: nm.value === it.nom_final ? undefined : nm.value }); };
+      var pv = h('button', { type: 'button', title: 'Voir le document pour vérifier' }, 'Aperçu'); pv.onclick = function () { act(pv, qBox, function () { return call('depotApercu', it.id).then(previewFile); }); };
       var rm = h('button', { type: 'button', class: 'danger', title: 'Retirer ce document' }, '✕'); rm.onclick = function () { call('depotRejeter', [it.id]).then(function () { Q = Q.filter(function (x) { return x.id !== it.id; }); delete chk[it.id]; drawQueue(); }); };
       var etat = it.pret ? h('b', { style: 'color:var(--pos,#2e9e4f)' }, '✓ Prêt') : h('b', { style: 'color:#b45309' }, '⚠ ' + (it.agent_id ? 'À compléter' : 'Agent à choisir'));
       return h('tr', null, h('td', null, cb), h('td', null, h('small', null, it.nom_original)), h('td', null, ag, it.candidats.length > 1 ? h('small', { class: 'muted' }, 'Possibles : ' + it.candidats.map(function (c) { return c.nom; }).join(', ')) : null),
-        h('td', null, ty), h('td', null, h('div', { style: 'display:grid;gap:4px' }, fieldsFor(it))), h('td', null, nm, it.avertissement ? h('small', { class: 'muted', style: 'display:block' }, it.avertissement) : null), h('td', null, etat), h('td', null, rm));
+        h('td', null, ty), h('td', null, h('div', { style: 'display:grid;gap:4px' }, fieldsFor(it))), h('td', null, nm, it.avertissement ? h('small', { class: 'muted', style: 'display:block' }, it.avertissement) : null), h('td', null, etat), h('td', null, h('div', { style: 'display:grid;gap:4px' }, pv, rm)));
     }
     var sendBtn = h('button', { class: 'primary', type: 'button' }, 'Envoyer vers les espaces des agents');
     function countBtn() { var n = Q.filter(function (x) { return chk[x.id] && x.pret; }).length; sendBtn.textContent = tr('Envoyer vers les espaces des agents') + ' (' + n + ')'; sendBtn.disabled = !n; }
