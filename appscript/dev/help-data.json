@@ -429,6 +429,18 @@
      "In \"To check before sending\", the \"Preview\" button opens the document (PDF or image) in a window so you can check it is the right agent and document; \"Open in a tab\" enlarges it, \"Download\" saves it. The same button exists in the list of filed documents. Word and Excel formats have no preview: open or download them.",
      "في «للتحقق قبل الإرسال» يفتح زر «معاينة» المستند (PDF أو صورة) في نافذة للتأكد من العون والمستند؛ و«فتح في علامة تبويب» يكبّره و«تنزيل» يحفظه. الزر نفسه موجود في قائمة المستندات المحفوظة. صيغتا Word وExcel بلا معاينة: افتحهما أو نزّلهما."
     ]
+   },
+   {
+    "t": [
+     "Doublons",
+     "Duplicates",
+     "التكرار"
+    ],
+    "x": [
+     "Sijil signale un même fichier déposé deux fois (« Doublon » en rouge : déjà classé chez l'agent ou déjà dans la liste) : il n'est pas coché d'office et son envoi demande une confirmation. Un document du même type et de la même période qu'un document déjà classé (par exemple une 2e fiche de paie de mars) reçoit un avertissement orange, sans blocage. La reconnaissance des doublons porte sur les documents déposés depuis cette version.",
+     "Sijil flags the same file uploaded twice (red \"Duplicate\": already filed for the agent or already in the list): it is not ticked by default and sending it requires confirmation. A document of the same type and period as an already filed one (e.g. a second March payslip) gets an orange warning, without blocking. Duplicate detection covers documents uploaded since this version.",
+     "ينبّه Sijil إلى الملف نفسه المودَع مرتين («مكرّر» بالأحمر: مصنّف لدى العون أو مدرج في القائمة): لا يُحدَّد تلقائيًا ويتطلب إرساله تأكيدًا. ويحصل مستند من النوع والفترة نفسيهما لمستند مصنّف (مثل كشف راتب ثانٍ لشهر مارس) على تحذير برتقالي دون منع. يشمل اكتشاف التكرار المستندات المودَعة منذ هذا الإصدار."
+    ]
    }
   ]
  },

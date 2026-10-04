@@ -207,7 +207,7 @@ var Documents = (function () {
   function canSee(user, agentId) {
     return user.role === 'admin' || user.id === agentId || Agents.visibleTo(user).some(function (a) { return a.id === agentId; });
   }
-  function pub(d) { var o = {}; Object.keys(d).forEach(function (k) { if (k !== 'file_id' && k !== 'champs') o[k] = d[k]; }); return o; }
+  function pub(d) { var o = {}; Object.keys(d).forEach(function (k) { if (k !== 'file_id' && k !== 'champs' && k !== 'empreinte') o[k] = d[k]; }); return o; }
 
   function list(user, agentId) {
     agentId = agentId || user.id;
@@ -302,8 +302,10 @@ var Documents = (function () {
     }
     return { bytes: bytes, mime: data.mime || 'application/octet-stream', ext: ext, converti: false };
   }
-  function docRow(user, agent, type, f, name, file, extra) {
-    var d = { id: newId_('G'), agent_id: agent.id, type: type, titre: name.replace(/\.[a-z0-9]{1,8}$/i, ''), file_id: file.getId(), nom_original: name, depose_par: user.nom, date: new Date().toISOString(), code: CODES[type], periode: periodeOf(type, f), dossier: 'Documents/' + label(agent), champs: JSON.stringify(f) };
+  // Empreinte du fichier déposé (avant toute conversion) : sert à repérer un même fichier déposé deux fois.
+  function hashOf(bytes) { return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, bytes).map(function (b) { return ('0' + ((b + 256) % 256).toString(16)).slice(-2); }).join(''); }
+  function docRow(user, agent, type, f, name, file, empreinte) {
+    var d = { id: newId_('G'), agent_id: agent.id, type: type, titre: name.replace(/\.[a-z0-9]{1,8}$/i, ''), file_id: file.getId(), nom_original: name, depose_par: user.nom, date: new Date().toISOString(), code: CODES[type], periode: periodeOf(type, f), dossier: 'Documents/' + label(agent), champs: JSON.stringify(f), empreinte: empreinte || '' };
     return d;
   }
   function upload(user, data) {
@@ -319,10 +321,14 @@ var Documents = (function () {
     var folder = agentFolder(agent);
     var name = uniqueName(folder, fileName(info.type, agent, info.champs, conv.ext, stemOf(data.nom)));
     var file = folder.createFile(Utilities.newBlob(conv.bytes, conv.mime, name));
-    var d = docRow(user, agent, info.type, info.champs, name, file);
-    Store.writeTable('Documents', Store.readTable('Documents').concat([d]));
+    var emp = hashOf(bytes); var tous = Store.readTable('Documents');
+    var d = docRow(user, agent, info.type, info.champs, name, file, emp);
+    var meme = tous.filter(function (x) { return x.empreinte && x.empreinte === emp; })[0];
+    var memeP = tous.filter(function (x) { return x.agent_id === agent.id && x.type === d.type && d.type !== 'autre' && x.periode && x.periode === d.periode; })[0];
+    var alerte = (meme ? ' ⚠ Doublon : ce fichier est déjà classé (' + meme.nom_original + ').' : '') + (!meme && memeP ? ' ⚠ Un document du même type et de la même période est déjà classé (' + memeP.nom_original + ').' : '');
+    Store.writeTable('Documents', tous.concat([d]));
     notifyAgent(user, agent, d);
-    var out = pub(d); out.detecte = { type: info.type, source: info.source, avertissement: info.avertissement, original: data.nom };
+    var out = pub(d); out.detecte = { type: info.type, source: info.source, avertissement: (info.avertissement + alerte).trim(), original: data.nom };
     return out;
   }
   // Prévient l'agent par e-mail qu'un nouveau document est dans son espace.
@@ -379,13 +385,34 @@ var Documents = (function () {
   // ----- dépôt en vrac : analyse, vérification, puis envoi vers l'espace de chaque agent -----
   function visibles(user) { return Agents.visibleTo(user).filter(function (a) { return Agents.isPerson(a) && a.type !== 'vehicule'; }); }
   function champsOf(r) { try { return merge(JSON.parse(r.champs || '{}'), {}); } catch (e) { return merge({}, {}); } }
-  function depotPub(r, byId) {
+  // Doublons : même fichier (empreinte identique) déjà classé ou déjà dans la liste = « exact » ; même agent, même type, même période = « periode ».
+  function ctxDepots() { return { docs: Store.readTable('Documents'), rows: Store.readTable('Depots') }; }
+  function doublonsOf(r, ctx, byId) {
+    var out = [];
+    if (r.empreinte) {
+      var d = ctx.docs.filter(function (x) { return x.empreinte && x.empreinte === r.empreinte; })[0];
+      if (d) out.push({ niveau: 'exact', message: 'Fichier identique déjà classé' + (byId[d.agent_id] ? ' chez ' + byId[d.agent_id].nom : '') + ' : ' + (byId[d.agent_id] ? d.nom_original : '') });
+      var q = ctx.rows.filter(function (x) { return x.id !== r.id && x.empreinte === r.empreinte; })[0];
+      if (q) out.push({ niveau: 'exact', message: 'Fichier identique déjà dans la liste : ' + q.nom_original });
+    }
+    if (r.agent_id && r.type !== 'autre') {
+      var per = periodeOf(r.type, champsOf(r));
+      if (per) {
+        var m = ctx.docs.filter(function (x) { return x.agent_id === r.agent_id && x.type === r.type && x.periode === per; })[0];
+        if (m) out.push({ niveau: 'periode', message: 'Un document du même type et de la même période est déjà classé : ' + m.nom_original });
+        var p = ctx.rows.filter(function (x) { return x.id !== r.id && x.agent_id === r.agent_id && x.type === r.type && periodeOf(x.type, champsOf(x)) === per; })[0];
+        if (p) out.push({ niveau: 'periode', message: 'Un document du même type et de la même période est déjà dans la liste : ' + p.nom_original });
+      }
+    }
+    return out;
+  }
+  function depotPub(r, byId, ctx) {
     var f = champsOf(r); var a = byId[r.agent_id] || null; var ids = []; try { ids = JSON.parse(r.candidats || '[]'); } catch (e) { ids = []; }
-    var manque = missing(r.type, f); var ext = r.ext;
+    var manque = missing(r.type, f); var ext = r.ext; var dbl = doublonsOf(r, ctx || ctxDepots(), byId);
     return { id: r.id, nom_original: r.nom_original, agent_id: r.agent_id, agent_nom: a ? a.nom : '', type: r.type, type_label: CFG.TYPES_DOC[r.type] || r.type, champs: f,
       nom_final: r.nom_force ? r.nom_force + (ext ? '.' + ext : '') : (a ? fileName(r.type, a, f, ext, stemOf(r.nom_original)) : ''), force: !!r.nom_force,
       avertissement: r.avert, source: r.source, candidats: ids.map(function (id) { return byId[id] ? { id: id, nom: byId[id].nom } : null; }).filter(Boolean),
-      manque: manque, pret: !!a && !manque.length, date_depot: r.date_depot };
+      manque: manque, pret: !!a && !manque.length, date_depot: r.date_depot, doublons: dbl, doublon_exact: dbl.some(function (x) { return x.niveau === 'exact'; }) };
   }
   function depotRows(user) {
     var rows = Store.readTable('Depots');
@@ -394,7 +421,8 @@ var Documents = (function () {
   function depotList(user) {
     if (user.role === 'agent') throw httpErr_('Accès refusé', 'FORBIDDEN');
     var by = {}; visibles(user).forEach(function (a) { by[a.id] = a; });
-    return depotRows(user).sort(function (a, b) { return a.date_depot < b.date_depot ? -1 : 1; }).map(function (r) { return depotPub(r, by); });
+    var ctx = ctxDepots();
+    return depotRows(user).sort(function (a, b) { return a.date_depot < b.date_depot ? -1 : 1; }).map(function (r) { return depotPub(r, by, ctx); });
   }
   function depotAdd(user, data) {
     if (user.role === 'agent') throw httpErr_('Accès refusé', 'FORBIDDEN');
@@ -408,7 +436,7 @@ var Documents = (function () {
     var conv = maybePdf(data, bytes);
     var file = stagingFolder().createFile(Utilities.newBlob(conv.bytes, conv.mime, String(data.nom)));
     var row = { id: newId_('Q'), nom_original: String(data.nom).slice(0, 120), file_id: file.getId(), ext: conv.ext, agent_id: agent ? agent.id : '', type: info.type, champs: JSON.stringify(info.champs), nom_force: '',
-      source: info.source, avert: info.avertissement + (conv.converti ? ' (converti en PDF)' : '') + (conv.echec ? ' ⚠ Conversion PDF impossible (' + conv.echec + ') : fichier conservé tel quel.' : ''), depose_par: user.nom, depose_id: user.id, date_depot: new Date().toISOString(), candidats: JSON.stringify(info.candidats.map(function (a) { return a.id; })) };
+      source: info.source, avert: info.avertissement + (conv.converti ? ' (converti en PDF)' : '') + (conv.echec ? ' ⚠ Conversion PDF impossible (' + conv.echec + ') : fichier conservé tel quel.' : ''), depose_par: user.nom, depose_id: user.id, date_depot: new Date().toISOString(), candidats: JSON.stringify(info.candidats.map(function (a) { return a.id; })), empreinte: hashOf(bytes) };
     Store.writeTable('Depots', Store.readTable('Depots').concat([row]));
     var by = {}; agents.forEach(function (a) { by[a.id] = a; });
     return depotPub(row, by);
@@ -434,18 +462,19 @@ var Documents = (function () {
     return depotPub(r, by);
   }
   // Après vérification : chaque fichier est renommé et rangé dans le dossier de son agent, qui est prévenu (un e-mail par agent).
-  function depotValider(user, ids) {
+  function depotValider(user, ids, forcer) {
     if (user.role === 'agent') throw httpErr_('Accès refusé', 'FORBIDDEN');
     var all = Store.readTable('Depots'); var mine = depotRows(user); var agents = visibles(user); var by = {}; agents.forEach(function (a) { by[a.id] = a; });
-    var docs = []; var done = {}; var erreurs = []; var parAgent = {};
+    var docs = []; var done = {}; var erreurs = []; var parAgent = {}; var ctx = ctxDepots();
     (ids || []).filter(function (x, i, a) { return a.indexOf(x) === i; }).forEach(function (id) {
       var r = mine.filter(function (x) { return x.id === id; })[0]; if (!r) return;
-      var pubr = depotPub(r, by);
+      var pubr = depotPub(r, by, ctx);
+      if (pubr.doublon_exact && !forcer) { erreurs.push({ id: id, nom: r.nom_original, message: 'Doublon exact : confirmez l\'envoi' }); return; }
       if (!pubr.pret) { erreurs.push({ id: id, nom: r.nom_original, message: !by[r.agent_id] ? 'Agent à choisir' : 'À compléter : ' + pubr.manque.join(', ') }); return; }
       try {
         var agent = by[r.agent_id]; var folder = agentFolder(agent); var file = DriveApp.getFileById(r.file_id);
         var name = uniqueName(folder, pubr.nom_final); file.setName(name); file.moveTo(folder);
-        var d = docRow(user, agent, r.type, champsOf(r), name, file); docs.push(d); done[id] = true;
+        var d = docRow(user, agent, r.type, champsOf(r), name, file, r.empreinte); docs.push(d); done[id] = true;
         (parAgent[agent.id] = parAgent[agent.id] || { agent: agent, docs: [] }).docs.push(d);
       } catch (e) { erreurs.push({ id: id, nom: r.nom_original, message: e.message }); }
     });

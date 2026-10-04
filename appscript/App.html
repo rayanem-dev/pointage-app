@@ -811,7 +811,7 @@ function DocumentsPage() {
     var queue = h('section', { class: 'card', hidden: true }); var qBox = msgBox();
     function agentOpts(cur) { return [h('option', { value: '' }, '— choisir l’agent —')].concat(agentsAll.map(function (a) { return h('option', { value: a.id }, a.nom); })); }
     function upd(it, patch) {
-      return call('depotUpdate', it.id, patch).then(function (r) { Q = Q.map(function (x) { return x.id === r.id ? r : x; }); if (r.pret && chk[r.id] === undefined) chk[r.id] = true; drawQueue(); }).catch(function (e) { qBox.show(e.message, false); drawQueue(); });
+      return call('depotUpdate', it.id, patch).then(function (r) { Q = Q.map(function (x) { return x.id === r.id ? r : x; }); if (r.pret && !r.doublon_exact && chk[r.id] === undefined) chk[r.id] = true; drawQueue(); }).catch(function (e) { qBox.show(e.message, false); drawQueue(); });
     }
     function fieldsFor(it) {
       var c = it.champs; var t = it.type; var inp = function (label, val, type, key, ph) { var el = h('input', { type: type, value: val || '', placeholder: ph || '', style: 'min-width:120px' }); el.onchange = function () { var p = {}; p[key] = el.value; upd(it, { champs: p }); }; return h('label', { class: 'inline' }, h('small', null, label), el); };
@@ -833,7 +833,7 @@ function DocumentsPage() {
       var rm = h('button', { type: 'button', class: 'danger', title: 'Retirer ce document' }, '✕'); rm.onclick = function () { call('depotRejeter', [it.id]).then(function () { Q = Q.filter(function (x) { return x.id !== it.id; }); delete chk[it.id]; drawQueue(); }); };
       var etat = it.pret ? h('b', { style: 'color:var(--pos,#2e9e4f)' }, '✓ Prêt') : h('b', { style: 'color:#b45309' }, '⚠ ' + (it.agent_id ? 'À compléter' : 'Agent à choisir'));
       return h('tr', null, h('td', null, cb), h('td', null, h('small', null, it.nom_original)), h('td', null, ag, it.candidats.length > 1 ? h('small', { class: 'muted' }, 'Possibles : ' + it.candidats.map(function (c) { return c.nom; }).join(', ')) : null),
-        h('td', null, ty), h('td', null, h('div', { style: 'display:grid;gap:4px' }, fieldsFor(it))), h('td', null, nm, it.avertissement ? h('small', { class: 'muted', style: 'display:block' }, it.avertissement) : null), h('td', null, etat), h('td', null, h('div', { style: 'display:grid;gap:4px' }, pv, rm)));
+        h('td', null, ty), h('td', null, h('div', { style: 'display:grid;gap:4px' }, fieldsFor(it))), h('td', null, nm, it.avertissement ? h('small', { class: 'muted', style: 'display:block' }, it.avertissement) : null, it.doublons.map(function (dp) { return h('small', { style: 'display:block;font-weight:600;color:' + (dp.niveau === 'exact' ? 'var(--neg)' : '#b45309') }, (dp.niveau === 'exact' ? '⛔ Doublon : ' : '⚠ Attention : ') + dp.message); })), h('td', null, etat, it.doublon_exact ? h('div', null, h('b', { style: 'color:var(--neg)' }, 'Doublon')) : null), h('td', null, h('div', { style: 'display:grid;gap:4px' }, pv, rm)));
     }
     var sendBtn = h('button', { class: 'primary', type: 'button' }, 'Envoyer vers les espaces des agents');
     function countBtn() { var n = Q.filter(function (x) { return chk[x.id] && x.pret; }).length; sendBtn.textContent = tr('Envoyer vers les espaces des agents') + ' (' + n + ')'; sendBtn.disabled = !n; }
@@ -853,8 +853,9 @@ function DocumentsPage() {
       var items = Q.filter(function (x) { return chk[x.id] && x.pret; }); if (!items.length) return;
       var per = {}; items.forEach(function (x) { per[x.agent_nom] = (per[x.agent_nom] || 0) + 1; });
       var resume = Object.keys(per).map(function (k) { return k + ' : ' + per[k]; }).join('\n');
-      if (!window.confirm(tr('Envoyer ' + items.length + ' document(s) dans l’espace des agents ?\n\n') + resume + tr('\n\nChaque agent sera prévenu par e-mail.'))) return;
-      act(sendBtn, qBox, function () { return call('depotValider', items.map(function (x) { return x.id; })); }).then(function (r) {
+      var dbl = items.filter(function (x) { return x.doublon_exact; }).length; var pdb = items.filter(function (x) { return !x.doublon_exact && x.doublons.length; }).length;
+      if (!window.confirm(tr('Envoyer ' + items.length + ' document(s) dans l’espace des agents ?\n\n') + resume + (dbl ? tr('\n\n⛔ ' + dbl + ' doublon(s) exact(s) : le même fichier est déjà classé ou listé. Les envoyer quand même ?') : '') + (pdb ? tr('\n\n⚠ ' + pdb + ' document(s) du même type et de la même période qu’un document déjà classé.') : '') + tr('\n\nChaque agent sera prévenu par e-mail.'))) return;
+      act(sendBtn, qBox, function () { return call('depotValider', items.map(function (x) { return x.id; }), dbl > 0); }).then(function (r) {
         if (!r) return;
         qBox.show('✓ ' + r.valides + ' document(s) envoyé(s)' + (r.erreurs.length ? ' · ⚠ ' + r.erreurs.map(function (e) { return e.nom + ' : ' + e.message; }).join(' ; ') : '') + '.', !r.erreurs.length);
         Q = Q.filter(function (x) { return r.noms.length ? !items.some(function (i) { return i.id === x.id && r.erreurs.every(function (e) { return e.id !== i.id; }); }) : true; });
@@ -868,7 +869,7 @@ function DocumentsPage() {
         if (done >= fl.length) { go.disabled = false; files.value = ''; upBox.show('✓ ' + (fl.length - bad.length) + ' document(s) analysé(s)' + (bad.length ? ' · ⚠ ' + bad.join(' ; ') : '') + '. Vérifiez la liste ci-dessous avant l’envoi.', !bad.length); drawQueue(); return; }
         var f = fl[done]; upBox.show('⏳ Analyse ' + (done + 1) + '/' + fl.length + ' : ' + f.name + '…', 'warn');
         fileToBase64(f).then(function (b64) { return call('depotAdd', { nom: f.name, mime: f.type, base64: b64, agent_id: forceAgent.value, pdf: pdfChk.checked }); })
-          .then(function (r) { Q.push(r); if (r.pret) chk[r.id] = true; }).catch(function (e) { bad.push(f.name + ' : ' + e.message); })
+          .then(function (r) { Q.push(r); if (r.pret && !r.doublon_exact) chk[r.id] = true; }).catch(function (e) { bad.push(f.name + ' : ' + e.message); })
           .then(function () { done += 1; drawQueue(); next(); });
       };
       next();
@@ -882,7 +883,7 @@ function DocumentsPage() {
     call('agentsVisible', true).then(function (agents) {
       agentsAll = agents; forceAgent.append.apply(forceAgent, agents.map(function (a) { return h('option', { value: a.id }, a.nom); }));
       sel.replaceChildren.apply(sel, agents.map(function (a) { return h('option', { value: a.id }, a.nom); })); loadList();
-      call('depotList').then(function (rows) { Q = rows; rows.forEach(function (r) { if (r.pret) chk[r.id] = true; }); drawQueue(); }).catch(function () {});
+      call('depotList').then(function (rows) { Q = rows; rows.forEach(function (r) { if (r.pret && !r.doublon_exact) chk[r.id] = true; }); drawQueue(); }).catch(function () {});
     });
   } else loadList();
   wrap.append(list);

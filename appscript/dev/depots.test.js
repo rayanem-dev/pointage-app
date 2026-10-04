@@ -9,7 +9,8 @@ const fail = (r, msg) => { assert.strictEqual(r.ok, false, 'devait échouer'); i
 const T = {};
 let ocr = '';
 const b64 = Buffer.from('%PDF-1.4 test').toString('base64');
-const add = (nom, texte = '', extra = {}) => { ocr = texte; return ok(call(T.admin, 'depotAdd', { nom, mime: 'application/pdf', base64: b64, ...extra })); };
+let cpt = 0; const unique = () => Buffer.from('%PDF-1.4 test ' + (cpt += 1)).toString('base64');
+const add = (nom, texte = '', extra = {}) => { ocr = texte; return ok(call(T.admin, 'depotAdd', { nom, mime: 'application/pdf', base64: unique(), ...extra })); };
 
 test('dépôt en vrac : mise en place et reconnaissance de l\'agent et du type par le nom du fichier', () => {
   run("Setup.install('admin@t.fr', 'adminpw12', 'Admin')");
@@ -119,4 +120,32 @@ test('conversion PDF d\'une grosse image (plusieurs Mo) : pas de dépassement de
   const jpg = Buffer.concat([tete.subarray(0, tete.length - 2), grand, tete.subarray(tete.length - 2)]).toString('base64');
   const taille = app.run('var p = Documents.imageToPdf(Utilities.base64Decode(' + JSON.stringify(jpg) + ')); p.length');
   assert.ok(taille > 3 * 1024 * 1024, 'PDF fabriqué sans erreur : ' + taille + ' octets');
+});
+
+test('doublons : même fichier déjà classé ou déjà listé, même type et même période ; envoi bloqué sans confirmation', () => {
+  env.fetchHandler = (url) => { if (url.startsWith('https://www.googleapis.com/upload/drive/v3/files')) return { code: 200, body: JSON.stringify({ id: 'ocr1' }) }; if (url.includes('/files/ocr1/export')) return { code: 200, body: '' }; return null; };
+  const contenu = Buffer.from('%PDF-1.4 fiche de paie unique').toString('base64');
+  const a1 = ok(call(T.admin, 'depotAdd', { nom: 'BENALI_Nadia_FDP_avril_2026.pdf', mime: 'application/pdf', base64: contenu }));
+  assert.deepStrictEqual(a1.doublons, [], 'premier dépôt : aucun doublon');
+  const a2 = ok(call(T.admin, 'depotAdd', { nom: 'copie de la fiche.pdf', mime: 'application/pdf', base64: contenu, agent_id: T.benali, type: 'fiche_emolument' }));
+  assert.ok(a2.doublon_exact && /déjà dans la liste/.test(a2.doublons[0].message), 'même fichier déjà listé');
+  assert.ok(ok(call(T.admin, 'depotList')).find((x) => x.id === a1.id).doublon_exact, 'signalé aussi sur le premier');
+  const refus = ok(call(T.admin, 'depotValider', [a2.id]));
+  assert.strictEqual(refus.valides, 0); assert.match(refus.erreurs[0].message, /Doublon exact/);
+  ok(call(T.admin, 'depotRejeter', [a2.id]));
+  assert.strictEqual(ok(call(T.admin, 'depotValider', [a1.id])).valides, 1, 'envoi normal une fois le doublon retiré');
+  // le même fichier déposé encore après classement
+  const a3 = ok(call(T.admin, 'depotAdd', { nom: 'encore.pdf', mime: 'application/pdf', base64: contenu, agent_id: T.benali, type: 'fiche_emolument' }));
+  assert.ok(a3.doublon_exact && /déjà classé chez BENALI NADIA/.test(a3.doublons[0].message), 'même fichier déjà classé');
+  ok(call(T.admin, 'depotUpdate', a3.id, { champs: { mois: 'avril 2026' } }));
+  const forcee = ok(call(T.admin, 'depotValider', [a3.id], true));
+  assert.strictEqual(forcee.valides, 1, 'envoi possible en confirmant explicitement');
+  // contenu différent mais même agent, type et période
+  const a4 = ok(call(T.admin, 'depotAdd', { nom: 'BENALI_Nadia_FDP_avril_2026_v2.pdf', mime: 'application/pdf', base64: Buffer.from('%PDF autre scan').toString('base64') }));
+  assert.ok(!a4.doublon_exact && a4.doublons.length && a4.doublons[0].niveau === 'periode' && /même période/.test(a4.doublons[0].message), 'avertissement de période, sans blocage');
+  assert.strictEqual(ok(call(T.admin, 'depotValider', [a4.id])).valides, 1);
+  // dépôt simple : avertissement
+  const u = ok(call(T.admin, 'documentUpload', { agent_id: T.benali, type: 'fiche_emolument', nom: 'BENALI_Nadia_FDP_avril_2026.pdf', mime: 'application/pdf', base64: contenu }));
+  assert.match(u.detecte.avertissement, /Doublon/);
+  env.fetchHandler = null;
 });

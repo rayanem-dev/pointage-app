@@ -2,6 +2,11 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.24.0 — 2026-10-04 — Détection des doublons
+
+- Un même fichier déposé deux fois est signalé : « Doublon » (déjà classé chez l'agent, ou déjà dans la liste). Son envoi demande une confirmation.
+- Un document du même type et de la même période qu'un document déjà classé (par exemple une 2e fiche de paie de mars) est signalé par un avertissement.
+
 ## 3.23.1 — 2026-10-04 — Conversion PDF des grosses photos et menu Version
 
 - La conversion en PDF fonctionne aussi pour les photos de plusieurs Mo (elle échouait sur les vraies photos de téléphone). Si une image ne peut pas être convertie, la raison est indiquée.

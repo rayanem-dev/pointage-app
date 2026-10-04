@@ -5518,5 +5518,60 @@
 "converti en PDF",
 "converted to PDF",
 "تم التحويل إلى PDF"
+],
+[
+"⛔ Doublon : ",
+"⛔ Duplicate: ",
+"⛔ مكرّر: "
+],
+[
+"⚠ Attention : ",
+"⚠ Warning: ",
+"⚠ تنبيه: "
+],
+[
+"Doublon",
+"Duplicate",
+"مكرّر"
+],
+[
+"Doublon exact : confirmez l'envoi",
+"Exact duplicate: confirm sending",
+"مكرّر تمامًا: أكّد الإرسال"
+],
+[
+"\n\n⛔ ",
+" \n\n⛔ ",
+"\n\n⛔ "
+],
+[
+" doublon(s) exact(s) : le même fichier est déjà classé ou listé. Les envoyer quand même ?",
+" exact duplicate(s): the same file is already filed or listed. Send them anyway?",
+" مكرّر(ات) تمامًا: الملف نفسه مصنّف أو مدرج بالفعل. إرسالها رغم ذلك؟"
+],
+[
+"\n\n⚠ ",
+"\n\n⚠ ",
+"\n\n⚠ "
+],
+[
+" document(s) du même type et de la même période qu’un document déjà classé.",
+" document(s) of the same type and period as an already filed document.",
+" مستند(ات) من النوع والفترة نفسيهما لمستند مصنّف بالفعل."
+],
+[
+"Détection des doublons",
+"Duplicate detection",
+"اكتشاف التكرار"
+],
+[
+"Un même fichier déposé deux fois est signalé : « Doublon » (déjà classé chez l'agent, ou déjà dans la liste). Son envoi demande une confirmation.",
+"The same file uploaded twice is flagged: \"Duplicate\" (already filed for the agent, or already in the list). Sending it requires confirmation.",
+"يُنبَّه إلى الملف نفسه المودَع مرتين: «مكرّر» (مصنّف بالفعل لدى العون أو مدرج في القائمة). ويتطلب إرساله تأكيدًا."
+],
+[
+"Un document du même type et de la même période qu'un document déjà classé (par exemple une 2e fiche de paie de mars) est signalé par un avertissement.",
+"A document of the same type and period as an already filed document (e.g. a second March payslip) is flagged with a warning.",
+"يُنبَّه بتحذير إلى مستند من النوع والفترة نفسيهما لمستند مصنّف بالفعل (مثل كشف راتب ثانٍ لشهر مارس)."
 ]
 ]

@@ -144,7 +144,7 @@ var HANDLERS = {
   depotAdd: { roles: STAFF, write: true, fn: function (u, a) { return Documents.depotAdd(u, a[0] || {}); } },
   depotList: { roles: STAFF, fn: function (u) { return Documents.depotList(u); } },
   depotUpdate: { roles: STAFF, write: true, fn: function (u, a) { return Documents.depotUpdate(u, a[0], a[1] || {}); } },
-  depotValider: { roles: STAFF, write: true, fn: function (u, a) { return Documents.depotValider(u, a[0] || []); } },
+  depotValider: { roles: STAFF, write: true, fn: function (u, a) { return Documents.depotValider(u, a[0] || [], a[1] === true); } },
   depotApercu: { roles: STAFF, fn: function (u, a) { return Documents.depotApercu(u, a[0]); } },
   depotRejeter: { roles: STAFF, write: true, fn: function (u, a) { return Documents.depotRejeter(u, a[0] || []); } },
   documentUpdate: { roles: STAFF, write: true, fn: function (u, a) { var o = a[0] || {}; return Documents.update(u, o.id, o); } },
