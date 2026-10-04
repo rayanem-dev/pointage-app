@@ -867,7 +867,7 @@ function DocumentsPage() {
       next();
     };
     var form = h('section', { class: 'card' }, h('h2', null, 'Déposer des documents en vrac'),
-      h('p', { class: 'muted' }, 'Déposez plusieurs documents à la fois (fiches de paie, titres de congé, contrats, attestations CNAS…). Sijil reconnaît l’agent, le type et les dates, puis propose le nom : TC_NOM_Prenom_2026-02-14, NOM_Prenom_FDP_Mars2026, NOM_Prenom_2026-04-04_Contrat, NOM_Prenom_AttestationCNAS_n°_2026-05-07, NOM_Prenom_MAJCNAS_Janvier2026_Mars2026, NOM_Prenom_AttestationTravail_2026-05-04, NOM_Prenom_AttestationEmoluments_Janvier2026_Mars2026. Vous vérifiez, puis vous envoyez : rien n’arrive chez l’agent avant votre accord.'),
+      h('p', { class: 'muted' }, 'Déposez plusieurs documents à la fois (fiches de paie, titres de congé, contrats, attestations CNAS…). Sijil reconnaît l’agent, le type et les dates, puis propose le nom. Vous vérifiez, puis vous envoyez : rien n’arrive chez l’agent avant votre accord.'),
       h('div', { class: 'row' }, field('Fichiers (10 Mo maximum chacun)', files, 'grow2'), field('Agent pour tous les fichiers (facultatif)', forceAgent)),
       h('label', { class: 'inline' }, pdfChk, ' Convertir les images (photos, scans JPG ou PNG) en PDF'), upBox, go);
     wrap.append(form, queue);

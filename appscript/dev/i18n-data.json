@@ -5628,5 +5628,10 @@
 "Les nouveautés côté éditeur (console, support, suivi des versions) sont masquées aux utilisateurs des entreprises.",
 "Publisher-side news (console, support, version tracking) is hidden from company users.",
 "المستجدات الخاصة بالناشر (اللوحة، الدعم، تتبع الإصدارات) مخفية عن مستخدمي الشركات."
+],
+[
+"Déposez plusieurs documents à la fois (fiches de paie, titres de congé, contrats, attestations CNAS…). Sijil reconnaît l’agent, le type et les dates, puis propose le nom. Vous vérifiez, puis vous envoyez : rien n’arrive chez l’agent avant votre accord.",
+"Upload several documents at once (payslips, leave certificates, contracts, CNAS certificates…). Sijil recognises the agent, type and dates, then proposes the name. You check, then send: nothing reaches the agent before your approval.",
+"أودِع عدة مستندات دفعة واحدة (كشوف الرواتب، شهادات العطلة، العقود، شهادات CNAS…). يتعرّف Sijil على العون والنوع والتواريخ ثم يقترح الاسم. تتحقق ثم ترسل: لا يصل شيء إلى العون قبل موافقتك."
 ]
 ]
