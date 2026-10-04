@@ -18,6 +18,9 @@ Revue du code de l'application (serveur Apps Script, interface, page d'accueil).
 - Isolation entre entreprises : un classeur par entreprise, session liée au code entreprise, licence vérifiée à chaque appel.
 - Page d'accueil : adresses du déploiement validées par un motif strict ; messages entre cadres limités à la langue et au thème.
 
+## Accès support de l'éditeur
+Le sélecteur d'entreprise ouvre l'espace d'un client avec les droits de son administrateur (session de 6 h, sans mot de passe). Il est réservé au compte éditeur, refusé aux clients suspendus, signalé par un bandeau, et chaque accès est noté dans le journal des connexions. La charte de confidentialité l'indique aux utilisateurs.
+
 ## Limites et recommandations (à votre main)
 1. **Dépôt GitHub public** : l'installateur et `clasp` déploient le code de la branche `main`. Activez la validation en deux étapes sur le compte GitHub, protégez la branche `main`, et rendez le dépôt privé (l'historique ancien contient des données réelles).
 2. **Compte Google propriétaire des classeurs** : validation en deux étapes obligatoire ; ne partagez pas le classeur principal ; renseignez la propriété de script `OWNER_EMAILS` (e-mails de l'éditeur).

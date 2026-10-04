@@ -216,11 +216,11 @@ var Tenants = (function () {
   function access(user, code) {
     requireOwner(user);
     var c = mustFind(code);
-    if (c.statut !== 'essai') throw httpErr_("L'accès direct est réservé aux clients en essai (statut « Essai »)");
-    checkLicense(c);
+    checkLicense(c); // un client suspendu ou à licence expirée doit d'abord être réactivé (Statut / Fin de licence)
     var admin = inClient(c, function () { return Store.readTable('Agents').filter(function (a) { return a.role === 'admin' && a.actif === '1'; })[0]; });
     if (!admin) throw httpErr_('Aucun administrateur actif dans ce classeur');
-    return Object.assign({ code: c.code, societe: c.nom }, Auth.openSession(c.code, admin));
+    Auth.journalSupport(c.code, user);
+    return Object.assign({ code: c.code, societe: c.nom, statut: c.statut }, Auth.openSession(c.code, admin));
   }
   // Contact de l'éditeur, montré aux clients (onglet « À propos ») : propriétés du script.
   function contact() {

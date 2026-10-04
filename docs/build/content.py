@@ -118,6 +118,8 @@ M = [
  ('img', 'docs/captures/crops/43-setup-maintenance.png', "L'onglet Maintenance.", 15.5),
  ('h2', "Qui est connecté ?"),
  ('p', "L'onglet « Connexions » (administrateur) montre qui est en ligne maintenant, la date de la dernière connexion de chaque utilisateur, le nombre de connexions et ceux qui ne se sont jamais connectés. Pour l'éditeur du produit, l'onglet rassemble toutes les entreprises clientes : un tableau par entreprise, le journal des dernières connexions et la liste de tous les utilisateurs. La liste se rafraîchit toute seule."),
+ ('h2', "Éditeur : changer d'entreprise"),
+ ('p', "Le compte éditeur a, dans l'en-tête, un sélecteur d'entreprise. Choisir un client ouvre son espace avec tous les droits de son administrateur (onglets, pointages, mots de passe, réglages). Un bandeau rappelle le mode support et « Retour à l'administration » ramène à la console. Chaque accès est noté dans le journal des connexions."),
  ('h2', "L'attachement et la facture"),
  ('p', "Dans « Exports », choisissez le mois et le contrat. La fiche de pointage s'exporte en Excel et en PDF. L'attachement reprend les jours réellement pointés de chaque fonction ; vous pouvez corriger une quantité. « Valider l'attachement » le fige : mêmes quantités, mêmes prix. La facture est alors établie à partir de l'attachement validé, avec son numéro et sa date. Un attachement non facturé peut être rouvert."),
  ('img', 'docs/captures/crops/50-exports.png', "La fiche de pointage, l'attachement et la facture.", 15.5),

@@ -161,11 +161,13 @@ test('console de l\'éditeur : code ADMIN réservé, administrateur d\'un client
   assert.ok(id);
 });
 
-test('console : accès direct à un client en essai (jamais éditeur, refusé pour un client actif)', () => {
+test('console : accès direct à un client (jamais éditeur ; refusé si suspendu), journalisé', () => {
   const ed = ok(call(null, 'login', 'editeur@t.fr', 'editeurpw1', 'ADMIN')).token;
   fail(call(ed, 'monCompteSave', { actuel: 'x' }), /inconnue/); // la carte « Mon compte » n'existe plus
   ok(call(ed, 'clientCreate', { code: 'ESSAI1', nom: 'SOCIETE ESSAI', admin_email: 'chef@essai.dz', statut: 'essai' }));
-  fail(call(ed, 'clientAcces', 'BETA'), /réservé aux clients en essai/);
+  const actif = ok(call(ed, 'clientAcces', 'BETA')); const meB = ok(call(actif.token, 'me')); assert.deepStrictEqual([meB.user.role, meB.code, meB.owner, meB.canSetup], ['admin', 'BETA', false, true], 'accès aussi à un client actif : tous les onglets et privilèges de son administrateur');
+  ok(call(ed, 'clientUpdate', 'BETA', { statut: 'suspendu' })); fail(call(ed, 'clientAcces', 'BETA'), /suspendu/i); ok(call(ed, 'clientUpdate', 'BETA', { statut: 'actif' }));
+  assert.ok(ok(call(ed, 'connexions')).journal.some((j) => j[1] === 'BETA' && /Support/.test(j[2]) && j[3] === 'support'), 'accès support noté dans le journal');
   const a = ok(call(ed, 'clientAcces', 'essai1'));
   assert.strictEqual(a.code, 'ESSAI1'); const me = ok(call(a.token, 'me'));
   assert.deepStrictEqual([me.user.email, me.code, me.owner], ['chef@essai.dz', 'ESSAI1', false], 'session de l\'administrateur du client, jamais éditeur');

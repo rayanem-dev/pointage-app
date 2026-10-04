@@ -18,6 +18,7 @@ var Auth = (function () {
     while (s.length > 8500 && list.length > 5) { list.pop(); s = JSON.stringify(list); }
     props.setProperty('LOG_ALL', s);
   }
+  function journalSupport(code, user) { try { journalAdd(code, { nom: 'Support : ' + (user && user.nom || 'éditeur'), role: 'support' }); } catch (e) { Logger.log('Accès support non journalisé : ' + e.message); } }
   function journal() { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('LOG_ALL') || '[]'); } catch (e) { return []; } }
   function noteLogin(code, agent) {
     var agentId = agent.id;
@@ -170,5 +171,5 @@ var Auth = (function () {
     return agent;
   }
   function canSetup(user) { return user.role === 'admin' || (user.role === 'chef' && user.acces_setup === '1'); }
-  return { journal: journal, activity: activity, forgot: forgot, resetPassword: resetPassword, resume: resume, forget: forget, revokeAll: revokeAll, openSession: openSession, makeCredentials: makeCredentials, check: check, login: login, logout: logout, userFromToken: userFromToken, canSetup: canSetup };
+  return { journalSupport: journalSupport, journal: journal, activity: activity, forgot: forgot, resetPassword: resetPassword, resume: resume, forget: forget, revokeAll: revokeAll, openSession: openSession, makeCredentials: makeCredentials, check: check, login: login, logout: logout, userFromToken: userFromToken, canSetup: canSetup };
 })();

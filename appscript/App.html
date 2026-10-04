@@ -2,7 +2,8 @@
 (function () {
 'use strict';
 var S = { code: (function () { try { return localStorage.getItem('pt-code') || ''; } catch (e) { return ''; } })(), rotations: ['28/28'], token: null, user: null, params: null, canSetup: false, info: null };
-try { S.token = sessionStorage.getItem('tk'); } catch (e) { /* stockage indisponible */ }
+try { S.token = sessionStorage.getItem('tk'); S.back = JSON.parse(sessionStorage.getItem('bk') || 'null'); S.clientsList = JSON.parse(sessionStorage.getItem('cl') || 'null'); } catch (e) { /* stockage indisponible */ }
+function setBack(b) { S.back = b; S.badges = null; S.announced = {}; try { if (b) sessionStorage.setItem('bk', JSON.stringify(b)); else sessionStorage.removeItem('bk'); } catch (e) { /* ignore */ } }
 
 // ---------- utilitaires ----------
 function h(tag, props) {
@@ -59,7 +60,7 @@ function logoutNow() {
   var rm = ''; try { rm = localStorage.getItem('pt-rm') || ''; localStorage.removeItem('pt-rm'); } catch (e) { /* ignore */ }
   Promise.all([call('logout').catch(function () {}), rm ? call('forget', rm).catch(function () {}) : null]).then(sessionEnd);
 }
-function sessionEnd() { S.token = null; S.user = null; S.path = null; S.owner = false; S.back = null; try { sessionStorage.removeItem('tk'); } catch (e) { /* ignore */ } boot(); } // boot relit l'état (annuaire, code entreprise)
+function sessionEnd() { S.token = null; S.user = null; S.path = null; S.owner = false; setBack(null); try { sessionStorage.removeItem('tk'); sessionStorage.removeItem('cl'); } catch (e) { /* ignore */ } boot(); } // boot relit l'état (annuaire, code entreprise)
 function saveFile(r) {
   var bin = atob(r.base64); var bytes = new Uint8Array(bin.length);
   for (var i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
@@ -239,6 +240,29 @@ var ROUTES = {
 // un lien « #/page » ouvrirait la fenêtre entière sur une page blanche).
 function go(path) { S.path = path; try { history.replaceState(null, '', '#' + path); } catch (e) { /* cadre isolé : sans importance */ } render(); }
 function navClick(path) { return function (ev) { ev.preventDefault(); go(path); }; }
+// Éditeur : sélecteur d'entreprise. Choisir un client ouvre son espace avec tous les droits de son administrateur (onglets, pointages, mots de passe…) ; « Mon espace » ramène à la console.
+function entSelect() {
+  if (!S.owner && !S.back) return null;
+  if (S.owner && !S.clientsFetched && !S.clientsLoading) { S.clientsLoading = true; call('clients').then(function (r) { S.clientsFetched = true; S.clientsList = r.clients.map(function (c) { return { code: c.code, nom: c.nom }; }); try { sessionStorage.setItem('cl', JSON.stringify(S.clientsList)); } catch (e) { /* ignore */ } S.clientsLoading = false; render(); }).catch(function () { S.clientsLoading = false; }); }
+  var cur = S.back ? S.back.code : '';
+  var sel = h('select', { class: 'entsel', title: 'Changer d’entreprise', 'aria-label': 'Entreprise' }, h('option', { value: '' }, 'Mon espace (éditeur)'),
+    (S.clientsList || (S.back ? [{ code: S.back.code, nom: S.back.societe }] : [])).map(function (c) { return h('option', { value: c.code }, c.nom + ' (' + c.code + ')'); }));
+  sel.value = cur;
+  sel.onchange = function () {
+    var code = sel.value;
+    var ownerTok = S.back ? S.back.token : S.token;
+    var quitter = S.back ? call('logout').catch(function () {}) : Promise.resolve();
+    quitter.then(function () {
+      S.token = ownerTok; try { sessionStorage.setItem('tk', ownerTok); } catch (e) { /* ignore */ }
+      if (!code) { setBack(null); S.path = null; boot(); return; }
+      call('clientAcces', code).then(function (r) {
+        setBack({ token: ownerTok, societe: r.societe, code: r.code }); S.token = r.token; S.owner = false; S.path = null; try { sessionStorage.setItem('tk', r.token); } catch (e) { /* ignore */ }
+        boot();
+      }).catch(function (e) { setBack(null); toast(e.message); boot(); });
+    });
+  };
+  return sel;
+}
 function render() {
   var root = $app();
   if (!S.user) { root.replaceChildren(S.charte ? h('div', { class: 'login', style: 'max-width:760px' }, CharteBlock(function () { S.charte = false; render(); })) : loginView()); return; }
@@ -246,20 +270,21 @@ function render() {
   // Compte de l'éditeur : son espace normal + onglets « Clients » et « Prospects ». Espace d'un client : l'application seule.
   var links = NAV[role].filter(function (l) { return !(S.canSetup && l[0] === '#/contrats'); }); // le contrat est dans Setup pour qui y a accès
   if (S.canSetup) links.push(['#/setup', 'Setup']);
-  if (S.owner) links.push(['#/clients', 'Clients'], ['#/prospects', 'Prospects']); // compte unique de l'éditeur : sa société + la console
+  if (S.owner) { links = links.filter(function (l) { return l[0] !== '#/apropos'; }); links.push(['#/clients', 'Clients'], ['#/prospects', 'Prospects']); } // l'éditeur n'a pas besoin de « À propos » // compte unique de l'éditeur : sa société + la console
   var path = S.path || (location.hash.replace(/^#/, '') || '/');
   var allowed = links.map(function (l) { return l[0].replace('#', ''); }).concat(['/motdepasse', '/nouveautes', '/confidentialite']);
   if (allowed.indexOf(path) < 0) path = role === 'admin' ? '/pointer' : role === 'client' ? '/groupe' : '/';
   S.path = path;
   var bar = h('header', { class: 'top' },
     h('span', { class: 'brandwrap' }, h('img', { src: LOGO, alt: '', width: 28, height: 28, class: 'logo' }), h('strong', { class: 'brand' }, S.params.prestataire || 'Sijil')),
+    entSelect(),
     h('nav', null, links.map(function (l) { return h('a', { href: l[0], 'data-path': l[0].slice(1), class: l[0] === '#' + path ? 'on' : '', onclick: navClick(l[0].slice(1)) }, l[1]); })),
     h('span', { class: 'who' }, S.user.nom, h('small', null, '(' + (role === 'chef' ? 'responsable d’équipe' : role) + ')'),
       h('a', { href: '#/motdepasse', onclick: navClick('/motdepasse') }, 'Mot de passe'),
       h('button', { class: 'link', onclick: logoutNow }, 'Déconnexion')));
   var main = h('main', null);
-  var back = S.back ? h('div', { class: 'msg warn', style: 'margin:0;border-radius:0;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap' }, 'Mode support : vous êtes dans l\'espace de « ' + S.back.societe + ' » (essai).',
-    h('button', { type: 'button', class: 'primary', onclick: function () { call('logout').catch(function () {}).then(function () { S.token = S.back.token; S.back = null; S.path = null; try { sessionStorage.setItem('tk', S.token); } catch (e) { /* ignore */ } boot(); }); } }, "‹ Retour à l'administration")) : null;
+  var back = S.back ? h('div', { class: 'msg warn', style: 'margin:0;border-radius:0;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap' }, 'Mode support : vous êtes dans l\'espace de « ' + S.back.societe + ' » avec tous les droits de son administrateur.',
+    h('button', { type: 'button', class: 'primary', onclick: function () { call('logout').catch(function () {}).then(function () { S.token = S.back.token; setBack(null); S.path = null; try { sessionStorage.setItem('tk', S.token); } catch (e) { /* ignore */ } boot(); }); } }, "‹ Retour à l'administration")) : null;
   root.replaceChildren.apply(root, [back, bar, main, h('footer', { class: 'muted', style: 'text-align:center;padding:14px;font-size:.8rem' }, 'Sijil · ', h('a', { href: '#/nouveautes', onclick: navClick('/nouveautes') }, 'version ' + ((S.info && S.info.version) || '?') + ' (nouveautés)'), h('br'), (S.info && S.info.copyright) || '', ' · ', h('a', { href: '#/confidentialite', onclick: navClick('/confidentialite') }, 'Confidentialité'))].filter(Boolean));
   if (path === '/documents') markDocsSeen();
   setTimeout(refreshBadges, 0);
@@ -969,7 +994,7 @@ function ClientsPage() {
   var lastRes = null; // message de bienvenue du dernier client créé (conservé après rechargement de la liste)
   var open = {}; // clients dont le panneau « Administrateur » est ouvert
   function copy(text, btn) { try { navigator.clipboard.writeText(text).then(function () { var t = btn.textContent; btn.textContent = tr('Copié ✓'); setTimeout(function () { btn.textContent = t; }, 1500); }); } catch (e) { window.prompt('Copiez :', text); } }
-  function load() { wrap.replaceChildren(loading()); call('clients').then(draw).catch(function (e) { wrap.replaceChildren(h('p', { class: 'msg err' }, e.message)); }); }
+  function load() { wrap.replaceChildren(loading()); call('clients').then(function (r) { S.clientsFetched = true; S.clientsList = r.clients.map(function (c) { return { code: c.code, nom: c.nom }; }); try { sessionStorage.setItem('cl', JSON.stringify(S.clientsList)); } catch (e) { /* ignore */ } var es = document.querySelector('.entsel'); if (es) { var v = es.value; es.replaceChildren.apply(es, [h('option', { value: '' }, 'Mon espace (éditeur)')].concat(S.clientsList.map(function (c) { return h('option', { value: c.code }, c.nom + ' (' + c.code + ')'); }))); es.value = v; } return r; }).then(draw).catch(function (e) { wrap.replaceChildren(h('p', { class: 'msg err' }, e.message)); }); }
   function draw(data) {
     var f = { code: '', nom: '', admin_email: '', admin_nom: '', contact: '', fin_licence: '', statut: 'actif', partager_lecture: false };
     var share = h('input', { type: 'checkbox' }); share.onchange = function () { f.partager_lecture = share.checked; };
@@ -1019,11 +1044,11 @@ function ClientsPage() {
       var tst = h('button', { type: 'button' }, 'Tester l\'accès'); var tm = msgBox();
       tst.onclick = function () { act(tst, tm, function () { return call('clientTest', c.code); }).then(function (r) { if (r) tm.show(r.ok ? '✓ Classeur « ' + r.classeur + ' » ouvert : ' + r.onglets + ' onglets, ' + r.administrateurs + ' administrateur(s), ' + r.agents + ' agent(s). Adresse : ' + r.adresse + '.' : r.detail, r.ok); }); };
       var adm = h('button', { type: 'button', title: "Changer l'e-mail et le mot de passe du gérant de cette entreprise" }, 'Gérant : e-mail / mot de passe'); adm.onclick = function () { open[c.code] = !open[c.code]; draw(data); };
-      var enter = h('button', { type: 'button', class: c.statut === 'essai' ? 'primary' : '', disabled: c.statut !== 'essai', title: c.statut === 'essai' ? "Ouvrir l'espace de ce client en essai (sans mot de passe)" : "Réservé aux clients en essai" }, 'Entrer (essai)'); var enm = msgBox();
+      var enter = h('button', { type: 'button', class: 'primary', disabled: c.statut === 'suspendu', title: c.statut === 'suspendu' ? 'Client suspendu : réactivez-le (Statut) pour entrer' : "Ouvrir l'espace de ce client avec tous les droits de son administrateur (sans mot de passe)" }, 'Entrer dans l\u2019espace'); var enm = msgBox();
       enter.onclick = function () {
         act(enter, enm, function () { return call('clientAcces', c.code); }).then(function (r) {
           if (!r) return;
-          S.back = { token: S.token, societe: r.societe }; S.token = r.token; S.owner = false; S.path = null; try { sessionStorage.setItem('tk', r.token); } catch (e) { /* ignore */ }
+          setBack({ token: S.token, societe: r.societe, code: r.code }); S.token = r.token; S.owner = false; S.path = null; try { sessionStorage.setItem('tk', r.token); } catch (e) { /* ignore */ }
           boot();
         });
       };

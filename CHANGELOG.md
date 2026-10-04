@@ -2,6 +2,12 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.20.0 — 2026-10-04 — Sélecteur d'entreprise pour l'éditeur
+
+- Un sélecteur d'entreprise dans l'en-tête : choisir un client ouvre son espace avec tous les droits de son administrateur (onglets, pointages, mots de passe…).
+- Chaque accès support est noté dans le journal des connexions.
+- « À propos » n'apparaît plus dans le menu de l'éditeur.
+
 ## 3.19.0 — 2026-10-03 — Connexions de toutes les entreprises et remarques des agents
 
 - L'éditeur voit dans « Connexions » toutes les entreprises clientes : qui est en ligne, les dernières connexions et un journal.

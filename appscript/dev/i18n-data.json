@@ -5043,5 +5043,60 @@
 "Un agent peut laisser une remarque sur son propre pointage : son responsable d'équipe est prévenu et peut lui répondre.",
 "An agent can leave a remark on their own attendance: their team manager is notified and can reply.",
 "يمكن للعون ترك ملاحظة على حضوره: يُبلَّغ مسؤول فريقه ويمكنه الرد."
+],
+[
+"Mon espace (éditeur)",
+"My space (publisher)",
+"مساحتي (الناشر)"
+],
+[
+"Changer d’entreprise",
+"Switch company",
+"تغيير الشركة"
+],
+[
+"Entrer dans l’espace",
+"Enter the space",
+"دخول المساحة"
+],
+[
+"Client suspendu : réactivez-le (Statut) pour entrer",
+"Client suspended: reactivate it (Status) to enter",
+"العميل موقوف: أعد تفعيله (الحالة) للدخول"
+],
+[
+"Ouvrir l'espace de ce client avec tous les droits de son administrateur (sans mot de passe)",
+"Open this client's space with all its administrator's rights (no password)",
+"فتح مساحة هذا العميل بكل صلاحيات مسؤولها (دون كلمة مرور)"
+],
+[
+" » avec tous les droits de son administrateur.",
+" » with all the rights of its administrator.",
+" » بكل صلاحيات مسؤولها."
+],
+[
+"Éditeur : changer d'entreprise",
+"Publisher: switch company",
+"الناشر: تغيير الشركة"
+],
+[
+"Sélecteur d'entreprise pour l'éditeur",
+"Company selector for the publisher",
+"منتقي الشركة للناشر"
+],
+[
+"Un sélecteur d'entreprise dans l'en-tête : choisir un client ouvre son espace avec tous les droits de son administrateur (onglets, pointages, mots de passe…).",
+"A company selector in the header: choosing a client opens its space with all its administrator's rights (tabs, attendance, passwords…).",
+"منتقي شركة في الترويسة: اختيار عميل يفتح مساحته بكل صلاحيات مسؤولها (العلامات، الحضور، كلمات المرور…)."
+],
+[
+"Chaque accès support est noté dans le journal des connexions.",
+"Every support access is recorded in the connections log.",
+"كل دخول دعم يُسجَّل في سجل الاتصالات."
+],
+[
+"« À propos » n'apparaît plus dans le menu de l'éditeur.",
+"\"About\" no longer appears in the publisher's menu.",
+"لم تعد «حول» تظهر في قائمة الناشر."
 ]
 ]
