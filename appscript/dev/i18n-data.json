@@ -5343,5 +5343,15 @@
 "Nouveaux documents que l'agent peut demander : copie du contrat, attestation CNAS, mise à jour CNAS, attestation d'émoluments.",
 "New documents an agent can request: copy of the contract, CNAS certificate, CNAS update, earnings certificate.",
 "مستندات جديدة يمكن للعون طلبها: نسخة من العقد، شهادة CNAS، تحديث CNAS، شهادة الأجر."
+],
+[
+"Conversion en PDF corrigée",
+"PDF conversion fixed",
+"تصحيح التحويل إلى PDF"
+],
+[
+"La conversion des photos et scans (JPEG, PNG) en PDF fonctionne : une page par image, et les photos prises au téléphone gardent le bon sens. Si un format d'image ne peut pas être converti, le fichier est gardé tel quel et la liste vous le signale.",
+"Converting photos and scans (JPEG, PNG) to PDF now works: one page per image, and phone photos keep the right orientation. If an image format cannot be converted, the file is kept as is and the list tells you.",
+"يعمل الآن تحويل الصور والمسح الضوئي (JPEG وPNG) إلى PDF: صفحة لكل صورة، وتحتفظ صور الهاتف باتجاهها الصحيح. إذا تعذّر تحويل صيغة صورة يُحفظ الملف كما هو وتُنبّهك القائمة."
 ]
 ]

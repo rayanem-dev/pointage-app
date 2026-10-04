@@ -2,6 +2,10 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.21.1 — 2026-10-04 — Conversion en PDF corrigée
+
+- La conversion des photos et scans (JPEG, PNG) en PDF fonctionne : une page par image, et les photos prises au téléphone gardent le bon sens. Si un format d'image ne peut pas être converti, le fichier est gardé tel quel et la liste vous le signale.
+
 ## 3.21.0 — 2026-10-04 — Dépôt de documents en vrac
 
 - Déposez plusieurs documents d'un coup : Sijil reconnaît l'agent, le type et les dates, et propose le nom (TC_NOM_Prenom_2026-02-14, NOM_Prenom_FDP_Mars2026, contrat, attestations CNAS, attestation de travail, attestation d'émoluments…).

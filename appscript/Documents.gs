@@ -221,11 +221,78 @@ var Documents = (function () {
     if (bytes.length > CFG.MAX_UPLOAD_BYTES) throw httpErr_('Fichier trop volumineux (6 Mo maximum)');
     return bytes;
   }
+  // ----- image → PDF : fabriqué ici (JPEG et PNG sans alpha), sans service externe ; l'orientation EXIF des photos est respectée -----
+  function u8(arr) { return arr.map(function (b) { return (b + 256) % 256; }); }
+  function be16(a, i) { return a[i] * 256 + a[i + 1]; }
+  function be32(a, i) { return ((a[i] * 256 + a[i + 1]) * 256 + a[i + 2]) * 256 + a[i + 3]; }
+  function ascii(s) { var o = []; for (var i = 0; i < s.length; i += 1) o.push(s.charCodeAt(i) & 255); return o; }
+  function jpegInfo(a) {
+    if (a[0] !== 255 || a[1] !== 216) return null;
+    var i = 2; var orient = 1; var info = null;
+    while (i + 4 < a.length) {
+      if (a[i] !== 255) { i += 1; continue; }
+      var m = a[i + 1]; if (m === 255) { i += 1; continue; }
+      if (m === 216 || (m >= 208 && m <= 215) || m === 1) { i += 2; continue; }
+      var len = be16(a, i + 2);
+      if (m === 225 && a[i + 4] === 69 && a[i + 5] === 120 && a[i + 6] === 105 && a[i + 7] === 102) { // « Exif » : orientation de la photo
+        var t = i + 10; var le = a[t] === 73; var r16 = function (p) { return le ? a[p] + a[p + 1] * 256 : a[p] * 256 + a[p + 1]; }; var r32 = function (p) { return le ? a[p] + a[p + 1] * 256 + a[p + 2] * 65536 + a[p + 3] * 16777216 : be32(a, p); };
+        var ifd = t + r32(t + 4); var cnt = r16(ifd);
+        for (var k = 0; k < cnt && k < 60; k += 1) { var e = ifd + 2 + k * 12; if (r16(e) === 274) { orient = r16(e + 8); break; } }
+      }
+      if (m >= 192 && m <= 207 && m !== 196 && m !== 200 && m !== 204) { info = { bits: a[i + 4], h: be16(a, i + 5), w: be16(a, i + 7), comps: a[i + 9] }; break; }
+      i += 2 + len;
+    }
+    if (!info || (info.comps !== 1 && info.comps !== 3) || info.bits !== 8) return null;
+    info.orient = orient; return info;
+  }
+  function pngInfo(a) {
+    var sig = [137, 80, 78, 71, 13, 10, 26, 10]; for (var s = 0; s < 8; s += 1) if (a[s] !== sig[s]) return null;
+    var i = 8; var info = null; var idat = []; var plte = null;
+    while (i + 8 <= a.length) {
+      var len = be32(a, i); var type = String.fromCharCode(a[i + 4], a[i + 5], a[i + 6], a[i + 7]); var d = i + 8;
+      if (type === 'IHDR') info = { w: be32(a, d), h: be32(a, d + 4), bits: a[d + 8], ctype: a[d + 9], interlace: a[d + 12] };
+      else if (type === 'PLTE') plte = a.slice(d, d + len);
+      else if (type === 'IDAT') for (var k = 0; k < len; k += 1) idat.push(a[d + k]);
+      else if (type === 'IEND') break;
+      i = d + len + 4;
+    }
+    if (!info || info.interlace || [0, 2, 3].indexOf(info.ctype) < 0 || !idat.length || (info.ctype === 3 && !plte)) return null; // alpha ou entrelacé : non géré
+    info.idat = idat; info.plte = plte; return info;
+  }
+  // Fabrique un PDF d'une page contenant l'image ; null si le format n'est pas pris en charge.
+  function imageToPdf(bytes) {
+    var a = u8(bytes); var j = jpegInfo(a); var p = j ? null : pngInfo(a);
+    if (!j && !p) return null;
+    var w = j ? j.w : p.w; var h = j ? j.h : p.h; var rot = j ? { 3: 180, 6: 90, 8: 270 }[j.orient] || 0 : 0;
+    var scale = 842 / Math.max(w, h); var pw = Math.max(1, Math.round(w * scale * 100) / 100); var ph = Math.max(1, Math.round(h * scale * 100) / 100);
+    var imgDict; var data;
+    if (j) { imgDict = '/Type /XObject /Subtype /Image /Width ' + w + ' /Height ' + h + ' /ColorSpace ' + (j.comps === 1 ? '/DeviceGray' : '/DeviceRGB') + ' /BitsPerComponent 8 /Filter /DCTDecode'; data = a; }
+    else {
+      var cs = p.ctype === 0 ? '/DeviceGray' : p.ctype === 2 ? '/DeviceRGB' : (function () { var hex = ''; p.plte.forEach(function (v) { hex += ('0' + v.toString(16)).slice(-2); }); return '[/Indexed /DeviceRGB ' + (p.plte.length / 3 - 1) + ' <' + hex + '>]'; })();
+      var colors = p.ctype === 2 ? 3 : 1;
+      imgDict = '/Type /XObject /Subtype /Image /Width ' + w + ' /Height ' + h + ' /ColorSpace ' + cs + ' /BitsPerComponent ' + p.bits + ' /Filter /FlateDecode /DecodeParms << /Predictor 15 /Colors ' + colors + ' /BitsPerComponent ' + p.bits + ' /Columns ' + w + ' >>';
+      data = p.idat;
+    }
+    var out = ascii('%PDF-1.5\n'); var offs = [];
+    function obj(n, body) { offs[n] = out.length; Array.prototype.push.apply(out, ascii(n + ' 0 obj\n')); Array.prototype.push.apply(out, body); Array.prototype.push.apply(out, ascii('\nendobj\n')); }
+    obj(1, ascii('<< /Type /Catalog /Pages 2 0 R >>'));
+    obj(2, ascii('<< /Type /Pages /Kids [3 0 R] /Count 1 >>'));
+    obj(3, ascii('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + pw + ' ' + ph + '] /Rotate ' + rot + ' /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>'));
+    var content = 'q ' + pw + ' 0 0 ' + ph + ' 0 0 cm /Im0 Do Q';
+    obj(4, ascii('<< /Length ' + content.length + ' >>\nstream\n' + content + '\nendstream'));
+    obj(5, ascii('<< ' + imgDict + ' /Length ' + data.length + ' >>\nstream\n').concat(data, ascii('\nendstream')));
+    var xref = out.length; var tab = 'xref\n0 6\n0000000000 65535 f \n';
+    for (var n = 1; n <= 5; n += 1) tab += ('0000000000' + offs[n]).slice(-10) + ' 00000 n \n';
+    Array.prototype.push.apply(out, ascii(tab + 'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF\n'));
+    return out.map(function (b) { return b > 127 ? b - 256 : b; });
+  }
   // Une image peut être convertie en PDF (option « convertir en PDF ») ; les autres formats restent tels quels.
   function maybePdf(data, bytes) {
     var ext = extOf(data.nom);
     if (data.pdf && ['jpg', 'jpeg', 'png', 'gif', 'bmp'].indexOf(ext) >= 0) {
-      try { var b = Utilities.newBlob(bytes, data.mime || 'image/' + (ext === 'jpg' ? 'jpeg' : ext), data.nom).getAs('application/pdf'); return { bytes: b.getBytes(), mime: 'application/pdf', ext: 'pdf', converti: true }; } catch (e) { Logger.log('Conversion PDF impossible : ' + e.message); }
+      try { var pdf = imageToPdf(bytes); if (pdf) return { bytes: pdf, mime: 'application/pdf', ext: 'pdf', converti: true }; } catch (e) { Logger.log('Conversion PDF (interne) impossible : ' + e.message); }
+      try { var b = Utilities.newBlob(bytes, data.mime || 'image/' + (ext === 'jpg' ? 'jpeg' : ext), data.nom).getAs('application/pdf'); return { bytes: b.getBytes(), mime: 'application/pdf', ext: 'pdf', converti: true }; } catch (e) { Logger.log('Conversion PDF (Google) impossible : ' + e.message); }
+      return { bytes: bytes, mime: data.mime || 'application/octet-stream', ext: ext, converti: false, echec: true };
     }
     return { bytes: bytes, mime: data.mime || 'application/octet-stream', ext: ext, converti: false };
   }
@@ -335,7 +402,7 @@ var Documents = (function () {
     var conv = maybePdf(data, bytes);
     var file = stagingFolder().createFile(Utilities.newBlob(conv.bytes, conv.mime, String(data.nom)));
     var row = { id: newId_('Q'), nom_original: String(data.nom).slice(0, 120), file_id: file.getId(), ext: conv.ext, agent_id: agent ? agent.id : '', type: info.type, champs: JSON.stringify(info.champs), nom_force: '',
-      source: info.source, avert: info.avertissement + (conv.converti ? ' (converti en PDF)' : ''), depose_par: user.nom, depose_id: user.id, date_depot: new Date().toISOString(), candidats: JSON.stringify(info.candidats.map(function (a) { return a.id; })) };
+      source: info.source, avert: info.avertissement + (conv.converti ? ' (converti en PDF)' : '') + (conv.echec ? ' (conversion PDF impossible pour ce format d\'image : fichier conservé tel quel)' : ''), depose_par: user.nom, depose_id: user.id, date_depot: new Date().toISOString(), candidats: JSON.stringify(info.candidats.map(function (a) { return a.id; })) };
     Store.writeTable('Depots', Store.readTable('Depots').concat([row]));
     var by = {}; agents.forEach(function (a) { by[a.id] = a; });
     return depotPub(row, by);
@@ -389,5 +456,5 @@ var Documents = (function () {
     return { retires: Object.keys(gone).length };
   }
   return { list: list, upload: upload, update: update, download: download, remove: remove, count: count, purgeFiles: purgeFiles, analyse: function (t) { var ty = detectType(t); return { type: ty, champs: ty ? extract(ty, t) : null }; }, fileName: fileName, nameFor: nameFor, detectType: detectType, extract: extract,
-    depotAdd: depotAdd, depotList: depotList, depotUpdate: depotUpdate, depotValider: depotValider, depotRejeter: depotRejeter};
+    imageToPdf: imageToPdf, depotAdd: depotAdd, depotList: depotList, depotUpdate: depotUpdate, depotValider: depotValider, depotRejeter: depotRejeter};
 })();

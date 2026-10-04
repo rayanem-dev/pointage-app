@@ -82,3 +82,23 @@ test('dépôt en vrac : conversion des images en PDF, rejet, droits', () => {
   fail(call(T.admin, 'depotAdd', { nom: 'a.pdf', base64: '' }), /manquant/);
   env.fetchHandler = null;
 });
+
+test('conversion image → PDF fabriquée sur place : JPEG et PNG valides (xref cohérente), alpha refusé proprement', () => {
+  const JPG = '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA0JCgsKCA0LCgsODg0PEyAVExISEyccHhcgLikxMC4pLSwzOko+MzZGNywtQFdBRkxOUlNSMj5aYVpQYEpRUk//2wBDAQ4ODhMREyYVFSZPNS01T09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0//wAARCAAGAAgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDDoooryD9FP//Z'; const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAGCAIAAABxZ0isAAAAFElEQVR4nGP8xcXFgA0wYRWlkwQAoSIBGmQ5qnUAAAAASUVORK5CYII='; const RGBA = 'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAGCAYAAAD+Bd/7AAAAFklEQVR4nGP8xcX1nwEPYMInOVgUAACWXwIZGOXdkwAAAABJRU5ErkJggg==';
+  const pdfOf = (b64) => Buffer.from(app.run('Utilitaire = null; Utilities.base64Encode(Documents.imageToPdf(Utilities.base64Decode(' + JSON.stringify(b64) + ')))'), 'base64');
+  for (const [b64, filtre] of [[JPG, '/DCTDecode'], [PNG, '/FlateDecode']]) {
+    const pdf = pdfOf(b64); const txt = pdf.toString('latin1');
+    assert.ok(txt.startsWith('%PDF-1.5') && txt.includes(filtre) && txt.includes('/Subtype /Image') && txt.trimEnd().endsWith('%%EOF'));
+    const xref = Number(/startxref\n(\d+)/.exec(txt)[1]); assert.ok(txt.slice(xref).startsWith('xref'), 'startxref pointe sur la table');
+    for (let n = 1; n <= 5; n += 1) { const off = Number(txt.slice(xref).split('\n')[2 + n].slice(0, 10)); assert.ok(txt.slice(off).startsWith(n + ' 0 obj'), 'objet ' + n + ' à son décalage'); }
+  }
+  assert.strictEqual(app.run('Documents.imageToPdf(Utilities.base64Decode(' + JSON.stringify(RGBA) + '))'), null, 'PNG avec transparence : non géré (le fichier est conservé tel quel)');
+  assert.strictEqual(app.run('Documents.imageToPdf(Utilities.base64Decode("aGVsbG8="))'), null);
+  // dépôt d'une vraie photo avec conversion
+  ocr = '';
+  const r = ok(call(T.admin, 'depotAdd', { nom: 'KADRI_Sofiane_Contrat_2026-05-01.jpg', mime: 'image/jpeg', base64: JPG, pdf: true }));
+  assert.strictEqual(r.nom_final, 'KADRI_Sofiane_2026-05-01_Contrat.pdf'); assert.match(r.avertissement, /converti en PDF/);
+  const rgb = ok(call(T.admin, 'depotAdd', { nom: 'KADRI_Sofiane_Contrat_2026-05-02.png', mime: 'image/png', base64: RGBA, pdf: true }));
+  assert.ok(rgb.nom_final.endsWith('.pdf') || /conservé/.test(rgb.avertissement), 'repli : conversion Google ou fichier conservé');
+  ok(call(T.admin, 'depotRejeter', [r.id, rgb.id]));
+});
