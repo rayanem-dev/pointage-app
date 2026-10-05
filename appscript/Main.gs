@@ -114,6 +114,8 @@ var HANDLERS = {
   // ----- responsable d’équipe / admin -----
   // a[0] = true : personnes seulement (documents) ; sinon personnes et véhicules (pointage)
   agentsVisible: { roles: STAFF, fn: function (u, a) { return Agents.visibleTo(u).filter(function (x) { return !a[0] || x.type !== 'vehicule'; }).map(Agents.publicAgent); } },
+  autoPointageGet: { roles: STAFF, fn: function (u) { return Auto.get(u); } },
+  autoPointageSet: { roles: STAFF, fn: function (u, a) { return Auto.set(u, a[0] || {}); } },
   pointerCompleter: { roles: STAFF, write: true, fn: function (u, a) { return Pointage.completer(u, a[0] || {}); } },
   pointer: {
     roles: STAFF, write: true,

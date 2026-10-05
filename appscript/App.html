@@ -506,9 +506,22 @@ function GridView(o) {
       });
     }, function (r) { return r ? r.total + ' jour(s) pointés pour ' + r.agents.length + ' agent(s).' : ''; }).then(function (r) { if (r && r.applique) load(); });
   };
+  // Pointage automatique : chaque jour à l'heure choisie, Sijil recopie pour chaque agent le pointage de la veille (réglage propre à la personne qui l'active).
+  var autoOn = h('input', { type: 'checkbox' }); var autoH = h('input', { type: 'time', value: '06:30', step: 60, 'aria-label': 'Heure du pointage automatique', style: 'width:96px' }); var autoMsg = h('small', { class: 'muted' });
+  function autoShow(r) {
+    autoOn.checked = !!r.on; autoH.value = r.heure || '06:30'; autoH.disabled = false;
+    autoMsg.className = 'muted'; autoMsg.style.color = '';
+    if (r.avertissement) { autoMsg.textContent = r.avertissement; autoMsg.style.color = 'var(--neg)'; }
+    else if (r.on) autoMsg.textContent = tr('✓ Actif : chaque jour vers ') + r.heure + (r.quand ? tr(' · dernière fois : ') + frDateTime(r.quand) + ' (' + r.total + ' jour(s))' : '') + (r.erreur ? ' · ⚠ ' + r.erreur : '');
+    else autoMsg.textContent = '';
+  }
+  function autoSave() { call('autoPointageSet', { on: autoOn.checked, heure: autoH.value }).then(autoShow).catch(function (e) { autoMsg.textContent = e.message; autoMsg.style.color = 'var(--neg)'; }); }
+  autoOn.onchange = autoSave; autoH.onchange = function () { if (autoOn.checked) autoSave(); };
+  if (o.completer) call('autoPointageGet').then(autoShow).catch(function () {});
   function completerBar() {
     if (!o.completer) return null;
-    return h('span', { class: 'completer' }, h('small', null, 'Compléter du'), dFrom, h('small', null, 'au'), dTo, h('label', { class: 'inline', title: 'Suivre la rotation prévue au lieu de répéter le dernier statut' }, rotOpt, h('small', null, 'rotation')), cbtn);
+    return h('span', { class: 'completer' }, h('small', null, 'Compléter du'), dFrom, h('small', null, 'au'), dTo, h('label', { class: 'inline', title: 'Suivre la rotation prévue au lieu de répéter le dernier statut' }, rotOpt, h('small', null, 'rotation')), cbtn,
+      h('label', { class: 'inline', style: 'margin-inline-start:12px', title: 'Chaque jour à l’heure choisie, recopie le pointage de la veille pour chaque agent. Un jour déjà pointé n’est jamais remplacé : une correction à la main l’emporte.' }, autoOn, h('small', null, 'Automatique chaque jour à'), autoH), autoMsg);
   }
   var rm = {}; // remarques du client : « agent|date » -> liste
   function setRemarks(list) { rm = {}; (list || []).forEach(function (r) { (rm[r.agent_id + '|' + r.date] = rm[r.agent_id + '|' + r.date] || []).push(r); }); }

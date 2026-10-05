@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const noop = () => new Proxy(function () {}, { get: (t, p) => (p === 'then' ? undefined : noop()), apply: () => noop() });
 
 function makeEnv() {
-  const env = { mails: [], files: {}, fetches: [], props: {}, cache: {}, books: {}, badFormulas: [], formulaCells: [] };
+  const env = { mails: [], files: {}, fetches: [], props: {}, cache: {}, books: {}, badFormulas: [], formulaCells: [], triggers: [] };
 
   // Feuille simulée avec les limites de grille de Google (26 colonnes × 1000 lignes par défaut) :
   // setValues agrandit la grille, mais régler la largeur / masquer / fusionner hors grille lève une erreur comme chez Google.
@@ -126,7 +126,7 @@ function makeEnv() {
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
     MailApp: { sendEmail: (m) => { if (env.mailFail) throw new Error('quota'); env.mails.push(m); } },
     Session: { getScriptTimeZone: () => 'Africa/Algiers', getActiveUser: () => ({ getEmail: () => 'owner@test' }) },
-    ScriptApp: { getScriptId: () => 'SCRIPT123', getOAuthToken: () => 'token', getService: () => ({ getUrl: () => 'https://script.google.com/macros/s/X/exec' }) },
+    ScriptApp: { getProjectTriggers: () => env.triggers.map((fn) => ({ getHandlerFunction: () => fn })), newTrigger: (fn) => ({ timeBased() { return { everyMinutes: () => ({ create: () => { if (env.triggerRefuse) throw new Error('autorisation refusée'); env.triggers.push(fn); } }) }; } }), getScriptId: () => 'SCRIPT123', getOAuthToken: () => 'token', getService: () => ({ getUrl: () => 'https://script.google.com/macros/s/X/exec' }) },
     UrlFetchApp: {
       fetch: (url, opts) => {
         env.fetches.push(url);

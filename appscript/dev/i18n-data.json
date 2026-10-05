@@ -5748,5 +5748,35 @@
 "Une faute de frappe dans le nom d'un fichier (BELMAHY au lieu de BELMAHI) ne bloque plus : l'agent est proposé, à vérifier.",
 "A typo in a file name (BELMAHY instead of BELMAHI) no longer blocks: the agent is suggested, to be checked.",
 "لم يعد الخطأ المطبعي في اسم الملف (BELMAHY بدل BELMAHI) يعطّل: يُقترح العون للتحقق."
+],
+[
+"Heure invalide (HH:MM, par exemple 06:30)",
+"Invalid time (HH:MM, e.g. 06:30)",
+"وقت غير صالح (HH:MM، مثال 06:30)"
+],
+[
+"Automatique chaque jour à",
+"Automatic every day at",
+"تلقائي كل يوم في الساعة"
+],
+[
+"Heure du pointage automatique",
+"Automatic recording time",
+"وقت التسجيل التلقائي"
+],
+[
+"Chaque jour à l’heure choisie, recopie le pointage de la veille pour chaque agent. Un jour déjà pointé n’est jamais remplacé : une correction à la main l’emporte.",
+"Every day at the chosen time, copies the previous day's record for each agent. A day already recorded is never replaced: a manual correction wins.",
+"في الساعة المختارة كل يوم، ينسخ تسجيل اليوم السابق لكل عون. لا يُستبدل أي يوم مسجَّل: التصحيح اليدوي هو الأرجح."
+],
+[
+"✓ Actif : chaque jour vers ",
+"✓ Active: every day around ",
+"✓ مفعّل: كل يوم نحو الساعة "
+],
+[
+" · dernière fois : ",
+" · last run: ",
+" · آخر مرة: "
 ]
 ]

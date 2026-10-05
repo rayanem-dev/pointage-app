@@ -5,7 +5,7 @@ const vm = require('vm');
 const { makeEnv } = require('./mock');
 
 const DIR = path.join(__dirname, '..');
-const ORDER = ['Config', 'Changelog', 'Charte', 'Dates', 'Holidays', 'Format', 'Cycle', 'Store', 'Tenants', 'Auth', 'Params', 'Agents', 'Contrats', 'Bordereau', 'Pointage', 'Remarques', 'Import', 'Demandes', 'Documents', 'DocData', 'Export', 'Archive', 'Prospects', 'Setup', 'Installer', 'Main'];
+const ORDER = ['Config', 'Changelog', 'Charte', 'Dates', 'Holidays', 'Format', 'Cycle', 'Store', 'Tenants', 'Auth', 'Auto', 'Params', 'Agents', 'Contrats', 'Bordereau', 'Pointage', 'Remarques', 'Import', 'Demandes', 'Documents', 'DocData', 'Export', 'Archive', 'Prospects', 'Setup', 'Installer', 'Main'];
 
 function loadApp(order) {
   const { env, globals } = makeEnv();

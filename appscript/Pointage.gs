@@ -130,7 +130,7 @@ var Pointage = (function () {
     var data = loadAllMonths(); var months = data.months; var agents = data.agents; var params = Params.get();
     var chosen = {}; (o.agent_ids || []).forEach(function (id) { chosen[id] = true; });
     var cibles = Agents.visibleTo(user).filter(function (a) { return Agents.isPerson(a) && a.actif === '1' && (o.tous || chosen[a.id]); });
-    if (!cibles.length) throw httpErr_('Aucun agent sélectionné');
+    if (!cibles.length) { if (o.auto) return { applique: false, agents: [], ignores: [], total: 0, to: to }; throw httpErr_('Aucun agent sélectionné'); }
     var plan = []; var ignores = []; var total = 0;
     cibles.forEach(function (a) {
       var tl = Cycle.timelineOf(months, a.id); var last = '';
@@ -138,7 +138,7 @@ var Pointage = (function () {
       if (!last) { ignores.push({ id: a.id, nom: a.nom, raison: 'aucun pointage' }); return; }
       var start = from || Dates.addDays(last, 1);
       if (start > to) { ignores.push({ id: a.id, nom: a.nom, raison: 'à jour' }); return; }
-      if (Dates.diffDays(start, to) > 92) throw httpErr_('Période trop longue (93 jours maximum par agent) : ' + a.nom);
+      if (Dates.diffDays(start, to) > 92) { if (o.auto) { ignores.push({ id: a.id, nom: a.nom, raison: 'dernier pointage trop ancien' }); return; } throw httpErr_('Période trop longue (93 jours maximum par agent) : ' + a.nom); }
       var fc = rotation ? Cycle.forecastOf(tl, Agents.rotationParams(a, params), to) : null; var dernier = tl.get(last);
       var jours = [];
       for (var d = start; d <= to; d = Dates.addDays(d, 1)) {

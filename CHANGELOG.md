@@ -2,6 +2,12 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.26.0 — 2026-10-05 — Pointage automatique
+
+- Une case « Pointage automatique » dans la barre « Compléter » : à l'heure choisie (6 h 30 par défaut), Sijil copie pour chaque agent le pointage de la veille, absences comprises.
+- Une correction faite à la main est toujours respectée : un jour déjà pointé n'est jamais remplacé.
+- Le réglage est personnel : l'administrateur couvre tous les agents, le responsable d'équipe son équipe. Le pointage part dans la demi-heure qui suit l'heure choisie.
+
 ## 3.25.1 — 2026-10-04 — Actualiser les données et agent deviné
 
 - Un lien « ↻ Actualiser » en bas de page relit les données du serveur ; dans Setup → Maintenance, « Actualiser les données » vide le cache du classeur.

@@ -210,6 +210,18 @@
    },
    {
     "t": [
+     "Pointage automatique",
+     "Automatic recording",
+     "التسجيل التلقائي"
+    ],
+    "x": [
+     "Dans la barre « Compléter », cochez « Pointage automatique » et choisissez l'heure (6 h 30 par défaut). Chaque jour à cette heure, Sijil copie pour chaque agent le pointage de la veille, absences comprises. Un jour déjà pointé n'est jamais remplacé : si vous corrigez à la main, c'est vous qui avez raison. Le réglage est personnel : l'administrateur couvre tous les agents, le responsable d'équipe son équipe. Le pointage part dans la demi-heure qui suit l'heure choisie.",
+     "In the \"Complete\" bar, tick \"Automatic recording\" and choose the time (6:30 by default). Every day at that time, Sijil copies each agent's previous-day record, absences included. A day already recorded is never replaced: if you correct by hand, you are right. The setting is personal: the administrator covers all agents, a team leader covers their team. Recording runs within half an hour after the chosen time.",
+     "في شريط «استكمال» حدّد «التسجيل التلقائي» واختر الساعة (6:30 افتراضيًا). كل يوم في هذه الساعة ينسخ Sijil تسجيل اليوم السابق لكل عون، بما في ذلك الغيابات. لا يُستبدل أبدًا يوم مسجَّل: إذا صحّحتَ يدويًا فتصحيحك هو المعتمد. الإعداد شخصي: المسؤول يشمل كل الأعوان ومسؤول الفريق فريقه. يتم التسجيل خلال نصف ساعة بعد الساعة المختارة."
+    ]
+   },
+   {
+    "t": [
      "Vues 3 mois, 6 mois, 1 an et jours fériés",
      "3-month, 6-month, 1-year views and holidays",
      "عروض 3 أشهر و6 أشهر وسنة والأعياد"
