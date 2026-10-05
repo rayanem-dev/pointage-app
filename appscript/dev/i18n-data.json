@@ -5793,5 +5793,55 @@
 "ou choisir des fichiers",
 "or choose files",
 "أو اختر ملفات"
+],
+[
+"Supprimer cette demande définitivement ?",
+"Delete this request permanently?",
+"حذف هذا الطلب نهائيًا؟"
+],
+[
+"Annuler la décision ? La demande repasse « en attente » : vous pourrez la modifier, la transmettre à la direction ou la supprimer.",
+"Cancel the decision? The request goes back to \"pending\": you can edit it, send it to management or delete it.",
+"إلغاء القرار؟ يعود الطلب إلى «قيد الانتظار»: يمكنك تعديله أو إرساله إلى الإدارة أو حذفه."
+],
+[
+"Annuler la décision",
+"Cancel the decision",
+"إلغاء القرار"
+],
+[
+"Demande supprimée.",
+"Request deleted.",
+"تم حذف الطلب."
+],
+[
+"Décision annulée : la demande est de nouveau en attente.",
+"Decision cancelled: the request is pending again.",
+"أُلغي القرار: الطلب قيد الانتظار من جديد."
+],
+[
+"Décision",
+"Decision",
+"القرار"
+],
+[
+"Réponse à l’agent",
+"Reply to the agent",
+"الرد على العون"
+],
+[
+"Cette demande a été transmise à la direction : elle ne peut plus être annulée",
+"This request has been sent to management: it can no longer be cancelled",
+"أُرسل هذا الطلب إلى الإدارة: لا يمكن إلغاؤه بعد الآن"
+],
+[
+"Cette demande a été transmise à la direction : elle ne peut plus être supprimée",
+"This request has been sent to management: it can no longer be deleted",
+"أُرسل هذا الطلب إلى الإدارة: لا يمكن حذفه بعد الآن"
+],
+[
+"Cette demande est déjà transmise à la direction ou traitée par elle : elle ne peut plus être modifiée",
+"This request has already been sent to management or handled by them: it can no longer be edited",
+"هذا الطلب أُرسل إلى الإدارة أو عولج من قبلها: لا يمكن تعديله بعد الآن"
 ]
 ]

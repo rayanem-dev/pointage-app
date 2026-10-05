@@ -2,6 +2,12 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.27.0 — 2026-10-05 — Modifier ou annuler une demande
+
+- Celui qui traite les demandes peut maintenant modifier, supprimer ou annuler la décision d'une demande déjà acceptée, refusée ou traitée, tant qu'elle n'a pas été envoyée à la direction. Une demande dont la décision est annulée repasse « en attente ».
+- Dans « Demandes à traiter », chaque demande a aussi les boutons « Modifier » et « Supprimer ».
+- Un agent peut supprimer sa propre demande tant qu'elle est en attente.
+
 ## 3.26.1 — 2026-10-05 — Glisser-déposer des documents
 
 - Dans « Documents », glissez directement vos fichiers dans la zone prévue (comme pour le bordereau du contrat) : l'analyse démarre aussitôt. Le choix par bouton reste possible.

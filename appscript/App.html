@@ -684,11 +684,27 @@ function DemandesPage() {
   function demandeCard(d, mine) {
     var periode = d.date_debut ? ' · du ' + frDate(d.date_debut) + (d.date_fin ? ' au ' + frDate(d.date_fin) : '') + (d.reprise ? ' · reprise prévue le ' + frDate(d.reprise) : '') : '';
     var transmise = d.statut === 'envoyee' ? h('p', { class: 'muted' }, 'Traitée : demande transmise à la direction (' + (S.params.prestataire || 'prestataire') + ')') : null;
-    var mod = d.statut === 'en_attente' ? h('button', { type: 'button', onclick: function () { editor(d, card); } }, 'Modifier') : null;
-    var card = h('article', { class: 'item' }, h('div', null, h('b', null, d.type_label), h('span', { class: 'badge ' + d.statut }, STATUT_LABEL[d.statut]), ' ', mod),
+    var direct = ['acceptee', 'refusee', 'traitee'].indexOf(d.statut) >= 0 && !d.envoi_id; // décision prise sans passer par la direction
+    var mod = (d.statut === 'en_attente' || (direct && !mine)) ? h('button', { type: 'button', onclick: function () { editor(d, card); } }, 'Modifier') : null;
+    var rouvre = direct && !mine ? h('button', { type: 'button', onclick: function () { reouvrirDem(d, rouvre); } }, 'Annuler la décision') : null;
+    var sup = (d.statut === 'en_attente' || (direct && !mine)) ? supBtn(d) : null;
+    var card = h('article', { class: 'item' }, h('div', null, h('b', null, d.type_label), h('span', { class: 'badge ' + d.statut }, STATUT_LABEL[d.statut]), ' ', mod, ' ', rouvre, ' ', sup),
       h('small', null, (mine ? '' : d.agent_nom + ' · ') + frDateTime(d.date_creation) + periode),
       transmise, d.message ? h('p', null, d.message) : null, d.reponse ? h('p', { class: 'reply' }, 'Réponse' + (d.traite_par ? ' (' + d.traite_par + ')' : '') + ' : ' + d.reponse) : null);
     return card;
+  }
+  function boxAfter(b) { var m = msgBox(); if (b.parentNode) b.parentNode.after(m); return m; }
+  function supBtn(d) {
+    var b = h('button', { type: 'button', class: 'danger' }, 'Supprimer');
+    b.onclick = function () {
+      if (!window.confirm(tr('Supprimer cette demande définitivement ?'))) return;
+      act(b, boxAfter(b), function () { return call('demandeSupprimer', d.id); }).then(function (r) { if (r) { flash = { text: 'Demande supprimée.', ok: true }; load(); } });
+    };
+    return b;
+  }
+  function reouvrirDem(d, b) {
+    if (!window.confirm(tr('Annuler la décision ? La demande repasse « en attente » : vous pourrez la modifier, la transmettre à la direction ou la supprimer.'))) return;
+    act(b, boxAfter(b), function () { return call('demandeReouvrir', d.id); }).then(function (r) { if (r) { flash = { text: 'Décision annulée : la demande est de nouveau en attente.', ok: true }; load(); } });
   }
   // Correction d'une demande encore en attente (oubli, mauvaise date…) par l'agent ou son chef.
   function editor(d, anchor) {
@@ -696,11 +712,15 @@ function DemandesPage() {
     var type = h('select', null, Object.keys(types).map(function (k) { return h('option', { value: k }, types[k]); })); type.value = d.type;
     var d1 = h('input', { type: 'date', value: d.date_debut || '' }); var d2 = h('input', { type: 'date', value: d.date_fin || '' });
     var msg = h('textarea', { rows: 3, maxlength: 500 }); msg.value = d.message || '';
+    var direct = ['acceptee', 'refusee', 'traitee'].indexOf(d.statut) >= 0;
+    var st = h('select', null, ['acceptee', 'refusee', 'traitee'].map(function (k) { return h('option', { value: k }, STATUT_LABEL[k]); })); st.value = d.statut;
+    var rep = h('input', { maxlength: 500, value: d.reponse || '' });
     var box = msgBox(); var ok = h('button', { class: 'primary', type: 'submit' }, 'Enregistrer'); var no = h('button', { type: 'button' }, 'Annuler');
     var form = h('form', { class: 'card', onsubmit: function (ev) {
       ev.preventDefault();
-      act(ok, box, function () { return call('demandeModifier', d.id, { type: type.value, date_debut: d1.value, date_fin: d2.value, message: msg.value }); }, 'Demande modifiée').then(function (r) { if (r) { flash = { text: 'Demande modifiée.', ok: true }; load(); } });
-    } }, h('div', { class: 'row' }, field('Type de demande', type, 'grow2'), field('Du', d1), field('Au', d2)), field('Message', msg), box, h('div', { class: 'sendbar' }, ok, no));
+      var patch = { type: type.value, date_debut: d1.value, date_fin: d2.value, message: msg.value }; if (direct) { patch.statut = st.value; patch.reponse = rep.value; }
+      act(ok, box, function () { return call('demandeModifier', d.id, patch); }, 'Demande modifiée').then(function (r) { if (r) { flash = { text: 'Demande modifiée.', ok: true }; load(); } });
+    } }, h('div', { class: 'row' }, field('Type de demande', type, 'grow2'), field('Du', d1), field('Au', d2)), field('Message', msg), direct ? h('div', { class: 'row' }, field('Décision', st), field('Réponse à l’agent', rep, 'grow2')) : null, box, h('div', { class: 'sendbar' }, ok, no));
     no.onclick = function () { form.remove(); };
     anchor.after(form);
   }
@@ -732,10 +752,11 @@ function DemandesPage() {
       return h('div', { class: 'theme' }, h('h3', null, all, L.types[t], h('span', { class: 'badge' }, items.length)),
         items.map(function (d) {
           var c = h('input', { type: 'checkbox', checked: true, onchange: updateCount }); checks.push({ id: d.id, el: c });
+          var mb = h('button', { type: 'button' }, 'Modifier'); mb.onclick = function () { editor(d, rowEl); };
           var rb = h('button', { type: 'button', class: 'danger' }, 'Refuser'); var ab = h('button', { type: 'button' }, 'Accepter');
           var decide = function (st, b) { var rep = window.prompt(st === 'refusee' ? 'Motif du refus (facultatif) :' : 'Réponse à l’agent (facultatif) :', ''); if (rep === null) return; act(b, box, function () { return call('demandeRepondre', d.id, st, rep); }, 'Réponse enregistrée').then(function (r) { if (r) { flash = { text: 'Réponse enregistrée', ok: true }; load(); } }); };
           rb.onclick = function () { decide('refusee', rb); }; ab.onclick = function () { decide('acceptee', ab); };
-          return h('div', { class: 'pick' }, c, h('div', null, h('b', null, d.agent_nom), d.agent_fonction ? ' · ' + d.agent_fonction : '', h('small', null, frDateTime(d.date_creation) + (d.date_debut ? ' · du ' + frDate(d.date_debut) + (d.date_fin ? ' au ' + frDate(d.date_fin) : '') + (d.reprise ? ' · reprise prévue le ' + frDate(d.reprise) : '') : '')), d.message ? h('div', null, d.message) : null), h('span', null, ab, rb));
+          var rowEl = h('div', { class: 'pick' }, c, h('div', null, h('b', null, d.agent_nom), d.agent_fonction ? ' · ' + d.agent_fonction : '', h('small', null, frDateTime(d.date_creation) + (d.date_debut ? ' · du ' + frDate(d.date_debut) + (d.date_fin ? ' au ' + frDate(d.date_fin) : '') + (d.reprise ? ' · reprise prévue le ' + frDate(d.reprise) : '') : '')), d.message ? h('div', null, d.message) : null), h('span', null, ab, rb, ' ', mb, ' ', supBtn(d))); return rowEl;
         }));
     }).filter(Boolean);
     send.onclick = function () {

@@ -6,6 +6,7 @@ var Demandes = (function () {
   // CFG est lu à l'appel (Apps Script charge les fichiers dans un ordre quelconque)
   var T = new Proxy({}, { get: function (t, k) { return CFG.TYPES_DEMANDE[k]; }, ownKeys: function () { return Object.keys(CFG.TYPES_DEMANDE); }, getOwnPropertyDescriptor: function (t, k) { return k in CFG.TYPES_DEMANDE ? { enumerable: true, configurable: true, value: CFG.TYPES_DEMANDE[k] } : undefined; } });
 
+  var DECIDEES = ['acceptee', 'refusee', 'traitee'];
   function byId(list) { var m = {}; list.forEach(function (x) { m[x.id] = x; }); return m; }
   // Qui traite la demande d'un agent : son responsable d’équipe actif, sinon l'admin.
   function handlerId(agent, agentsById) {
@@ -66,7 +67,8 @@ var Demandes = (function () {
     var d = all.filter(function (x) { return x.id === id; })[0];
     if (!d) throw httpErr_('Demande introuvable');
     if (!(d.agent_id === user.id || canHandle(user, d, agentsById))) throw httpErr_('Demande non accessible', 'FORBIDDEN');
-    if (d.statut !== 'en_attente') throw httpErr_('Cette demande est déjà transmise ou traitée : elle ne peut plus être modifiée');
+    var decidee = DECIDEES.indexOf(d.statut) >= 0 && !d.envoi_id;
+    if (d.statut !== 'en_attente' && !(decidee && canHandle(user, d, agentsById))) throw httpErr_('Cette demande est déjà transmise à la direction ou traitée par elle : elle ne peut plus être modifiée');
     var type = data.type || d.type;
     if (!T[type]) throw httpErr_('Type de demande invalide');
     var debut = data.date_debut !== undefined ? data.date_debut : d.date_debut; var fin = data.date_fin !== undefined ? data.date_fin : d.date_fin;
@@ -75,8 +77,37 @@ var Demandes = (function () {
     if (type !== d.type) d.objet = T[type];
     d.type = type; d.date_debut = debut || ''; d.date_fin = fin || '';
     if (data.message !== undefined) d.message = String(data.message || '').trim();
+    if (decidee) {
+      if (data.statut !== undefined) { if (DECIDEES.indexOf(data.statut) < 0) throw httpErr_('Statut invalide'); d.statut = data.statut; }
+      if (data.reponse !== undefined) d.reponse = String(data.reponse || '').trim().slice(0, 500);
+      d.traite_par = user.nom; d.date_traitement = new Date().toISOString();
+    }
     Store.writeTable('Demandes', all);
     return enrich(d, agentsById);
+  }
+
+  // Annule une décision prise directement (acceptée, refusée, traitée) : la demande redevient « en attente » et peut être modifiée, transmise à la direction ou supprimée.
+  function reouvrir(user, id) {
+    var agentsById = byId(Agents.list()); var all = Store.readTable('Demandes');
+    var d = all.filter(function (x) { return x.id === id; })[0];
+    if (!d || !canHandle(user, d, agentsById)) throw httpErr_('Demande non accessible', 'FORBIDDEN');
+    if (d.statut === 'en_attente') return enrich(d, agentsById);
+    if (d.statut === 'envoyee' || d.envoi_id) throw httpErr_('Cette demande a été transmise à la direction : elle ne peut plus être annulée');
+    d.statut = 'en_attente'; d.reponse = ''; d.traite_par = ''; d.date_traitement = '';
+    Store.writeTable('Demandes', all);
+    return enrich(d, agentsById);
+  }
+
+  // Supprime une demande : l'agent retire la sienne tant qu'elle est en attente ; celui qui la traite supprime aussi une décision directe. Jamais une demande déjà transmise à la direction.
+  function supprimer(user, id) {
+    var agentsById = byId(Agents.list()); var all = Store.readTable('Demandes');
+    var d = all.filter(function (x) { return x.id === id; })[0];
+    if (!d) throw httpErr_('Demande introuvable');
+    var handler = canHandle(user, d, agentsById);
+    if (!(handler || (d.agent_id === user.id && d.statut === 'en_attente'))) throw httpErr_('Demande non accessible', 'FORBIDDEN');
+    if (d.statut === 'envoyee' || d.envoi_id) throw httpErr_('Cette demande a été transmise à la direction : elle ne peut plus être supprimée');
+    Store.writeTable('Demandes', all.filter(function (x) { return x.id !== id; }));
+    return { ok: true, id: id };
   }
 
   function groupBy(items) {
@@ -184,5 +215,5 @@ var Demandes = (function () {
       a_traiter: user.role === 'agent' ? 0 : all.filter(function (d) { return d.statut === 'en_attente' && canHandle(user, d, agentsById); }).length
     };
   }
-  return { modifier: modifier, create: create, list: list, repondre: repondre, envoyerDirection: envoyerDirection, traiterEnvoi: traiterEnvoi, counts: counts };
+  return { modifier: modifier, reouvrir: reouvrir, supprimer: supprimer, create: create, list: list, repondre: repondre, envoyerDirection: envoyerDirection, traiterEnvoi: traiterEnvoi, counts: counts };
 })();
