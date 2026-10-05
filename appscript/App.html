@@ -683,7 +683,7 @@ function DemandesPage() {
   }
   function demandeCard(d, mine) {
     var periode = d.date_debut ? ' · du ' + frDate(d.date_debut) + (d.date_fin ? ' au ' + frDate(d.date_fin) : '') + (d.reprise ? ' · reprise prévue le ' + frDate(d.reprise) : '') : '';
-    var transmise = d.statut === 'envoyee' ? h('p', { class: 'muted' }, 'Traitée : demande transmise à la direction (' + (S.params.prestataire || 'prestataire') + ')') : null;
+    var transmise = d.statut === 'envoyee' ? h('p', { class: 'muted' }, 'Transmise à la direction (' + (S.params.prestataire || 'prestataire') + '), en attente de sa réponse') : null;
     var direct = ['acceptee', 'refusee', 'traitee'].indexOf(d.statut) >= 0 && !d.envoi_id; // décision prise sans passer par la direction
     var mod = (d.statut === 'en_attente' || (direct && !mine)) ? h('button', { type: 'button', onclick: function () { editor(d, card); } }, 'Modifier') : null;
     var rouvre = direct && !mine ? h('button', { type: 'button', onclick: function () { reouvrirDem(d, rouvre); } }, 'Annuler la décision') : null;
@@ -791,8 +791,8 @@ function DemandesPage() {
     if (!isAdmin) out.push(newForm());
     if (staff) {
       out.push(inbox(L), envoisView(L));
-      var done = L.toHandle.filter(function (d) { return d.statut !== 'en_attente'; }).slice(0, 25);
-      if (done.length) out.push(h('section', { class: 'card' }, h('h2', null, 'Dernières demandes traitées'), done.map(function (d) { return demandeCard(d, false); })));
+      var done = L.toHandle.filter(function (d) { return d.statut !== 'en_attente' && d.statut !== 'envoyee'; }).slice(0, 25); // les demandes envoyées sont dans « Envois à la direction »
+      if (done.length) out.push(h('section', { class: 'card' }, h('h2', null, 'Dernières demandes traitées'), h('p', { class: 'muted' }, 'Une erreur ? Tant qu’une demande n’est pas envoyée à la direction, vous pouvez la modifier, annuler votre décision (elle repasse en attente) ou la supprimer.'), done.map(function (d) { return demandeCard(d, false); })));
     }
     if (!isAdmin) out.push(h('section', { class: 'card' }, h('h2', null, 'Mes demandes'), L.mine.length ? L.mine.map(function (d) { return demandeCard(d, true); }) : h('p', { class: 'muted' }, "Vous n'avez fait aucune demande.")));
     return out;

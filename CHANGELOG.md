@@ -2,6 +2,11 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.27.1 — 2026-10-05 — Demandes : affichage plus clair
+
+- Une demande déjà envoyée à la direction n'apparaît plus dans « Dernières demandes traitées » : elle reste dans « Envois à la direction » jusqu'à la réponse, avec la mention « Transmise à la direction, en attente de sa réponse ».
+- Un rappel indique qu'une décision peut être modifiée ou annulée tant que la demande n'est pas envoyée.
+
 ## 3.27.0 — 2026-10-05 — Modifier ou annuler une demande
 
 - Celui qui traite les demandes peut maintenant modifier, supprimer ou annuler la décision d'une demande déjà acceptée, refusée ou traitée, tant qu'elle n'a pas été envoyée à la direction. Une demande dont la décision est annulée repasse « en attente ».

@@ -5843,5 +5843,20 @@
 "Cette demande est déjà transmise à la direction ou traitée par elle : elle ne peut plus être modifiée",
 "This request has already been sent to management or handled by them: it can no longer be edited",
 "هذا الطلب أُرسل إلى الإدارة أو عولج من قبلها: لا يمكن تعديله بعد الآن"
+],
+[
+"Transmise à la direction (",
+"Sent to management (",
+"أُرسل إلى الإدارة ("
+],
+[
+"), en attente de sa réponse",
+"), awaiting their reply",
+"), في انتظار ردّها"
+],
+[
+"Une erreur ? Tant qu’une demande n’est pas envoyée à la direction, vous pouvez la modifier, annuler votre décision (elle repasse en attente) ou la supprimer.",
+"A mistake? As long as a request has not been sent to management, you can edit it, cancel your decision (it goes back to pending) or delete it.",
+"هل هناك خطأ؟ ما دام الطلب لم يُرسل إلى الإدارة، يمكنك تعديله أو إلغاء قرارك (يعود قيد الانتظار) أو حذفه."
 ]
 ]
