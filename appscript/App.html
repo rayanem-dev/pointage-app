@@ -740,7 +740,7 @@ function DemandesPage() {
 
   // Boîte du chef : demandes en attente regroupées par thème, une seule demande envoyée à la direction.
   function inbox(L) {
-    var pending = L.toHandle.filter(function (d) { return d.statut === 'en_attente'; });
+    var pending = L.toHandle.filter(function (d) { return d.statut === 'en_attente' || (d.statut === 'acceptee' && !d.envoi_id); }); // en cours : à traiter ou déjà acceptées, pas encore envoyées
     var box = msgBox(); var checks = [];
     var note = h('input', { placeholder: 'Note pour la direction (facultative)' });
     var send = h('button', { class: 'primary' }, 'Envoyer à la direction');
@@ -756,7 +756,8 @@ function DemandesPage() {
           var rb = h('button', { type: 'button', class: 'danger' }, 'Refuser'); var ab = h('button', { type: 'button' }, 'Accepter');
           var decide = function (st, b) { var rep = window.prompt(st === 'refusee' ? 'Motif du refus (facultatif) :' : 'Réponse à l’agent (facultatif) :', ''); if (rep === null) return; act(b, box, function () { return call('demandeRepondre', d.id, st, rep); }, 'Réponse enregistrée').then(function (r) { if (r) { flash = { text: 'Réponse enregistrée', ok: true }; load(); } }); };
           rb.onclick = function () { decide('refusee', rb); }; ab.onclick = function () { decide('acceptee', ab); };
-          var rowEl = h('div', { class: 'pick' }, c, h('div', null, h('b', null, d.agent_nom), d.agent_fonction ? ' · ' + d.agent_fonction : '', h('small', null, frDateTime(d.date_creation) + (d.date_debut ? ' · du ' + frDate(d.date_debut) + (d.date_fin ? ' au ' + frDate(d.date_fin) : '') + (d.reprise ? ' · reprise prévue le ' + frDate(d.reprise) : '') : '')), d.message ? h('div', null, d.message) : null), h('span', null, ab, rb, ' ', mb, ' ', supBtn(d))); return rowEl;
+          var accepted = d.statut === 'acceptee'; var un = h('button', { type: 'button' }, 'Annuler la décision'); un.onclick = function () { reouvrirDem(d, un); };
+          var rowEl = h('div', { class: 'pick' }, c, h('div', null, h('b', null, d.agent_nom), d.agent_fonction ? ' · ' + d.agent_fonction : '', accepted ? h('span', { class: 'badge acceptee' }, 'Acceptée') : null, h('small', null, frDateTime(d.date_creation) + (d.date_debut ? ' · du ' + frDate(d.date_debut) + (d.date_fin ? ' au ' + frDate(d.date_fin) : '') + (d.reprise ? ' · reprise prévue le ' + frDate(d.reprise) : '') : '')), d.message ? h('div', null, d.message) : null, d.reponse ? h('div', { class: 'reply' }, 'Réponse : ' + d.reponse) : null), h('span', null, accepted ? [un] : [ab, rb], ' ', mb, ' ', supBtn(d))); return rowEl;
         }));
     }).filter(Boolean);
     send.onclick = function () {
@@ -768,13 +769,13 @@ function DemandesPage() {
       });
     };
     updateCount();
-    return h('section', { class: 'card' }, h('h2', null, 'Demandes à traiter' + (pending.length ? ' (' + pending.length + ')' : '')),
-      h('p', { class: 'muted' }, "Les demandes de votre groupe arrivent ici, regroupées par thème. Cochez celles à transmettre : une seule demande groupée part à la direction."),
-      themes.length ? themes : h('p', { class: 'muted' }, 'Aucune demande en attente.'), box,
+    return h('section', { class: 'card' }, h('h2', null, 'Demandes en cours' + (pending.length ? ' (' + pending.length + ')' : '')),
+      h('p', { class: 'muted' }, "Les demandes de votre groupe arrivent ici, regroupées par thème. Acceptez ou refusez ; tant qu’une demande n’est pas envoyée, vous pouvez la modifier, annuler votre décision ou la supprimer. Cochez celles à transmettre : une seule demande groupée part à la direction."),
+      themes.length ? themes : h('p', { class: 'muted' }, 'Aucune demande en cours.'), box,
       themes.length ? h('div', { class: 'sendbar' }, note, send) : null);
   }
   function envoisView(L) {
-    return h('section', { class: 'card' }, h('h2', null, 'Envois à la direction'),
+    return h('section', { class: 'card' }, h('h2', null, 'Historique des demandes transmises à la direction'),
       L.envois.length ? L.envois.map(function (e) {
         var box = msgBox();
         var res = h('select', null, h('option', { value: 'acceptee' }, 'Acceptées'), h('option', { value: 'refusee' }, 'Refusées'), h('option', { value: 'traitee' }, 'Traitées'));
@@ -784,15 +785,15 @@ function DemandesPage() {
           h('small', null, plural(+e.nb, 'demande') + ' · par ' + e.chef_nom + (e.note ? ' · ' + e.note : '')),
           e.groupes.map(function (g) { return h('p', null, h('b', null, g.label + ' (' + g.items.length + ') : '), g.items.map(function (d) { return d.agent_nom; }).join(', ')); }),
           e.statut === 'envoye' ? h('div', { class: 'sendbar' }, res, rep, btn) : (e.reponse ? h('p', { class: 'reply' }, 'Réponse : ' + e.reponse) : null), box);
-      }) : h('p', { class: 'muted' }, 'Aucun envoi pour le moment.'));
+      }) : h('p', { class: 'muted' }, 'Aucune demande transmise pour le moment.'));
   }
   function view(L) {
     var out = [];
     if (!isAdmin) out.push(newForm());
     if (staff) {
       out.push(inbox(L), envoisView(L));
-      var done = L.toHandle.filter(function (d) { return d.statut !== 'en_attente' && d.statut !== 'envoyee'; }).slice(0, 25); // les demandes envoyées sont dans « Envois à la direction »
-      if (done.length) out.push(h('section', { class: 'card' }, h('h2', null, 'Dernières demandes traitées'), h('p', { class: 'muted' }, 'Une erreur ? Tant qu’une demande n’est pas envoyée à la direction, vous pouvez la modifier, annuler votre décision (elle repasse en attente) ou la supprimer.'), done.map(function (d) { return demandeCard(d, false); })));
+      var done = L.toHandle.filter(function (d) { return ['refusee', 'traitee'].indexOf(d.statut) >= 0 && !d.envoi_id; }).slice(0, 25); // les demandes envoyées sont dans « Envois à la direction »
+      if (done.length) out.push(h('section', { class: 'card' }, h('h2', null, 'Demandes refusées ou traitées directement'), h('p', { class: 'muted' }, 'Une erreur ? Vous pouvez modifier la demande, annuler votre décision (elle repasse en cours) ou la supprimer.'), done.map(function (d) { return demandeCard(d, false); })));
     }
     if (!isAdmin) out.push(h('section', { class: 'card' }, h('h2', null, 'Mes demandes'), L.mine.length ? L.mine.map(function (d) { return demandeCard(d, true); }) : h('p', { class: 'muted' }, "Vous n'avez fait aucune demande.")));
     return out;

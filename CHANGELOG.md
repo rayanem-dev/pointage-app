@@ -2,6 +2,12 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.28.0 — 2026-10-05 — Demandes : en cours, puis historique
+
+- La page Demandes est réorganisée : « Demandes en cours » (à traiter et déjà acceptées, pas encore envoyées), puis les demandes refusées ou traitées directement, puis en bas l'« Historique des demandes transmises à la direction ».
+- Une demande acceptée reste dans « Demandes en cours » : on peut la modifier, annuler la décision, la supprimer ou la transmettre à la direction avec les autres.
+- Une demande transmise à la direction passe dans l'historique et ne se modifie plus.
+
 ## 3.27.1 — 2026-10-05 — Demandes : affichage plus clair
 
 - Une demande déjà envoyée à la direction n'apparaît plus dans « Dernières demandes traitées » : elle reste dans « Envois à la direction » jusqu'à la réponse, avec la mention « Transmise à la direction, en attente de sa réponse ».

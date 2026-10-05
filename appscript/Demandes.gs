@@ -165,15 +165,15 @@ var Demandes = (function () {
     return lines.join('\n');
   }
 
-  // Regroupe les demandes en attente (par thème) en un seul envoi à la direction.
+  // Regroupe les demandes en cours (en attente, ou déjà acceptées) (par thème) en un seul envoi à la direction.
   function envoyerDirection(user, ids, note) {
     if (user.role === 'agent') throw httpErr_('Accès refusé', 'FORBIDDEN');
     var params = Params.get();
     var agentsById = byId(Agents.list());
     var all = Store.readTable('Demandes');
     var wanted = (ids && ids.length) ? ids : null;
-    var chosen = all.filter(function (d) { return d.statut === 'en_attente' && canHandle(user, d, agentsById) && (!wanted || wanted.indexOf(d.id) >= 0); });
-    if (!chosen.length) throw httpErr_('Aucune demande en attente à envoyer');
+    var chosen = all.filter(function (d) { return (d.statut === 'en_attente' || (d.statut === 'acceptee' && !d.envoi_id)) && canHandle(user, d, agentsById) && (!wanted || wanted.indexOf(d.id) >= 0); });
+    if (!chosen.length) throw httpErr_('Aucune demande à envoyer');
     var items = chosen.map(function (d) { return enrich(d, agentsById); });
     var groups = groupBy(items);
     var envoi = { id: newId_('E'), chef_id: user.id, date_envoi: new Date().toISOString(), nb: chosen.length, themes: groups.map(function (g) { return g.label + ' (' + g.items.length + ')'; }).join(', '), note: String(note || '').slice(0, 300), statut: 'envoye', reponse: '', date_reponse: '' };

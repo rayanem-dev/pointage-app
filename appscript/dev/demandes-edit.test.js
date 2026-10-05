@@ -42,3 +42,18 @@ test('demandes : décision directe modifiable, annulable, supprimable ; jamais u
   fail(call(admin, 'demandeReouvrir', d1.id), /transmise/);
   fail(call(admin, 'demandeModifier', d1.id, { message: 'x' }), /ne peut plus/);
 });
+
+test('demandes : une demande acceptée reste « en cours » et part à la direction avec les autres', () => {
+  run("Setup.install('admin@t.fr', 'adminpw12', 'Admin')");
+  const admin = ok(call(null, 'login', 'admin@t.fr', 'adminpw12')).token;
+  ok(call(admin, 'agentCreate', { nom: 'AGENT ENV', email: 'ev@t.fr', role: 'agent', password: 'agentpw123' }));
+  const ag = ok(call(null, 'login', 'ev@t.fr', 'agentpw123')).token;
+  const a = ok(call(ag, 'demandeCreate', { type: 'ats' })); const b = ok(call(ag, 'demandeCreate', { type: 'contrat' })); const c = ok(call(ag, 'demandeCreate', { type: 'attestation_cnas' }));
+  ok(call(admin, 'demandeRepondre', a.id, 'acceptee', 'ok'));
+  ok(call(admin, 'demandeRepondre', c.id, 'refusee', 'non'));
+  const r = ok(call(admin, 'demandesEnvoyer', [], ''));
+  assert.strictEqual(r.envoi.nb, 2, 'la demande acceptée et celle en attente partent ; la refusée reste');
+  const l = ok(call(admin, 'demandesList'));
+  const st = Object.fromEntries(l.toHandle.map((d) => [d.id, d.statut]));
+  assert.deepStrictEqual([st[a.id], st[b.id], st[c.id]], ['envoyee', 'envoyee', 'refusee']);
+});

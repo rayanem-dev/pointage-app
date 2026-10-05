@@ -5858,5 +5858,45 @@
 "Une erreur ? Tant qu’une demande n’est pas envoyée à la direction, vous pouvez la modifier, annuler votre décision (elle repasse en attente) ou la supprimer.",
 "A mistake? As long as a request has not been sent to management, you can edit it, cancel your decision (it goes back to pending) or delete it.",
 "هل هناك خطأ؟ ما دام الطلب لم يُرسل إلى الإدارة، يمكنك تعديله أو إلغاء قرارك (يعود قيد الانتظار) أو حذفه."
+],
+[
+"Demandes en cours",
+"Requests in progress",
+"طلبات قيد المعالجة"
+],
+[
+"Les demandes de votre groupe arrivent ici, regroupées par thème. Acceptez ou refusez ; tant qu’une demande n’est pas envoyée, vous pouvez la modifier, annuler votre décision ou la supprimer. Cochez celles à transmettre : une seule demande groupée part à la direction.",
+"Your group's requests arrive here, grouped by theme. Accept or refuse; as long as a request has not been sent, you can edit it, cancel your decision or delete it. Tick those to forward: a single grouped request goes to management.",
+"تصل هنا طلبات مجموعتك مجمّعة حسب الموضوع. اقبل أو ارفض؛ ما دام الطلب لم يُرسل يمكنك تعديله أو إلغاء قرارك أو حذفه. حدّد ما تريد إحالته: يُرسل طلب مجمّع واحد إلى الإدارة."
+],
+[
+"Aucune demande en cours.",
+"No requests in progress.",
+"لا توجد طلبات قيد المعالجة."
+],
+[
+"Demandes refusées ou traitées directement",
+"Requests refused or handled directly",
+"طلبات مرفوضة أو معالجة مباشرة"
+],
+[
+"Une erreur ? Vous pouvez modifier la demande, annuler votre décision (elle repasse en cours) ou la supprimer.",
+"A mistake? You can edit the request, cancel your decision (it goes back to in progress) or delete it.",
+"هل هناك خطأ؟ يمكنك تعديل الطلب أو إلغاء قرارك (يعود قيد المعالجة) أو حذفه."
+],
+[
+"Historique des demandes transmises à la direction",
+"History of requests sent to management",
+"سجل الطلبات المُحالة إلى الإدارة"
+],
+[
+"Aucune demande transmise pour le moment.",
+"No requests sent yet.",
+"لا توجد طلبات مُحالة حتى الآن."
+],
+[
+"Aucune demande à envoyer",
+"No request to send",
+"لا يوجد طلب للإرسال"
 ]
 ]
