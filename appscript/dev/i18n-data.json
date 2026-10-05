@@ -5778,5 +5778,20 @@
 " · dernière fois : ",
 " · last run: ",
 " · آخر مرة: "
+],
+[
+"Glissez vos documents ici",
+"Drop your documents here",
+"أفلت مستنداتك هنا"
+],
+[
+"plusieurs à la fois : fiches de paie, titres de congé, contrats, attestations… (10 Mo maximum chacun)",
+"several at once: payslips, leave tickets, contracts, certificates… (10 MB maximum each)",
+"عدة ملفات دفعة واحدة: كشوف الراتب، سندات العطلة، العقود، الشهادات… (10 ميغابايت كحد أقصى لكل ملف)"
+],
+[
+"ou choisir des fichiers",
+"or choose files",
+"أو اختر ملفات"
 ]
 ]

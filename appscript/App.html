@@ -878,8 +878,10 @@ function DocumentsPage() {
         loadList(); drawQueue();
       });
     };
-    go.onclick = function () {
-      var fl = Array.prototype.slice.call(files.files); if (!fl.length) { upBox.show('Choisissez un ou plusieurs fichiers.', false); return; }
+    go.onclick = function () { analyser(Array.prototype.slice.call(files.files)); };
+    function analyser(fl) {
+      if (!fl.length) { upBox.show('Choisissez un ou plusieurs fichiers.', false); return; }
+      if (go.disabled) return;
       go.disabled = true; var done = 0; var bad = [];
       var next = function () {
         if (done >= fl.length) { go.disabled = false; files.value = ''; upBox.show('✓ ' + (fl.length - bad.length) + ' document(s) analysé(s)' + (bad.length ? ' · ⚠ ' + bad.join(' ; ') : '') + '. Vérifiez la liste ci-dessous avant l’envoi.', !bad.length); drawQueue(); return; }
@@ -889,11 +891,18 @@ function DocumentsPage() {
           .then(function () { done += 1; drawQueue(); next(); });
       };
       next();
-    };
+    }
+    // Glisser-déposer : les fichiers lâchés (ou choisis) sont analysés tout de suite.
+    files.addEventListener('change', function () { if (files.files.length) analyser(Array.prototype.slice.call(files.files)); });
+    var zone = h('label', { class: 'dropzone' }, files, h('span', { class: 'dz-icon' }, '📂'), h('b', null, 'Glissez vos documents ici'),
+      h('span', { class: 'muted' }, 'plusieurs à la fois : fiches de paie, titres de congé, contrats, attestations… (10 Mo maximum chacun)'), h('span', { class: 'dz-btn' }, 'ou choisir des fichiers'));
+    ['dragenter', 'dragover'].forEach(function (ev) { zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.add('over'); }); });
+    ['dragleave', 'drop'].forEach(function (ev) { zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.remove('over'); }); });
+    zone.addEventListener('drop', function (e) { var fl = e.dataTransfer && e.dataTransfer.files; if (fl && fl.length) analyser(Array.prototype.slice.call(fl)); });
     var form = h('section', { class: 'card' }, h('h2', null, 'Déposer des documents en vrac'),
       h('p', { class: 'muted' }, 'Déposez plusieurs documents à la fois (fiches de paie, titres de congé, contrats, attestations CNAS…). Sijil reconnaît l’agent, le type et les dates, puis propose le nom. Vous vérifiez, puis vous envoyez : rien n’arrive chez l’agent avant votre accord.'),
-      h('div', { class: 'row' }, field('Fichiers (10 Mo maximum chacun)', files, 'grow2'), field('Agent pour tous les fichiers (facultatif)', forceAgent)),
-      h('label', { class: 'inline' }, pdfChk, ' Convertir les images (photos, scans JPG ou PNG) en PDF'), upBox, go);
+      zone, h('div', { class: 'row' }, field('Agent pour tous les fichiers (facultatif)', forceAgent)),
+      h('label', { class: 'inline' }, pdfChk, ' Convertir les images (photos, scans JPG ou PNG) en PDF'), upBox);
     wrap.append(form, queue);
     sel.onchange = loadList;
     call('agentsVisible', true).then(function (agents) {

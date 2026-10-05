@@ -2,6 +2,10 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.26.1 — 2026-10-05 — Glisser-déposer des documents
+
+- Dans « Documents », glissez directement vos fichiers dans la zone prévue (comme pour le bordereau du contrat) : l'analyse démarre aussitôt. Le choix par bouton reste possible.
+
 ## 3.26.0 — 2026-10-05 — Pointage automatique
 
 - Une case « Pointage automatique » dans la barre « Compléter » : à l'heure choisie (6 h 30 par défaut), Sijil copie pour chaque agent le pointage de la veille, absences comprises.
