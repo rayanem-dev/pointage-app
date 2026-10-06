@@ -147,6 +147,9 @@ var Demandes = (function () {
     return enrich(d, agentsById);
   }
 
+  // « Je vous remercie de bien vouloir préparer <…> pour : » : tournure propre à chaque type de demande.
+  var PHRASE = { titre_conge: 'le(s) Titre(s) de congé', attestation_travail: 'l\'(les) Attestation(s) de travail', ats: 'l\'(les) ATS', fiche_emolument: 'la (les) Fiche(s) d\'émoluments', contrat: 'la (les) Copie(s) du contrat',
+    attestation_cnas: 'l\'(les) Attestation(s) CNAS', maj_cnas: 'la (les) Mise(s) à jour CNAS', attestation_emoluments: 'l\'(les) Attestation(s) d\'émoluments', prolongation_conge: 'la (les) Prolongation(s) de congé', prolongation_sejour: 'la (les) Prolongation(s) de séjour' };
   function esc(t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   // Message à la direction : un bloc par thème. Titre de congé : nom, date de sortie, durée (jours), date de reprise.
   // Retourne { text, html } (le texte brut sert aussi de secours à l'écran).
@@ -156,7 +159,7 @@ var Demandes = (function () {
     if (envoi.note) { t.push(envoi.note, ''); hh.push('<p>' + esc(envoi.note) + '</p>'); }
     groups.forEach(function (g) {
       var conge = g.type === 'titre_conge';
-      var intro = conge ? 'Je vous remercie de bien vouloir préparer le(s) Titre(s) de congé pour :' : 'Je vous remercie de bien vouloir traiter les demandes suivantes — ' + g.label + ' (' + g.items.length + ') :';
+      var intro = 'Je vous remercie de bien vouloir préparer ' + (PHRASE[g.type] || (g.label + ' (' + g.items.length + ')')) + ' pour :';
       t.push(intro, ''); hh.push('<p>' + esc(intro) + '</p>');
       g.items.forEach(function (d) {
         var rep = d.reprise !== undefined ? d.reprise : reprise(d, Agents.get(d.agent_id));
@@ -167,7 +170,8 @@ var Demandes = (function () {
           if (rep) lignes.push(['Durée', Dates.diffDays(d.date_debut, rep) + ' jours', true]);
           if (rep) lignes.push(['Date de reprise', Dates.frDate(rep)]);
         } else {
-          if (d.date_debut) lignes.push(['Du', Dates.frDate(d.date_debut) + (d.date_fin ? ' au ' + Dates.frDate(d.date_fin) : '')]);
+          if (d.date_debut && d.date_fin) { lignes.push(['Date de début', Dates.frDate(d.date_debut)]); lignes.push(['Date de fin', Dates.frDate(d.date_fin)]); lignes.push(['Durée', (Dates.diffDays(d.date_debut, d.date_fin) + 1) + ' jours', true]); }
+          else if (d.date_debut) lignes.push(['À partir du', Dates.frDate(d.date_debut)]);
         }
         if (d.message) lignes.push(['Précisions', d.message]);
         t.push(nom); lignes.forEach(function (l) { t.push('    - ' + l[0] + ' : ' + l[1]); }); t.push('');

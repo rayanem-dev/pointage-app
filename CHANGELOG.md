@@ -2,6 +2,10 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.29.3 — 2026-10-06 — Même modèle de message pour toutes les demandes
+
+- Toutes les demandes envoyées à la direction suivent le modèle du titre de congé : « Je vous remercie de bien vouloir préparer … pour : », le nom de chaque agent, ses dates (et la durée en jours) puis « Cordialement ». Une phrase d'introduction par type de demande.
+
 ## 3.29.2 — 2026-10-06 — Signature des messages à la direction
 
 - Les messages envoyés à la direction sont signés « Admin Sijil ».
