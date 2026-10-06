@@ -2,6 +2,10 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.29.5 — 2026-10-06 — Dates toujours visibles dans la grille de pointage
+
+- Quand on descend dans la grille de pointage, la ligne des dates et des jours (avec la colonne d'aujourd'hui) reste affichée sous la barre du haut, au lieu de disparaître derrière elle. Correction : la colonne du jour d'aujourd'hui défilait avec les lignes au lieu de rester en haut.
+
 ## 3.29.4 — 2026-10-06 — Types de demandes simplifiés
 
 - « ATS » et « Attestation d'émoluments » ne sont plus proposés dans les nouvelles demandes (on garde « Fiche d'émoluments »). Les demandes déjà faites de ces types restent visibles et peuvent être traitées normalement.

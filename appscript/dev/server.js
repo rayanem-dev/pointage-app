@@ -68,7 +68,7 @@ function seed() {
   // quelques demandes pour la démo
   const agentTok = ok(call(null, 'login', 'hamlaoui@demo.local', 'demo1234')).token;
   ok(call(agentTok, 'demandeCreate', { type: 'titre_conge', date_debut: '2026-10-25', date_fin: '2026-11-22', message: 'Retour famille' }));
-  ok(call(agentTok, 'demandeCreate', { type: 'ats', message: 'Pour dossier CNAS' }));
+  ok(call(agentTok, 'demandeCreate', { type: 'attestation_cnas', message: 'Pour dossier CNAS' }));
   const tadj = ok(call(null, 'login', 'boudiaf@demo.local', 'demo1234')).token;
   ok(call(tadj, 'demandeCreate', { type: 'titre_conge', message: '' }));
   ok(call(tadj, 'demandeCreate', { type: 'fiche_emolument', message: 'Septembre' }));

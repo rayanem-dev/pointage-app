@@ -315,6 +315,12 @@ function actualiser() {
   var vide = S.user && S.user.role === 'admin' ? call('cacheVider').catch(function () {}) : Promise.resolve();
   vide.then(function () { S.badges = null; S.verCheck = null; S.clientsFetched = false; S.usersByCode = {}; S.badgesAt = 0; render(); toast(tr('Données actualisées.')); });
 }
+// Hauteur de la barre du haut (elle peut passer sur 2-3 lignes) : sert à coller la grille de pointage juste dessous (--navh).
+function navHeight() {
+  var top = document.querySelector('.top'); if (!top) return;
+  document.documentElement.style.setProperty('--navh', top.offsetHeight + 'px');
+  if (!top._ro && window.ResizeObserver) { top._ro = new ResizeObserver(function () { document.documentElement.style.setProperty('--navh', top.offsetHeight + 'px'); }); top._ro.observe(top); }
+}
 function render() {
   var root = $app();
   if (!S.user) { root.replaceChildren(S.charte ? h('div', { class: 'login', style: 'max-width:760px' }, CharteBlock(function () { S.charte = false; render(); })) : loginView()); return; }
@@ -341,6 +347,7 @@ function render() {
   if (S.owner) checkVersion().then(function (r) { var a = document.querySelector('a[data-path="/version"]'); if (a) { a.textContent = tr('Version') + (r.c === 0 ? ' ✓' : r.c === null ? '' : ' ⚠'); a.title = r.c === 0 ? tr('✓ Tout est à jour') : ''; } });
   setTimeout(refreshBadges, 0);
   main.append(ROUTES[path]());
+  navHeight();
   paintBadges();
   window.scrollTo(0, 0);
 }

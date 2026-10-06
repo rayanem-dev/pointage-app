@@ -61,7 +61,8 @@ tr.picked td { background: var(--picked); } .bulk { border-color: var(--accent);
 .tabs button.on { border-bottom-color: var(--accent, #1f5fbf); font-weight: 700; }
 .chip { display: inline-block; min-width: 26px; padding: 1px 7px; border: 1px solid rgba(0,0,0,.25); border-radius: 4px; text-align: center; font-size: .85rem; }
 .legend { color: var(--muted); font-size: .85rem; margin: 10px 0 0; } .legend .chip { margin: 0 2px 0 8px; }
-.gridwrap { overflow: auto; max-height: 75vh; border: 1px solid var(--line); border-radius: 6px; }
+.gridwrap { overflow: auto; max-height: min(75vh, max(240px, calc(100vh - var(--navh, 130px) - 190px))); border: 1px solid var(--line); border-radius: 6px; }
+.gridwrap:has(.grid) { position: sticky; top: var(--navh, 0px); z-index: 6; background: var(--card); } /* la grille reste sous la barre du haut : dates et jours toujours visibles, aujourd'hui compris */
 table { border-collapse: collapse; width: 100%; }
 .grid { width: auto; font-size: .82rem; } .grid th, .grid td { border: 1px solid var(--gridline); padding: 0; text-align: center; height: 28px; }
 .grid th { background: var(--head2); padding: 2px 0; min-width: 27px; position: sticky; top: 0; z-index: 2; } .grid th small { font-size: .65rem; } .grid th.fri { background: var(--fri); }
@@ -75,7 +76,7 @@ table { border-collapse: collapse; width: 100%; }
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
 .stat { text-align: center; } .stat b { font-size: 1.8rem; display: block; } .stat.st-T, .stat.st-R, .stat.st-ABS { color: #fff; } .stat.st-T small, .stat.st-R small, .stat.st-ABS small { color: #fff; opacity: .9; }
 .stat.pos b { color: var(--pos); } .stat.neg b { color: var(--neg); }
-.today { display: grid; gap: 6px; border-left: 8px solid var(--line); } .today.s-T { border-color: var(--c-T); } .today.s-R { border-color: var(--c-R); } .today.s-ABS { border-color: var(--c-ABS); }
+.card.today { display: grid; gap: 6px; border-left: 8px solid var(--line); } .card.today.s-T { border-color: var(--c-T); } .card.today.s-R { border-color: var(--c-R); } .card.today.s-ABS { border-color: var(--c-ABS); } /* carte « aujourd'hui » seulement : jamais la colonne du jour dans la grille */
 .today .big { font-size: 1.6rem; font-weight: 700; } .today .days { font-size: 1.1rem; }
 .tile { text-decoration: none; color: inherit; display: block; cursor: pointer; } .tile b { font-size: 1.4rem; }
 .bar { height: 14px; border-radius: 7px; background: var(--track); overflow: hidden; margin: 8px 0; } .bar div { height: 100%; }
