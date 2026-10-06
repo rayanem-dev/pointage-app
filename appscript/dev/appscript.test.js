@@ -143,7 +143,10 @@ test('demandes : 10 types, regroupement par thème par le chef, une seule demand
   assert.deepStrictEqual(sent.groupes.map((g) => [g.label, g.n]), [['Titre de congé', 2], ["Fiche d'émoluments", 1], ['Prolongation de séjour', 1]]);
   assert.strictEqual(sent.mail, true); assert.strictEqual(env.mails.length, 1);
   assert.strictEqual(env.mails[0].to, 'direction@client.dz');
-  assert.match(env.mails[0].body, /TITRE DE CONGÉ \(2\)[\s\S]*AGENT UN[\s\S]*du 01\/11\/2026 au 28\/11\/2026/);
+  assert.match(env.mails[0].body, /^Bonjour,/);
+  assert.match(env.mails[0].body, /préparer le\(s\) Titre\(s\) de congé pour :\n\nAGENT UN[^\n]*\n    - Date de sortie : 01\/11\/2026\n    - Durée : 28 jours\n    - Date de reprise : 29\/11\/2026/);
+  assert.match(env.mails[0].body, /Cordialement,/);
+  assert.match(env.mails[0].htmlBody, /<li>Durée : <b>28 jours<\/b><\/li>/);
   fail(call(T.chef, 'demandesEnvoyer'), /Aucune demande/);
   assert.strictEqual(ok(call(T.ag, 'demandesList')).mine.find((d) => d.id === d1.id).statut, 'envoyee');
   T.envoi = sent.envoi.id;

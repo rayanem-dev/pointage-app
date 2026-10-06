@@ -147,22 +147,35 @@ var Demandes = (function () {
     return enrich(d, agentsById);
   }
 
+  function esc(t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  // Message à la direction : un bloc par thème. Titre de congé : nom, date de sortie, durée (jours), date de reprise.
+  // Retourne { text, html } (le texte brut sert aussi de secours à l'écran).
   function buildMessage(envoi, groups, params, chef) {
-    var lines = [];
-    lines.push('Demande groupée N° ' + envoi.id + ' — ' + (params.prestataire_nom || 'Prestataire'));
-    lines.push('Émise par : ' + (chef ? chef.nom : 'Administration') + ' le ' + Dates.frDate(envoi.date_envoi.slice(0, 10)));
-    lines.push('Nombre de demandes : ' + envoi.nb);
-    if (envoi.note) lines.push('Note : ' + envoi.note);
+    var sig = (chef ? chef.nom : 'Administration') + (params.prestataire_nom ? '\n' + params.prestataire_nom : '');
+    var t = ['Bonjour,', '']; var hh = ['<p>Bonjour,</p>'];
+    if (envoi.note) { t.push(envoi.note, ''); hh.push('<p>' + esc(envoi.note) + '</p>'); }
     groups.forEach(function (g) {
-      lines.push(''); lines.push(g.label.toUpperCase() + ' (' + g.items.length + ')');
+      var conge = g.type === 'titre_conge';
+      var intro = conge ? 'Je vous remercie de bien vouloir préparer le(s) Titre(s) de congé pour :' : 'Je vous remercie de bien vouloir traiter les demandes suivantes — ' + g.label + ' (' + g.items.length + ') :';
+      t.push(intro, ''); hh.push('<p>' + esc(intro) + '</p>');
       g.items.forEach(function (d) {
-        var periode = d.date_debut ? ' — du ' + Dates.frDate(d.date_debut) + (d.date_fin ? ' au ' + Dates.frDate(d.date_fin) : '') : '';
         var rep = d.reprise !== undefined ? d.reprise : reprise(d, Agents.get(d.agent_id));
-        if (rep) periode += ' — reprise le ' + Dates.frDate(rep);
-        lines.push(' • ' + d.agent_nom + (d.agent_fonction ? ' (' + d.agent_fonction + ')' : '') + periode + (d.message ? ' — ' + d.message : ''));
+        var nom = d.agent_nom + (d.agent_fonction ? ' (' + d.agent_fonction + ')' : '');
+        var lignes = [];
+        if (conge && d.date_debut) {
+          lignes.push(['Date de sortie', Dates.frDate(d.date_debut)]);
+          if (rep) lignes.push(['Durée', Dates.diffDays(d.date_debut, rep) + ' jours', true]);
+          if (rep) lignes.push(['Date de reprise', Dates.frDate(rep)]);
+        } else {
+          if (d.date_debut) lignes.push(['Du', Dates.frDate(d.date_debut) + (d.date_fin ? ' au ' + Dates.frDate(d.date_fin) : '')]);
+        }
+        if (d.message) lignes.push(['Précisions', d.message]);
+        t.push(nom); lignes.forEach(function (l) { t.push('    - ' + l[0] + ' : ' + l[1]); }); t.push('');
+        hh.push('<p style="margin:0 0 4px"><b>' + esc(nom) + '</b></p><ul style="margin:0 0 14px">' + lignes.map(function (l) { return '<li>' + esc(l[0]) + ' : ' + (l[2] ? '<b>' + esc(l[1]) + '</b>' : esc(l[1])) + '</li>'; }).join('') + '</ul>');
       });
     });
-    return lines.join('\n');
+    t.push('Cordialement,', '', sig); hh.push('<p>Cordialement,</p><p>' + esc(sig).replace(/\n/g, '<br>') + '</p>');
+    return { text: t.join('\n'), html: '<div style="font-family:Arial,sans-serif;font-size:14px">' + hh.join('') + '</div>' };
   }
 
   // Regroupe les demandes en cours (en attente, ou déjà acceptées) (par thème) en un seul envoi à la direction.
@@ -180,11 +193,11 @@ var Demandes = (function () {
     chosen.forEach(function (d) { d.statut = 'envoyee'; d.envoi_id = envoi.id; });
     Store.writeTable('Demandes', all);
     Store.writeTable('Envois', Store.readTable('Envois').concat([envoi]));
-    var text = buildMessage(envoi, groups, params, user);
+    var msg = buildMessage(envoi, groups, params, user); var text = msg.text;
     var mail = false;
     if (params.direction_email) {
       try {
-        MailApp.sendEmail({ to: params.direction_email, subject: 'Demande groupée — ' + (params.prestataire_nom || 'Prestataire') + ' — ' + envoi.nb + ' demande(s)', body: text });
+        MailApp.sendEmail({ to: params.direction_email, subject: 'Demande groupée — ' + (params.prestataire_nom || 'Prestataire') + ' — ' + envoi.nb + ' demande(s)', body: text, htmlBody: msg.html });
         mail = true;
       } catch (e) { Logger.log('Envoi e-mail impossible : ' + e.message); }
     }
