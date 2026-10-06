@@ -4,7 +4,7 @@
 
 ## 3.29.1 — 2026-10-06 — Nouveau format du message de titre de congé
 
-- Le message envoyé à la direction pour les titres de congé suit un modèle simple : « Je vous remercie de bien vouloir préparer le(s) Titre(s) de congé pour : », puis pour chaque agent la date de sortie, la durée en jours et la date de reprise, et « Cordialement » avec le nom de l'expéditeur.
+- Le message envoyé à la direction pour les titres de congé suit un modèle simple : « Je vous remercie de bien vouloir préparer le(s) Titre(s) de congé pour : », puis pour chaque agent la date de sortie, la durée en jours et la date de reprise, et « Cordialement » suivi de votre nom.
 
 ## 3.29.0 — 2026-10-06 — Responsable pointage et personnel administratif
 
