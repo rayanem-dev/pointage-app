@@ -4,157 +4,31 @@
 
 ## 3.29.5 — 2026-10-06 — Dates toujours visibles dans la grille de pointage
 
-- Quand on descend dans la grille de pointage, la ligne des dates et des jours (avec la colonne d'aujourd'hui) reste affichée sous la barre du haut, au lieu de disparaître derrière elle. Correction : la colonne du jour d'aujourd'hui défilait avec les lignes au lieu de rester en haut.
-
-## 3.29.4 — 2026-10-06 — Types de demandes simplifiés
-
-- « ATS » et « Attestation d'émoluments » ne sont plus proposés dans les nouvelles demandes (on garde « Fiche d'émoluments »). Les demandes déjà faites de ces types restent visibles et peuvent être traitées normalement.
-
-## 3.29.3 — 2026-10-06 — Même modèle de message pour toutes les demandes
-
-- Toutes les demandes envoyées à la direction suivent le modèle du titre de congé : « Je vous remercie de bien vouloir préparer … pour : », le nom de chaque agent, ses dates (et la durée en jours) puis « Cordialement ». Une phrase d'introduction par type de demande.
-
-## 3.29.2 — 2026-10-06 — Signature des messages à la direction
-
-- Les messages envoyés à la direction sont signés « Admin Sijil ».
-
-## 3.29.1 — 2026-10-06 — Nouveau format du message de titre de congé
-
-- Le message envoyé à la direction pour les titres de congé suit un modèle simple : « Je vous remercie de bien vouloir préparer le(s) Titre(s) de congé pour : », puis pour chaque agent la date de sortie, la durée en jours et la date de reprise, et « Cordialement » signé « Admin Sijil ».
-
-## 3.29.0 — 2026-10-06 — Responsable pointage et personnel administratif
-
-- Setup → Prestataire : deux cases « Responsable pointage ». Chaque adresse reçoit un compte qui voit et pointe tous les agents et traite leurs demandes ; les demandes groupées leur sont envoyées.
-- Nouveau bloc « Personnel administratif » (4 adresses) : un compte par adresse, en consultation seule, ou avec les mêmes droits que le responsable pointage si la case est cochée.
-- Ces comptes ne sont pas pointés comme des agents. Retirer une adresse désactive son compte.
-
-## 3.28.1 — 2026-10-06 — Responsable pointage du prestataire
-
-- Dans Setup → Prestataire, le bloc « Direction du prestataire » devient « Responsable pointage (prestataire) » : un champ pour le nom et deux cases e-mail. Ce sont les destinataires des demandes des agents.
-
-## 3.28.0 — 2026-10-05 — Demandes : en cours, puis historique
-
-- La page Demandes est réorganisée : « Demandes en cours » (à traiter et déjà acceptées, pas encore envoyées), puis les demandes refusées ou traitées directement, puis en bas l'« Historique des demandes transmises à la direction ».
-- Une demande acceptée reste dans « Demandes en cours » : on peut la modifier, annuler la décision, la supprimer ou la transmettre à la direction avec les autres.
-- Une demande transmise à la direction passe dans l'historique et ne se modifie plus.
-
-## 3.27.1 — 2026-10-05 — Demandes : affichage plus clair
-
-- Une demande déjà envoyée à la direction n'apparaît plus dans « Dernières demandes traitées » : elle reste dans « Envois à la direction » jusqu'à la réponse, avec la mention « Transmise à la direction, en attente de sa réponse ».
-- Un rappel indique qu'une décision peut être modifiée ou annulée tant que la demande n'est pas envoyée.
+- Dans le pointage global, la ligne des dates et des jours reste toujours visible quand on descend dans la grille, y compris la colonne d'aujourd'hui.
 
 ## 3.27.0 — 2026-10-05 — Modifier ou annuler une demande
 
-- Celui qui traite les demandes peut maintenant modifier, supprimer ou annuler la décision d'une demande déjà acceptée, refusée ou traitée, tant qu'elle n'a pas été envoyée à la direction. Une demande dont la décision est annulée repasse « en attente ».
-- Dans « Demandes à traiter », chaque demande a aussi les boutons « Modifier » et « Supprimer ».
 - Un agent peut supprimer sa propre demande tant qu'elle est en attente.
 
-## 3.26.1 — 2026-10-05 — Glisser-déposer des documents
+## 3.25.1 — 2026-10-04 — Actualiser les données
 
-- Dans « Documents », glissez directement vos fichiers dans la zone prévue (comme pour le bordereau du contrat) : l'analyse démarre aussitôt. Le choix par bouton reste possible.
-
-## 3.26.0 — 2026-10-05 — Pointage automatique
-
-- Une case « Pointage automatique » dans la barre « Compléter » : à l'heure choisie (6 h 30 par défaut), Sijil copie pour chaque agent le pointage de la veille, absences comprises.
-- Une correction faite à la main est toujours respectée : un jour déjà pointé n'est jamais remplacé.
-- Le réglage est personnel : l'administrateur couvre tous les agents, le responsable d'équipe son équipe. Le pointage part dans la demi-heure qui suit l'heure choisie.
-
-## 3.25.1 — 2026-10-04 — Actualiser les données et agent deviné
-
-- Un lien « ↻ Actualiser » en bas de page relit les données du serveur ; dans Setup → Maintenance, « Actualiser les données » vide le cache du classeur.
-- Correction d'un cas rare où une ancienne liste pouvait réapparaître quelques minutes après une modification.
-- Dépôt de documents : « Actualiser la liste », et la liste se met à jour toute seule si un document n'est plus en attente.
-- Une faute de frappe dans le nom d'un fichier (BELMAHY au lieu de BELMAHI) ne bloque plus : l'agent est proposé, à vérifier.
-
-## 3.25.0 — 2026-10-04 — Dépôt de documents : mois abrégés, aperçu des photos
-
-- Le mois est reconnu même abrégé dans le nom du fichier : « FEVR 26 », « JANV 26 », « dec 25 » (février 2026, janvier 2026, décembre 2025). Le mois du nom du fichier prime sur celui lu dans le document, et un avertissement signale les dates lues dans le contenu.
-- Les photos et scans JPG ou PNG sont convertis en PDF au moment de l'envoi : l'aperçu montre l'image d'origine, qui s'affiche toujours.
-- Aperçu d'un PDF : si la zone reste vide, « Ouvrir dans un onglet » l'affiche avec le lecteur du navigateur.
-
-## 3.24.2 — 2026-10-04 — Nouveautés réservées à l'éditeur
-
-- Les nouveautés côté éditeur (console, support, suivi des versions) sont masquées aux utilisateurs des entreprises.
+- Un lien « ↻ Actualiser » en bas de page relit les données à jour.
 
 ## 3.24.1 — 2026-10-04 — Notifications de documents fiabilisées
 
 - Le « Nouveau » des documents est conservé par Sijil jusqu'à ce que l'agent ouvre sa liste : il s'affiche même si l'agent se connecte plus tard, sur n'importe quel appareil.
-- Quand l'éditeur ouvre la session d'un agent pour l'aider, les documents ne sont pas marqués comme lus à sa place.
-- Si l'e-mail de notification ne peut pas partir (adresse absente ou invalide, limite d'envoi de Google), la raison est indiquée au moment de l'envoi ; le document est bien dans l'espace de l'agent.
 
-## 3.24.0 — 2026-10-04 — Détection des doublons
+## 3.19.0 — 2026-10-03 — Remarques des agents sur leur pointage
 
-- Un même fichier déposé deux fois est signalé : « Doublon » (déjà classé chez l'agent, ou déjà dans la liste). Son envoi demande une confirmation.
-- Un document du même type et de la même période qu'un document déjà classé (par exemple une 2e fiche de paie de mars) est signalé par un avertissement.
-
-## 3.23.1 — 2026-10-04 — Conversion PDF des grosses photos et menu Version
-
-- La conversion en PDF fonctionne aussi pour les photos de plusieurs Mo (elle échouait sur les vraies photos de téléphone). Si une image ne peut pas être convertie, la raison est indiquée.
-- « Version » est maintenant dans le menu de l'éditeur, avec ✓ quand le site et le serveur sont à jour.
-
-## 3.23.0 — 2026-10-04 — Connexion par utilisateur et carte Version
-
-- L'éditeur choisit une entreprise puis un utilisateur de cette entreprise pour se connecter à sa place et intervenir directement. Chaque accès est noté dans le journal.
-- Une carte « Version » compare le site et le serveur : « Tout est à jour » ou ce qu'il reste à publier.
-- Les documents peuvent peser jusqu'à 10 Mo.
-
-## 3.22.0 — 2026-10-04 — Aperçu des documents
-
-- Un bouton « Aperçu » permet de voir un document avant de l'envoyer à l'agent, et aussi dans la liste des documents déjà rangés. Il montre les PDF et les images, avec un accès pour l'ouvrir dans un onglet ou le télécharger.
-
-## 3.21.1 — 2026-10-04 — Conversion en PDF corrigée
-
-- La conversion des photos et scans (JPEG, PNG) en PDF fonctionne : une page par image, et les photos prises au téléphone gardent le bon sens. Si un format d'image ne peut pas être converti, le fichier est gardé tel quel et la liste vous le signale.
-
-## 3.21.0 — 2026-10-04 — Dépôt de documents en vrac
-
-- Déposez plusieurs documents d'un coup : Sijil reconnaît l'agent, le type et les dates, et propose le nom (TC_NOM_Prenom_2026-02-14, NOM_Prenom_FDP_Mars2026, contrat, attestations CNAS, attestation de travail, attestation d'émoluments…).
-- Vous vérifiez et corrigez la liste, puis vous l'envoyez : rien n'arrive chez les agents avant votre accord, et chacun reçoit un seul e-mail.
-- Les photos et scans peuvent être convertis en PDF.
-- Nouveaux documents que l'agent peut demander : copie du contrat, attestation CNAS, mise à jour CNAS, attestation d'émoluments.
-
-## 3.20.0 — 2026-10-04 — Sélecteur d'entreprise pour l'éditeur
-
-- Un sélecteur d'entreprise dans l'en-tête : choisir un client ouvre son espace avec tous les droits de son administrateur (onglets, pointages, mots de passe…).
-- Chaque accès support est noté dans le journal des connexions.
-- « À propos » n'apparaît plus dans le menu de l'éditeur.
-
-## 3.19.0 — 2026-10-03 — Connexions de toutes les entreprises et remarques des agents
-
-- L'éditeur voit dans « Connexions » toutes les entreprises clientes : qui est en ligne, les dernières connexions et un journal.
 - Un agent peut laisser une remarque sur son propre pointage : son responsable d'équipe est prévenu et peut lui répondre.
 
 ## 3.18.0 — 2026-10-03 — Responsable d'équipe
 
 - Le « chef de groupe » devient « responsable d'équipe » partout dans l'application, l'aide et les documents.
 
-## 3.17.0 — 2026-10-03 — Qui est en ligne ?
-
-- Nouvel onglet « Connexions » pour l'administrateur : qui est en ligne maintenant, la date de la dernière connexion de chacun, le nombre de connexions, et ceux qui ne se sont jamais connectés.
-
-## 3.16.0 — 2026-10-03 — Privilèges du responsable d’équipe et plusieurs e-mails
-
-- L'administrateur choisit, chef par chef, s'il peut extraire l'attachement et la facture (case dans sa fiche), en plus de l'accès au Setup.
-- L'onglet Client accepte jusqu'à 4 e-mails de contact client (Setup → Client) : chacun reçoit son compte de consultation, avec les mêmes droits.
-- L'e-mail de la direction du prestataire accepte aussi 4 adresses.
-
-## 3.15.0 — 2026-10-03 — Exports pour le responsable d’équipe
-
-- Le responsable d’équipe a un nouvel onglet « Exports » : il extrait en Excel ou PDF la fiche de pointage, l'attachement et la facture déjà établie. Il consulte seulement ; la validation reste à l'administrateur.
-- Dans Setup, les onglets sont dans un nouvel ordre : Prestataire (mon entreprise), Client, Contrat, Rotation.
-
-## 3.14.0 — 2026-10-03 — Sécurité renforcée et listes triées
+## 3.14.0 — 2026-10-03 — Listes triées par ordre alphabétique
 
 - Les agents sont classés par ordre alphabétique partout (pointage, gestion, documents).
-- Un texte saisi (nom, message, remarque) ne peut plus jamais être pris pour une formule du classeur.
-- Protection contre les envois en masse : nombre de demandes, de remarques et de codes de réinitialisation limité par heure.
-- Les logos importés sont vérifiés (vrai format PNG, JPG ou GIF).
-
-## 3.13.0 — 2026-10-03 — Logos par import et demandes modifiables
-
-- Les logos du prestataire et du client s'ajoutent maintenant en important une image (PNG, JPG ou GIF) dans Setup, sans rien recopier. Ils apparaissent sur les documents exportés.
-- Dans « Demandes à traiter » et « Mes demandes », un bouton « Modifier » permet de corriger une demande en attente (oubli, mauvaise date…).
-- Une demande envoyée à la direction est marquée « Traitée : demande transmise à la direction » avec le nom de l'entreprise prestataire.
 
 ## 3.12.0 — 2026-10-03 — Mot de passe oublié et reconnexion automatique
 
@@ -167,22 +41,14 @@
 - Nouvel onglet « Aide » : le mode d'emploi de Sijil, expliqué simplement pour chaque profil (agent, responsable d’équipe, administrateur, client), avec une recherche.
 - L'aide existe en français, en arabe et en anglais.
 
-## 3.10.0 — 2026-10-02 — Compléter les jours non pointés
-
-- Un seul bouton pour rattraper les jours oubliés : du lendemain du dernier pointage jusqu'à aujourd'hui, chaque agent garde son dernier statut (T, R ou ABS).
-- Vous choisissez les agents (ou tous) et la date de fin. Vous pouvez aussi suivre la rotation prévue.
-- Les jours déjà pointés ne sont jamais modifiés. Un résumé vous est montré avant de valider.
-
 ## 3.9.0 — 2026-10-02 — Compte client, remarques et durée du contrat
 
-- Le contrat indique maintenant sa date de début, sa durée et sa date de fin. Tout le monde peut les voir.
-- En ajoutant l'e-mail du contact client dans le contrat, son compte de consultation est créé et ses accès peuvent lui être envoyés.
 - Le client peut laisser une remarque sur n'importe quel jour du pointage. Le responsable d’équipe est prévenu, répond, et le client voit la réponse.
 
 ## 3.8.0 — 2026-10-02 — Vues 3 mois, 6 mois, 1 an et jours fériés
 
 - Le pointage global peut s'afficher sur 3 mois, 6 mois ou 1 an, avec les mêmes couleurs que le mois. Le jour d'aujourd'hui est repéré.
-- Les jours fériés algériens sont visibles dans toutes les vues : fêtes nationales et fêtes religieuses. Les dates religieuses sont estimées (un jour d'écart est possible) et se corrigent dans Setup → Rotation.
+- Les jours fériés algériens sont visibles dans toutes les vues : fêtes nationales et fêtes religieuses. Les dates religieuses sont estimées : un jour d'écart est possible.
 
 ## 3.7.0 — 2026-10-02 — Pages plus rapides
 
@@ -197,32 +63,15 @@
 ## 3.5.0 — 2026-10-02 — Pastilles et notifications
 
 - Une pastille sur « Mes documents » indique les nouveaux documents. Un message s'affiche quand un document arrive, et l'agent reçoit aussi un e-mail.
-- Le responsable d’équipe voit une pastille sur « Demandes » et reçoit un e-mail à chaque nouvelle demande.
 
 ## 3.3.0 — 2026-10-02 — Trois langues et mode sombre
 
 - L'application existe en français, en arabe et en anglais. Le choix se fait en bas à droite.
 - Un mode sombre est disponible, avec une petite bascule soleil / lune en bas à droite.
 
-## 3.2.0 — 2026-10-02 — Accès des agents par e-mail
-
-- À la création d'un agent, ses accès (lien, identifiant, mot de passe provisoire) peuvent lui être envoyés par e-mail.
-- Un bouton « Envoyer l'accès » dans la liste des agents permet de les renvoyer à tout moment.
-
 ## 3.0.0 — 2026-10-02 — Sijil : nouveau nom et nouveau logo
 
 - L'application s'appelle Sijil, avec un nouveau logo et de nouvelles couleurs.
-
-## 2.5.0 — 2026-10-02 — Export du pointage en Excel
-
-- Setup → Maintenance : exporter un pointage en Excel, avec le contrat, les prix, les agents et les attachements qui en dépendent.
-- Le même fichier peut être réimporté en entier.
-
-## 1.9.0 — 2026-10-01 — Import d'un pointage Excel
-
-- Setup → Maintenance : importer un pointage depuis un fichier Excel, un mois par onglet.
-- Les noms écrits différemment sont rapprochés des agents existants, et les agents inconnus peuvent être créés.
-- Dans la modification groupée des agents, vous pouvez aussi changer la fonction.
 
 ## 1.8.0 — 2026-10-01 — Compte client (consultation)
 
@@ -233,35 +82,13 @@
 - La liste des attachements et des factures validés, avec leurs PDF à télécharger.
 - Un tableau par fonction montre ce qui a déjà été facturé et ce qui reste à facturer.
 
-## 1.6.0 — 2026-10-01 — Rotations et modification groupée
-
-- Plusieurs types de rotation au choix (28/28, 14/14, 21/21…), et une rotation propre à chaque agent.
-- Dans la liste des agents, cochez plusieurs lignes pour les modifier en une seule fois.
-- La quantité de l'attachement reprend les jours de travail réellement pointés.
-
-## 1.5.0 — 2026-10-01 — Setup en onglets
-
-- Le Setup est rangé en onglets : Contrat, Prestataire, Client, Rotation et Maintenance.
-- Sauvegarde et restauration de vos données depuis l'onglet Maintenance.
-
-## 1.4.0 — 2026-10-01 — Fiche de pointage, attachement et documents
-
-- La fiche de pointage et l'attachement s'exportent en Excel et en PDF.
-- Les documents des agents sont reconnus, renommés et rangés automatiquement.
-
 ## 1.3.0 — 2026-10-01 — Prévisions
 
 - Dès le premier pointage, l'application prévoit les jours de travail et de repos suivants. Un pointage réel n'est jamais remplacé.
 
 ## 1.2.0 — 2026-10-01 — Contrats
 
-- Le contrat est résumé en une page. Le bordereau des prix se dépose en un geste.
 - L'attachement validé est figé, puis la facture est établie.
-
-## 1.1.0 — 2026-10-01 — Bordereau des prix, effectifs et véhicules
-
-- Lecture du bordereau des prix (PDF scanné, photo, Excel ou CSV).
-- Les effectifs suivent le contrat, et les véhicules mis à disposition sont gérés comme les agents.
 
 ## 1.0.0 — 2026-10-01 — Première version
 

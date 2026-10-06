@@ -344,7 +344,7 @@ function render() {
   var back = S.back ? h('div', { class: 'msg warn', style: 'margin:0;border-radius:0;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap' }, 'Mode support : vous êtes dans l\'espace de « ' + S.back.societe + ' » en tant que ' + S.user.nom + ' (' + tr(ROLE_LIB[S.user.role] || S.user.role) + ').',
     h('button', { type: 'button', class: 'primary', onclick: function () { call('logout').catch(function () {}).then(function () { S.token = S.back.token; setBack(null); S.path = null; try { sessionStorage.setItem('tk', S.token); } catch (e) { /* ignore */ } boot(); }); } }, "‹ Retour à l'administration")) : null;
   root.replaceChildren.apply(root, [back, bar, main, h('footer', { class: 'muted', style: 'text-align:center;padding:14px;font-size:.8rem' }, 'Sijil · ', h('a', { href: '#/nouveautes', onclick: navClick('/nouveautes') }, 'version ' + ((S.info && S.info.version) || '?') + ' (nouveautés)'), h('br'), (S.info && S.info.copyright) || '', ' · ', h('a', { href: '#/confidentialite', onclick: navClick('/confidentialite') }, 'Confidentialité'), ' · ', h('a', { href: '#', title: 'Relire les données depuis le serveur', onclick: function (ev) { ev.preventDefault(); actualiser(); } }, '↻ Actualiser'))].filter(Boolean));
-  if (S.owner) checkVersion().then(function (r) { var a = document.querySelector('a[data-path="/version"]'); if (a) { a.textContent = tr('Version') + (r.c === 0 ? ' ✓' : r.c === null ? '' : ' ⚠'); a.title = r.c === 0 ? tr('✓ Tout est à jour') : ''; } });
+  if (S.owner) checkVersion().then(function (r) { var fl = document.querySelector('footer a[href="#/nouveautes"]'); if (fl && r.c !== null) fl.textContent += ' · ' + tr('site') + ' v' + r.site + (r.c === 0 ? ' ✓' : ' ⚠'); var a = document.querySelector('a[data-path="/version"]'); if (a) { a.textContent = tr('Version') + (r.c === 0 ? ' ✓' : r.c === null ? '' : ' ⚠'); a.title = r.c === 0 ? tr('✓ Tout est à jour') : ''; } });
   setTimeout(refreshBadges, 0);
   main.append(ROUTES[path]());
   navHeight();
@@ -1266,7 +1266,16 @@ function VersionPage() {
     else if (r.c < 0) { verdict.className = 'msg warn'; verdict.textContent = tr('⚠ Le serveur est en retard : v' + r.srv + ' au lieu de v' + r.site + '. À déployer.'); }
     else { verdict.className = 'msg warn'; verdict.textContent = tr('⚠ Le site est en retard : v' + r.site + ' au lieu de v' + r.srv + '. À publier (patientez 1 à 2 minutes).'); }
   });
-  return card;
+  // Présentation des nouveautés : les dernières versions, avec accès à tout l'historique.
+  var news = asyncBlock(function () {
+    return call('changelogMoi').then(function (c) {
+      return h('section', { class: 'card' }, h('h2', null, 'Dernières nouveautés'),
+        c.versions.slice(0, 3).map(function (v) {
+          return h('article', { class: 'release' }, h('h3', null, 'Version ' + v.v, h('small', null, frDate(v.date) + ' · ' + v.titre)), h('ul', null, v.points.map(function (p) { return h('li', null, p); })));
+        }), h('p', null, h('a', { href: '#/nouveautes', onclick: navClick('/nouveautes') }, 'Voir tout l\u2019historique des versions')));
+    });
+  });
+  return h('div', { style: 'display:grid;gap:16px' }, card, news);
 }
 function AProposPage() {
   return asyncBlock(function () {
@@ -1295,7 +1304,7 @@ function AProposPage() {
 // ---------- Nouveautés : historique des versions ----------
 function NouveautesPage() {
   return asyncBlock(function () {
-    return call(S.owner ? 'changelogEditeur' : 'changelog').then(function (c) {
+    return call(S.user ? 'changelogMoi' : 'changelog').then(function (c) {
       return h('section', { class: 'card' }, h('h2', null, 'Nouveautés — historique des versions'),
         c.versions.map(function (v) {
           return h('article', { class: 'release' }, h('h3', null, 'Version ' + v.v, h('small', null, frDate(v.date) + ' · ' + v.titre)), h('ul', null, v.points.map(function (p) { return h('li', null, p); })));

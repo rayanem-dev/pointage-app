@@ -12,7 +12,7 @@ from docx.oxml import OxmlElement
 from PIL import Image
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-VERSION = '3.29.5'; DATE = 'Octobre 2026'
+VERSION = '3.30.0'; DATE = 'Octobre 2026'
 NAVY = RGBColor(0x0E, 0x43, 0x77); BLUE = RGBColor(0x16, 0x59, 0x8D); TEAL = RGBColor(0x2F, 0xB5, 0xB4); GREY = RGBColor(0x6B, 0x77, 0x85)
 LOGO = os.path.join(ROOT, 'brand', 'logo-sijil-complet.png')
 COPY = '© 2026 Rayane M. — Tous droits réservés'

@@ -53,7 +53,8 @@ var HANDLERS = {
   },
   charte: { pub: true, fn: function () { var c = charte_(); return { editeur: CFG.EDITEUR, copyright: CFG.COPYRIGHT, maj: c.maj, sections: c.sections }; } },
   changelog: { pub: true, fn: function () { return { version: CFG.VERSION, copyright: CFG.COPYRIGHT, versions: changelogView(false) }; } },
-  changelogEditeur: { roles: ['admin'], fn: function (u) { return { version: CFG.VERSION, copyright: CFG.COPYRIGHT, versions: changelogView(Tenants.isOwner(u)) }; } }, // l'éditeur voit aussi les points qui le concernent
+  // Nouveautés selon le profil : éditeur = tout ; administrateur / responsable d'équipe = sans le côté éditeur ; agent et client = ce qui les concerne seulement.
+  changelogMoi: { roles: ['agent', 'chef', 'admin', 'client'], fn: function (u) { return { version: CFG.VERSION, copyright: CFG.COPYRIGHT, versions: changelogView(Tenants.isOwner(u) ? 'proprio' : (u.role === 'admin' || u.role === 'chef') ? 'staff' : 'tous') }; } },
   login: { pub: true, fn: function (u, a) { return Auth.login(a[0], a[1], a[2], a[3]); } },
   resume: { pub: true, fn: function (u, a) { return Auth.resume(a[0]); } },
   forget: { pub: true, fn: function (u, a) { return Auth.forget(a[0]); } },

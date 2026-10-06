@@ -208,13 +208,18 @@ test('support : liste des utilisateurs d\'un client et connexion à la place de 
   assert.ok(adminAlpha.role === 'admin');
 });
 
-test('nouveautés : le public (agents, clients, administrateurs d\'entreprise) ne voit rien du côté éditeur ; l\'éditeur voit tout', () => {
+test('nouveautés : chacun ne voit que ce qui le concerne (agent/client < administrateur < éditeur), rien de confidentiel pour le public', () => {
   const pub = ok(call(null, 'changelog')).versions; const txt = JSON.stringify(pub);
-  assert.ok(!/éditeur|support|Version »|Connexions de toutes/i.test(txt), 'aucun point réservé à l\'éditeur');
-  assert.ok(pub.every((v) => v.points.length && v.points.every((p) => !p.startsWith('§'))));
+  assert.ok(!/éditeur|support|Version »|Connexions|sécurité|formule|Setup|Maintenance|cache|Google|bogue/i.test(txt), 'aucun point réservé à l\'éditeur ni aux administrateurs');
+  assert.ok(pub.every((v) => v.points.length && v.points.every((p) => !/^[§#] /.test(p))));
   const ed = ok(call(null, 'login', 'editeur@t.fr', 'editeurpw1', 'ADMIN')).token;
-  const full = ok(call(ed, 'changelogEditeur')).versions;
-  assert.ok(full.length > pub.length && /éditeur/i.test(JSON.stringify(full)) && !JSON.stringify(full).includes('§'), 'l\'éditeur voit aussi ses propres nouveautés (marqueur retiré)');
+  const full = ok(call(ed, 'changelogMoi')).versions;
+  assert.ok(full.length > pub.length && /éditeur/i.test(JSON.stringify(full)) && !/[§#] /.test(JSON.stringify(full)), 'l\'éditeur voit tout (marqueurs retirés)');
   const a = ok(call(null, 'login', 'admin@alpha.dz', T.alphaPw, 'ALPHA')).token;
-  assert.strictEqual(JSON.stringify(ok(call(a, 'changelogEditeur')).versions), JSON.stringify(pub), 'un administrateur d\'entreprise voit la version publique');
+  const staff = ok(call(a, 'changelogMoi')).versions; const st = JSON.stringify(staff);
+  assert.ok(st.length > txt.length && /Setup/.test(st), 'l\'administrateur voit aussi les réglages et la gestion');
+  assert.ok(!/éditeur|sécurité|formule/i.test(st), '… mais pas le côté éditeur ni la sécurité');
+  assert.ok(staff.length < full.length);
+  assert.strictEqual(ok(call(ed, 'changelog')).versions.length, pub.length, 'la version publique reste la même, même pour l\'éditeur connecté');
 });
+
