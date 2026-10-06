@@ -1,0 +1,63 @@
+# Déploiement automatique vers Google Apps Script à chaque mise à jour du dossier appscript/ sur main.
+# Secrets du dépôt requis : CLASPRC_JSON (contenu de ~/.clasprc.json), SCRIPT_ID, DEPLOYMENT_ID.
+name: Déployer Sijil (Apps Script)
+
+on:
+  push:
+    branches: [main]
+    paths: ['appscript/**']
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-appscript
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Tests
+        working-directory: appscript
+        run: node --test dev/*.test.js
+
+      - name: Vérifier les secrets
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          SCRIPT_ID: ${{ secrets.SCRIPT_ID }}
+          DEPLOYMENT_ID: ${{ secrets.DEPLOYMENT_ID }}
+        run: |
+          for v in CLASPRC_JSON SCRIPT_ID DEPLOYMENT_ID; do
+            if [ -z "${!v}" ]; then echo "::error::Secret $v manquant (Settings → Secrets and variables → Actions)"; exit 1; fi
+          done
+
+      - name: Installer clasp
+        run: npm install -g @google/clasp@2.4.2
+
+      - name: Connexion Google
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          SCRIPT_ID: ${{ secrets.SCRIPT_ID }}
+        run: |
+          printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+          printf '{"scriptId":"%s","rootDir":"."}' "$SCRIPT_ID" > appscript/.clasp.json
+
+      - name: Envoyer le code et mettre à jour le déploiement
+        working-directory: appscript
+        env:
+          DEPLOYMENT_ID: ${{ secrets.DEPLOYMENT_ID }}
+        run: |
+          VERSION=$(node -p "require('../version.json').version || require('../version.json').v || ''" 2>/dev/null || echo "")
+          clasp push --force
+          clasp deploy --deploymentId "$DEPLOYMENT_ID" --description "auto ${VERSION} ${GITHUB_SHA::7}"
+
+      - name: Nettoyer
+        if: always()
+        run: rm -f "$HOME/.clasprc.json" appscript/.clasp.json
