@@ -358,7 +358,7 @@ var Documents = (function () {
     if (!/^\S+@\S+\.\S+$/.test(agent.email || '')) return { ok: false, raison: 'adresse e-mail absente ou invalide' };
     try {
       var noms = docs.map(function (d) { return d.nom_original; });
-      MailApp.sendEmail({ to: agent.email, replyTo: user.email || undefined, subject: 'Nouveau document — ' + noms[0] + (noms.length > 1 ? ' (+' + (noms.length - 1) + ')' : ''),
+      Mail.send({ to: agent.email, replyTo: user.email || undefined, cta: { label: 'Ouvrir mes documents', url: Mail.lien() }, societe: Params.get().prestataire_nom, subject: 'Nouveau document — ' + noms[0] + (noms.length > 1 ? ' (+' + (noms.length - 1) + ')' : ''),
         body: 'Bonjour ' + agent.nom + ',\n\n' + (noms.length > 1 ? 'Nouveaux documents dans votre espace Sijil :\n - ' + noms.join('\n - ') : 'Nouveau document dans votre espace Sijil : ' + noms[0]) + '\nDéposé par ' + user.nom + '.\n\nConnectez-vous, onglet « Mes documents », pour le télécharger.' });
       return { ok: true, raison: '' };
     } catch (e) { Logger.log('Document non notifié : ' + e.message); return { ok: false, raison: e.message }; }

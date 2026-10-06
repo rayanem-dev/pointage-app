@@ -131,7 +131,7 @@ var Auth = (function () {
         var secret = ('000000' + (parseInt(Utilities.getUuid().replace(/-/g, '').slice(0, 8), 16) % 1000000)).slice(-6);
         cache.put(forgotKey(tenant.code, email), JSON.stringify({ h: hash(secret, email), n: 0 }), 1800);
         try {
-          MailApp.sendEmail({ to: email, subject: 'Votre code de réinitialisation Sijil', body: 'Bonjour ' + agent.nom + ',\n\nVotre code de réinitialisation du mot de passe Sijil : ' + secret + '\n\nIl est valable 30 minutes. Saisissez-le sur la page de connexion, avec votre nouveau mot de passe.\n\nSi vous n\'avez rien demandé, ignorez ce message : votre mot de passe reste inchangé.' });
+          Mail.send({ to: email, subject: 'Votre code de réinitialisation Sijil', code: secret, cta: { label: 'Ouvrir Sijil', url: CFG.APP_SHELL_URL }, body: 'Bonjour ' + agent.nom + ',\n\nVotre code de réinitialisation du mot de passe Sijil : ' + secret + '\n\nIl est valable 30 minutes. Saisissez-le sur la page de connexion, avec votre nouveau mot de passe.\n\nSi vous n\'avez rien demandé, ignorez ce message : votre mot de passe reste inchangé.' });
         } catch (e) { Logger.log('Code non envoyé : ' + e.message); }
       }
     }

@@ -267,7 +267,7 @@ var Tenants = (function () {
     var to = contact().email || ownerEmails()[0] || '';
     if (!to) throw httpErr_("L'éditeur n'a pas encore indiqué son adresse e-mail : contactez-le directement");
     var c = Store.tenantCode() ? find(Store.tenantCode()) : null;
-    MailApp.sendEmail({ to: to, replyTo: user.email, subject: '[Sijil] ' + (c ? c.nom : 'Client') + ' — ' + (sujet || 'Commentaire'),
+    Mail.send({ to: to, replyTo: user.email, subject: '[Sijil] ' + (c ? c.nom : 'Client') + ' — ' + (sujet || 'Commentaire'),
       body: message + '\n\n— ' + user.nom + ' <' + user.email + '>\nSociété : ' + (c ? c.nom + ' (' + c.code + ')' : Params.get().prestataire_nom) + '\nVersion : ' + CFG.VERSION });
     cache.put(key, String(n + 1), 3600);
     return { envoye: true };
@@ -280,7 +280,7 @@ var Tenants = (function () {
     message = String(message || '').trim();
     if (message.length < 10 || message.length > 3000) throw httpErr_('Message vide ou trop long');
     var reply = contact().email;
-    MailApp.sendEmail({ to: to, replyTo: reply || undefined, subject: 'Votre espace Sijil' + (nom ? ' — ' + String(nom).slice(0, 80) : ''), body: message });
+    Mail.send({ to: to, replyTo: reply || undefined, cta: { label: 'Ouvrir Sijil', url: CFG.APP_SHELL_URL }, subject: 'Votre espace Sijil' + (nom ? ' — ' + String(nom).slice(0, 80) : ''), body: message });
     return { envoye: true, to: to };
   }
   // Code entreprise de l'espace courant (celui du client, ou celui du classeur principal s'il est dans l'annuaire) ; vide sans annuaire.

@@ -55,7 +55,7 @@ var Demandes = (function () {
       var all = Agents.list(); var byIdx = byId(all); var h = handlerId(user, byIdx);
       var dest = (h === 'admin' ? all.filter(function (a) { return a.role === 'admin' && a.actif === '1'; }) : [byIdx[h]]).filter(function (a) { return a && /^\S+@\S+\.\S+$/.test(a.email || ''); }).slice(0, 3);
       dest.forEach(function (a) {
-        MailApp.sendEmail({ to: a.email, replyTo: user.email || undefined, subject: 'Nouvelle demande — ' + user.nom + ' : ' + d.objet,
+        Mail.send({ to: a.email, replyTo: user.email || undefined, subject: 'Nouvelle demande — ' + user.nom + ' : ' + d.objet, cta: { label: 'Ouvrir les demandes', url: Mail.lien() }, societe: Params.get().prestataire_nom,
           body: 'Bonjour ' + a.nom + ',\n\n' + user.nom + (user.fonction ? ' (' + user.fonction + ')' : '') + ' a fait une demande : ' + (T[d.type] || d.type) + '\nObjet : ' + d.objet + (d.date_debut ? '\nDu ' + Dates.frDate(d.date_debut) + (d.date_fin ? ' au ' + Dates.frDate(d.date_fin) : '') : '') + (reprise(d, user) ? '\nReprise du travail prévue le ' + Dates.frDate(reprise(d, user)) : '') + (d.message ? '\n\n' + d.message : '') + '\n\nOuvrez Sijil, onglet Demandes, pour la traiter.' });
       });
     } catch (e) { Logger.log('Demande non notifiée : ' + e.message); }
@@ -204,7 +204,7 @@ var Demandes = (function () {
     var mail = false;
     if (params.direction_email) {
       try {
-        MailApp.sendEmail({ to: params.direction_email, subject: 'Demande groupée — ' + (params.prestataire_nom || 'Prestataire') + ' — ' + envoi.nb + ' demande(s)', body: text, htmlBody: msg.html });
+        Mail.send({ to: params.direction_email, subject: 'Demande groupée — ' + (params.prestataire_nom || 'Prestataire') + ' — ' + envoi.nb + ' demande(s)', body: text, html: msg.html, societe: params.prestataire_nom });
         mail = true;
       } catch (e) { Logger.log('Envoi e-mail impossible : ' + e.message); }
     }

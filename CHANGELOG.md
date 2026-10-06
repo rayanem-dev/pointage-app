@@ -2,6 +2,10 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.31.0 — 2026-10-06 — E-mails aux couleurs de Sijil
+
+- Tous les e-mails de Sijil (accès, nouveau document, demandes, remarques, code de réinitialisation) ont maintenant un en-tête avec le logo et les couleurs de Sijil, un bouton pour ouvrir l'application et un pied de page.
+
 ## 3.29.5 — 2026-10-06 — Dates toujours visibles dans la grille de pointage
 
 - Dans le pointage global, la ligne des dates et des jours reste toujours visible quand on descend dans la grille, y compris la colonne d'aujourd'hui.

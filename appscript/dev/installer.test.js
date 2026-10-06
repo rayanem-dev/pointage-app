@@ -36,7 +36,7 @@ function setup({ githubCode = 200, apiCode = 200, apiBody = '', skip = [] } = {}
 test('installe tous les fichiers du dépôt avec les bons types', () => {
   const t = setup();
   const msg = t.run('installerDepuisGitHub()');
-  assert.match(msg, /Code installé : 33 fichiers/);
+  assert.match(msg, /Code installé : 34 fichiers/);
   const sent = t.put[0].files;
   const by = Object.fromEntries(sent.map((f) => [f.name, f]));
   assert.strictEqual(by.Main.type, 'SERVER_JS'); assert.strictEqual(by.Index.type, 'HTML'); assert.strictEqual(by.appsscript.type, 'JSON');

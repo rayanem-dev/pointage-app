@@ -28,7 +28,7 @@ var Prospects = (function () {
     if (isNew) {
       try {
         var to = Store.withMaster(function () { return Tenants.contact().email; });
-        if (to) MailApp.sendEmail({ to: to, replyTo: email, subject: '[Sijil] Demande d\'essai — ' + societe, body: 'Nouvelle demande d\'essai\n\nSociété : ' + societe + '\nContact : ' + data.nom + ' <' + email + '>\nTéléphone : ' + data.tel + '\n\n' + data.message + '\n\n(Console → Prospects pour créer l\'essai.)' });
+        if (to) Mail.send({ to: to, replyTo: email, subject: '[Sijil] Demande d\'essai — ' + societe, body: 'Nouvelle demande d\'essai\n\nSociété : ' + societe + '\nContact : ' + data.nom + ' <' + email + '>\nTéléphone : ' + data.tel + '\n\n' + data.message + '\n\n(Console → Prospects pour créer l\'essai.)' });
       } catch (e) { Logger.log('Prospect non notifié : ' + e.message); }
     }
     return { ok: true };
@@ -58,7 +58,7 @@ var Prospects = (function () {
     var envoye = false;
     if (o.envoyer) {
       var reply = Tenants.contact().email;
-      MailApp.sendEmail({ to: p.email, replyTo: reply || undefined, subject: 'Votre essai Sijil — ' + p.societe, body: res.message + '\n\nEssai gratuit jusqu\'au ' + res.client.fin_licence.split('-').reverse().join('/') + '.' });
+      Mail.send({ to: p.email, replyTo: reply || undefined, cta: { label: 'Ouvrir Sijil', url: CFG.APP_SHELL_URL }, subject: 'Votre essai Sijil — ' + p.societe, body: res.message + '\n\nEssai gratuit jusqu\'au ' + res.client.fin_licence.split('-').reverse().join('/') + '.' });
       envoye = true;
     }
     return { client: res.client, admin: res.admin, message: res.message, envoye: envoye };

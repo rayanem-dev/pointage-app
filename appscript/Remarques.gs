@@ -26,7 +26,7 @@ var Remarques = (function () {
       var agents = Agents.list(); var chef = agent.chef_id ? agents.filter(function (a) { return a.id === agent.chef_id && a.actif === '1'; })[0] : null;
       var dest = (chef ? [chef] : agents.filter(function (a) { return a.role === 'admin' && a.actif === '1'; })).filter(function (a) { return /^\S+@\S+\.\S+$/.test(a.email || ''); }).slice(0, 3);
       dest.forEach(function (a) {
-        MailApp.sendEmail({ to: a.email, replyTo: user.email || undefined, subject: (user.role === 'agent' ? 'Remarque de l’agent — ' : 'Remarque du client — ') + agent.nom + ' le ' + Dates.frDate(r.date),
+        Mail.send({ to: a.email, replyTo: user.email || undefined, cta: { label: 'Ouvrir le pointage', url: Mail.lien() }, societe: Params.get().prestataire_nom, subject: (user.role === 'agent' ? 'Remarque de l’agent — ' : 'Remarque du client — ') + agent.nom + ' le ' + Dates.frDate(r.date),
           body: 'Bonjour ' + a.nom + ',\n\n' + user.nom + (user.role === 'agent' ? ' (agent)' : ' (client)') + ' a laissé une remarque sur le pointage de ' + agent.nom + ' du ' + Dates.frDate(r.date) + ' :\n\n« ' + r.texte + ' »\n\nOuvrez Sijil, onglet Pointage, pour la consulter et répondre.' });
       });
     } catch (e) { Logger.log('Remarque non notifiée : ' + e.message); }

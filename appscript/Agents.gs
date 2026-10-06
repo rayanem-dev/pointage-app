@@ -147,7 +147,7 @@ var Agents = (function () {
     if (!reuse) { pw = randomPassword(); setPassword(user, id, pw); }
     var code = Tenants.codeActuel(); var societe = Params.get().prestataire_nom || 'Sijil';
     var body = 'Bonjour ' + a.nom + ',\n\nVotre accès à Sijil (' + societe + ') :\nLien : ' + (code ? Tenants.lien(code) : CFG.APP_SHELL_URL) + (code ? '\nCode entreprise : ' + code : '') + '\nIdentifiant : ' + a.email + '\nMot de passe provisoire : ' + pw + '\n(à changer à la première connexion)\n\nCordialement,\n' + user.nom;
-    MailApp.sendEmail({ to: a.email, replyTo: user.email || undefined, subject: 'Votre accès Sijil — ' + societe, body: body });
+    Mail.send({ to: a.email, replyTo: user.email || undefined, subject: 'Votre accès Sijil — ' + societe, body: body, societe: societe, cta: { label: 'Ouvrir Sijil', url: code ? Tenants.lien(code) : CFG.APP_SHELL_URL } });
     return { envoye: true, to: a.email, nouveau: !reuse, password: reuse ? '' : pw };
   }
   function changeOwnPassword(user, current, next) {
