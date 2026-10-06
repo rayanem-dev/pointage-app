@@ -5898,5 +5898,35 @@
 "Aucune demande à envoyer",
 "No request to send",
 "لا يوجد طلب للإرسال"
+],
+[
+"Nom du responsable pointage",
+"Name of the attendance manager",
+"اسم مسؤول التسجيل"
+],
+[
+"Responsable pointage (prestataire)",
+"Attendance manager (provider)",
+"مسؤول التسجيل (المقاول)"
+],
+[
+"E-mails du responsable pointage (2 cases)",
+"Attendance manager e-mails (2 boxes)",
+"البريد الإلكتروني لمسؤول التسجيل (خانتان)"
+],
+[
+"Destinataire des demandes des agents.",
+"Recipient of the agents' requests.",
+"المستلم لطلبات الأعوان."
+],
+[
+"Destinataires des demandes des agents (les demandes groupées leur sont envoyées).",
+"Recipients of the agents' requests (grouped requests are sent to them).",
+"مستلمو طلبات الأعوان (تُرسل إليهم الطلبات المجمّعة)."
+],
+[
+"E-mails du responsable pointage",
+"Attendance manager e-mails",
+"البريد الإلكتروني لمسؤول التسجيل"
 ]
 ]

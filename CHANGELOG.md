@@ -2,6 +2,10 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.28.1 — 2026-10-06 — Responsable pointage du prestataire
+
+- Dans Setup → Prestataire, le bloc « Direction du prestataire » devient « Responsable pointage (prestataire) » : un champ pour le nom et deux cases e-mail. Ce sont les destinataires des demandes des agents.
+
 ## 3.28.0 — 2026-10-05 — Demandes : en cours, puis historique
 
 - La page Demandes est réorganisée : « Demandes en cours » (à traiter et déjà acceptées, pas encore envoyées), puis les demandes refusées ou traitées directement, puis en bas l'« Historique des demandes transmises à la direction ».

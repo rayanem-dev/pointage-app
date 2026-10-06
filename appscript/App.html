@@ -103,9 +103,10 @@ function act(btn, box, fn, okText) {
     .then(function (r) { btn.disabled = false; return r; });
 }
 // Quatre cases distinctes pour quatre adresses e-mail ; la valeur (lue ou écrite) reste « a@x, b@y, c@z ».
-function emailsBox(value, onInput) {
+function emailsBox(value, onInput, n) {
   var list = String(value || '').split(/[\s,;]+/).filter(Boolean);
-  var ins = [0, 1, 2, 3].map(function (i) { return h('input', { type: 'email', placeholder: 'Adresse e-mail ' + (i + 1), value: list[i] || '', autocomplete: 'off' }); });
+  var cases = Math.min(4, Math.max(n || 4, list.length)); // jamais moins de cases que d'adresses déjà enregistrées
+  var ins = Array.apply(null, Array(cases)).map(function (_, i) { return i; }).map(function (i) { return h('input', { type: 'email', placeholder: 'Adresse e-mail ' + (i + 1), value: list[i] || '', autocomplete: 'off' }); });
   var box = h('div', { class: 'emails3', style: 'display:grid;gap:6px' }, ins);
   Object.defineProperty(box, 'value', {
     get: function () { return ins.map(function (x) { return x.value.trim(); }).filter(Boolean).join(', '); },
@@ -114,7 +115,7 @@ function emailsBox(value, onInput) {
   ins.forEach(function (x) { x.addEventListener('input', function () { if (onInput) onInput(box.value); }); });
   return box;
 }
-function emailsField(label, box, cls) { return h('div', { class: 'field ' + (cls || '') }, h('label', null, label), box); }
+function emailsField(label, box, cls, hint) { return h('div', { class: 'field ' + (cls || '') }, h('label', null, label), box, hint ? h('small', { class: 'muted' }, hint) : null); }
 function field(label, input, cls, hint) { return h('label', { class: cls || '' }, label, input, hint ? h('small', null, hint) : null); }
 
 // Choix d'une rotation « jours de travail/jours de repos » : liste proposée + valeur personnalisée.
@@ -1333,10 +1334,10 @@ function SetupPage() {
       var sets = groups.map(function (g) {
         var fields = defs.filter(function (d) { return d.group === g; }).map(function (d) {
           if (d.type === 'logo') return logoControl(d);
-          if (d.type === 'emails') { var eb = emailsBox(data.values[d.key]); inputs[d.key] = eb; return emailsField(d.label, eb, 'grow2'); }
+          if (d.type === 'emails') { var eb = emailsBox(data.values[d.key], null, d.n); inputs[d.key] = eb; return emailsField(d.label, eb, 'grow2', d.hint); }
           var el = d.type === 'bool' ? h('select', null, h('option', { value: '1' }, 'Oui'), h('option', { value: '0' }, 'Non')) : d.type === 'area' ? h('textarea', { rows: 3 }) : h('input', { type: d.type === 'number' ? 'number' : d.type === 'color' ? 'color' : 'text', min: 1 });
           el.value = data.values[d.key] || (d.type === 'color' ? '#000000' : ''); inputs[d.key] = el;
-          return field(d.label, el, d.type === 'text' || d.type === 'area' ? 'grow2' : '');
+          return field(d.label, el, d.type === 'text' || d.type === 'area' ? 'grow2' : '', d.hint);
         });
         return h('fieldset', null, g === defs[0].group && groups.length === 1 ? null : h('legend', null, g), h('div', { class: 'row' }, fields));
       });

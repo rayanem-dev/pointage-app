@@ -24,8 +24,8 @@ var Params = (function () {
     { key: 'couleur_ABS', label: 'Couleur ABS (absence)', group: 'Couleurs', type: 'color', def: '#E53935' },
     { key: 'couleur_T_prevu', label: 'Couleur T prévu', group: 'Couleurs', type: 'color', def: '#D6F0CC' },
     { key: 'couleur_R_prevu', label: 'Couleur R prévu', group: 'Couleurs', type: 'color', def: '#FBDCC8' },
-    { key: 'direction_nom', label: 'Direction du prestataire (destinataire des demandes groupées)', group: 'Direction du prestataire', type: 'text', def: '' },
-    { key: 'direction_email', label: 'E-mails de la direction du prestataire (4 au maximum)', group: 'Direction du prestataire', type: 'emails', def: '' },
+    { key: 'direction_nom', label: 'Nom du responsable pointage', group: 'Responsable pointage (prestataire)', type: 'text', def: '', hint: 'Destinataire des demandes des agents.' },
+    { key: 'direction_email', label: 'E-mails du responsable pointage (2 cases)', group: 'Responsable pointage (prestataire)', type: 'emails', n: 2, def: '', hint: 'Destinataires des demandes des agents (les demandes groupées leur sont envoyées).' },
     { key: 'client_nom', label: 'Client (société cliente du contrat)', group: 'Client', type: 'text', def: '' },
     { key: 'client_entete', label: 'En-tête client (fiche de pointage, une ligne par ligne)', group: 'Client', type: 'area', def: '' },
     { key: 'client_adresse_facture', label: 'Adresse de facturation (« DOIT »)', group: 'Client', type: 'area', def: '' },
@@ -50,7 +50,7 @@ var Params = (function () {
       if (!def) return;
       var s = String(values[k] == null ? '' : values[k]);
       if (def.type === 'number' && !(Number(s) >= 1 && Number(s) % 1 === 0)) throw httpErr_(def.label + ' : entier ≥ 1 attendu');
-      if (def.type === 'emails') s = Format.emails(s, k === 'client_emails' ? 'E-mails du contact client' : 'E-mails de la direction', 4).join(', ');
+      if (def.type === 'emails') s = Format.emails(s, k === 'client_emails' ? 'E-mails du contact client' : 'E-mails du responsable pointage', 4).join(', ');
       if (def.type === 'bool') { s = (values[k] === true || s === '1' || s === 'true') ? '1' : '0'; }
       if (def.type === 'color' && !/^#[0-9a-fA-F]{6}$/.test(s)) throw httpErr_(def.label + ' : couleur #RRGGBB attendue');
       cur[k] = s;
@@ -99,7 +99,7 @@ var Params = (function () {
     };
   }
   // Onglet du Setup où s'affiche chaque groupe de champs.
-  var TABS = { 'Prestataire': 'prestataire', 'Direction du prestataire': 'prestataire', 'Client': 'client', 'Rotation': 'rotation', 'Couleurs': 'rotation', 'Attachement': 'contrat' };
-  function defsForClient() { return DEFS.map(function (d) { return { key: d.key, label: d.label, group: d.group, type: d.type, tab: TABS[d.group] || 'prestataire' }; }); }
+  var TABS = { 'Prestataire': 'prestataire', 'Responsable pointage (prestataire)': 'prestataire', 'Client': 'client', 'Rotation': 'rotation', 'Couleurs': 'rotation', 'Attachement': 'contrat' };
+  function defsForClient() { return DEFS.map(function (d) { return { key: d.key, label: d.label, group: d.group, type: d.type, n: d.n, hint: d.hint, tab: TABS[d.group] || 'prestataire' }; }); }
   return { DEFS: DEFS, DEFAULTS: DEFAULTS, get: get, set: set, pub: pub, defsForClient: defsForClient, logoUpload: logoUpload, logoRemove: logoRemove, logoView: logoView };
 })();
