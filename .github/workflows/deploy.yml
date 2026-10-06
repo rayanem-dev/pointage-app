@@ -2,10 +2,11 @@
 # Secrets du dépôt requis : CLASPRC_JSON (contenu de ~/.clasprc.json), SCRIPT_ID, DEPLOYMENT_ID.
 name: Déployer Sijil (Apps Script)
 
+# Désactivé : le déploiement se fait à la main (deploy.ps1). Pour le réactiver, ajouter ici :
+#   push:
+#     branches: [main]
+#     paths: ['appscript/**']
 on:
-  push:
-    branches: [main]
-    paths: ['appscript/**']
   workflow_dispatch:
 
 concurrency:
