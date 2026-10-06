@@ -145,7 +145,7 @@ test('demandes : 10 types, regroupement par thème par le chef, une seule demand
   assert.strictEqual(env.mails[0].to, 'direction@client.dz');
   assert.match(env.mails[0].body, /^Bonjour,/);
   assert.match(env.mails[0].body, /préparer le\(s\) Titre\(s\) de congé pour :\n\nAGENT UN[^\n]*\n    - Date de sortie : 01\/11\/2026\n    - Durée : 28 jours\n    - Date de reprise : 29\/11\/2026/);
-  assert.match(env.mails[0].body, /Cordialement,/);
+  assert.match(env.mails[0].body, /Cordialement,\n\nAdmin Sijil$/);
   assert.match(env.mails[0].htmlBody, /<li>Durée : <b>28 jours<\/b><\/li>/);
   fail(call(T.chef, 'demandesEnvoyer'), /Aucune demande/);
   assert.strictEqual(ok(call(T.ag, 'demandesList')).mine.find((d) => d.id === d1.id).statut, 'envoyee');

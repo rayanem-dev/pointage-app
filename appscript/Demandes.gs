@@ -151,7 +151,7 @@ var Demandes = (function () {
   // Message à la direction : un bloc par thème. Titre de congé : nom, date de sortie, durée (jours), date de reprise.
   // Retourne { text, html } (le texte brut sert aussi de secours à l'écran).
   function buildMessage(envoi, groups, params, chef) {
-    var sig = (chef ? chef.nom : 'Administration') + (params.prestataire_nom ? '\n' + params.prestataire_nom : '');
+    var sig = 'Admin Sijil';
     var t = ['Bonjour,', '']; var hh = ['<p>Bonjour,</p>'];
     if (envoi.note) { t.push(envoi.note, ''); hh.push('<p>' + esc(envoi.note) + '</p>'); }
     groups.forEach(function (g) {

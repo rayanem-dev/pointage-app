@@ -2,9 +2,13 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.29.2 — 2026-10-06 — Signature des messages à la direction
+
+- Les messages envoyés à la direction sont signés « Admin Sijil ».
+
 ## 3.29.1 — 2026-10-06 — Nouveau format du message de titre de congé
 
-- Le message envoyé à la direction pour les titres de congé suit un modèle simple : « Je vous remercie de bien vouloir préparer le(s) Titre(s) de congé pour : », puis pour chaque agent la date de sortie, la durée en jours et la date de reprise, et « Cordialement » suivi de votre nom.
+- Le message envoyé à la direction pour les titres de congé suit un modèle simple : « Je vous remercie de bien vouloir préparer le(s) Titre(s) de congé pour : », puis pour chaque agent la date de sortie, la durée en jours et la date de reprise, et « Cordialement » signé « Admin Sijil ».
 
 ## 3.29.0 — 2026-10-06 — Responsable pointage et personnel administratif
 
