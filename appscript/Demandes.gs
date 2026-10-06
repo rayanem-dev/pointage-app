@@ -15,7 +15,7 @@ var Demandes = (function () {
   }
   function canHandle(user, demande, agentsById) {
     if (user.role === 'admin') return true;
-    return user.role === 'chef' && demande.agent_id !== user.id && handlerId(agentsById[demande.agent_id], agentsById) === user.id;
+    return user.role === 'chef' && demande.agent_id !== user.id && (Agents.tous(user) || handlerId(agentsById[demande.agent_id], agentsById) === user.id);
   }
   function enrich(d, agentsById) {
     var a = agentsById[d.agent_id] || {};
@@ -123,7 +123,7 @@ var Demandes = (function () {
     var toHandle = user.role === 'agent' ? [] : all.filter(function (d) { return canHandle(user, d, agentsById); }).sort(sortDesc);
     var envois = [];
     if (user.role !== 'agent') {
-      envois = Store.readTable('Envois').filter(function (e) { return user.role === 'admin' || e.chef_id === user.id; })
+      envois = Store.readTable('Envois').filter(function (e) { return user.role === 'admin' || Agents.tous(user) || e.chef_id === user.id; })
         .sort(function (a, b) { return a.date_envoi < b.date_envoi ? 1 : -1; }).slice(0, 40)
         .map(function (e) {
           var items = all.filter(function (d) { return d.envoi_id === e.id; });
@@ -196,7 +196,7 @@ var Demandes = (function () {
     if (['acceptee', 'refusee', 'traitee'].indexOf(statut) < 0) throw httpErr_('Statut invalide');
     var envois = Store.readTable('Envois');
     var e = envois.filter(function (x) { return x.id === envoiId; })[0];
-    if (!e || (user.role !== 'admin' && e.chef_id !== user.id)) throw httpErr_('Envoi introuvable', 'FORBIDDEN');
+    if (!e || (user.role !== 'admin' && !Agents.tous(user) && e.chef_id !== user.id)) throw httpErr_('Envoi introuvable', 'FORBIDDEN');
     var all = Store.readTable('Demandes');
     var now = new Date().toISOString();
     all.forEach(function (d) {

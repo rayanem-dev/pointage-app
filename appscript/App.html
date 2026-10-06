@@ -115,6 +115,18 @@ function emailsBox(value, onInput, n) {
   ins.forEach(function (x) { x.addEventListener('input', function () { if (onInput) onInput(box.value); }); });
   return box;
 }
+// Personnel administratif : une adresse par ligne, avec la case « droits de responsable pointage » (sinon consultation seule). Valeur : « a@x|1, b@y|0 ».
+function staffBox(value) {
+  var list = String(value || '').split(/[\s,;]+/).filter(Boolean).map(function (t) { var p = t.split('|'); return { email: p[0], droits: p[1] === '1' }; });
+  var rows = [0, 1, 2, 3].map(function (i) {
+    var em = h('input', { type: 'email', placeholder: 'Adresse e-mail ' + (i + 1), value: (list[i] || {}).email || '', autocomplete: 'off' });
+    var ck = h('input', { type: 'checkbox', checked: !!(list[i] || {}).droits });
+    return { em: em, ck: ck, node: h('div', { class: 'staffrow', style: 'display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center' }, em, h('label', { class: 'inline', style: 'white-space:nowrap' }, ck, ' Droits de responsable pointage')) };
+  });
+  var box = h('div', { style: 'display:grid;gap:6px' }, rows.map(function (r) { return r.node; }));
+  Object.defineProperty(box, 'value', { get: function () { return rows.filter(function (r) { return r.em.value.trim(); }).map(function (r) { return r.em.value.trim() + '|' + (r.ck.checked ? '1' : '0'); }).join(', '); } });
+  return box;
+}
 function emailsField(label, box, cls, hint) { return h('div', { class: 'field ' + (cls || '') }, h('label', null, label), box, hint ? h('small', { class: 'muted' }, hint) : null); }
 function field(label, input, cls, hint) { return h('label', { class: cls || '' }, label, input, hint ? h('small', null, hint) : null); }
 
@@ -1330,10 +1342,11 @@ function SetupPage() {
     function paramsForm(name) {
       var defs = data.defs.filter(function (d) { return d.tab === name; });
       var groups = []; defs.forEach(function (d) { if (groups.indexOf(d.group) < 0) groups.push(d.group); });
-      var inputs = {}; var box = msgBox(); var btn = h('button', { class: 'primary' }, 'Enregistrer');
+      var inputs = {}; var box = msgBox(); var btn = h('button', { class: 'primary' }, 'Enregistrer'); var comptesBox = h('div');
       var sets = groups.map(function (g) {
         var fields = defs.filter(function (d) { return d.group === g; }).map(function (d) {
           if (d.type === 'logo') return logoControl(d);
+          if (d.type === 'staff') { var sb = staffBox(data.values[d.key]); inputs[d.key] = sb; return emailsField(d.label, sb, 'grow2', d.hint); }
           if (d.type === 'emails') { var eb = emailsBox(data.values[d.key], null, d.n); inputs[d.key] = eb; return emailsField(d.label, eb, 'grow2', d.hint); }
           var el = d.type === 'bool' ? h('select', null, h('option', { value: '1' }, 'Oui'), h('option', { value: '0' }, 'Non')) : d.type === 'area' ? h('textarea', { rows: 3 }) : h('input', { type: d.type === 'number' ? 'number' : d.type === 'color' ? 'color' : 'text', min: 1 });
           el.value = data.values[d.key] || (d.type === 'color' ? '#000000' : ''); inputs[d.key] = el;
@@ -1356,10 +1369,15 @@ function SetupPage() {
         act(btn, box, function () { return call('setupSave', out); }, title + ' : enregistré').then(function (r) {
           if (!r) return;
           Object.keys(out).forEach(function (k) { data.values[k] = out[k]; });
+          comptesBox.replaceChildren.apply(comptesBox, (r.comptes || []).map(function (c) {
+            var m = msgBox(); var b = h('button', { type: 'button', class: 'primary' }, 'Envoyer par e-mail');
+            b.onclick = function () { act(b, m, function () { return call('agentEnvoyerAcces', c.id, c.password); }).then(function (x) { if (x) m.show('✓ Accès envoyés à ' + x.to + '.', true); }); };
+            return h('div', { class: 'card', style: 'margin:8px 0' }, h('b', null, tr('Compte créé') + ' : ' + c.nom + ' — ' + c.email + ' — ' + tr('mot de passe') + ' : ' + c.password), h('div', { class: 'sendbar' }, b), m);
+          }));
           if ('prestataire_nom' in out) { S.params.prestataire = out.prestataire_nom; document.querySelector('.brand').textContent = out.prestataire_nom || 'Pointage'; }
           if ('jours_travail' in out) { S.params.jours_travail = +out.jours_travail; S.params.jours_repos = +out.jours_repos; ['T', 'R', 'ABS', 'T_prevu', 'R_prevu'].forEach(function (k) { S.params.colors[k] = out['couleur_' + k]; }); applyColors(); }
         });
-      } }, h('h2', null, title), SETUP_INTRO[name] ? h('p', { class: 'muted' }, SETUP_INTRO[name]) : null, sets, box, btn);
+      } }, h('h2', null, title), SETUP_INTRO[name] ? h('p', { class: 'muted' }, SETUP_INTRO[name]) : null, sets, box, btn, comptesBox);
     }
     function show() {
       var nodes;

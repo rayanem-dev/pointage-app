@@ -4,10 +4,10 @@ var CFG = {
   CODE_EDITEUR: 'ADMIN', // code réservé : connexion à la console de l'éditeur (gestion des clients)
   APP_SHELL_URL: 'https://rayanem-dev.github.io/pointage-app/', // page d'accueil installable (liens d'invitation ?c=CODE)
   COPYRIGHT: '© 2026 Rayane M. — Tous droits réservés', // propriétaire du logiciel : à modifier ici, affiché sur toutes les pages
-  VERSION: '3.28.1',
+  VERSION: '3.29.0',
   TABLES: {
     Params: ['cle', 'valeur'],
-    Agents: ['id', 'nom', 'fonction', 'affectation', 'contrat', 'email', 'role', 'chef_id', 'actif', 'acces_setup', 'password_hash', 'salt', 'date_entree', 'type', 'rotation', 'acces_exports'],
+    Agents: ['id', 'nom', 'fonction', 'affectation', 'contrat', 'email', 'role', 'chef_id', 'actif', 'acces_setup', 'password_hash', 'salt', 'date_entree', 'type', 'rotation', 'acces_exports', 'portee', 'origine'],
     Contrats: ['numero', 'client', 'objet', 'date_contrat', 'ref_mois', 'ref_attachement', 'rep_prestataire', 'rep_client', 'date_debut', 'duree_mois', 'client_email'],
     Fonctions: ['contrat', 'designation', 'libelle', 'positions', 'delai', 'prix_unitaire', 'qte_precedente_ref', 'nature'],
     Attachements: ['contrat', 'mois', 'designation', 'qte_mois'],

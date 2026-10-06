@@ -64,7 +64,7 @@ test('création des agents : par l\'admin et par le responsable d’équipe', ()
   fail(call(T.ag, 'agentCreate', { nom: 'Z', email: 'z@test.local' }), /refusé/);
   // le chef ne gère que son groupe, et pas les rôles
   assert.strictEqual(ok(call(T.chef, 'agentsManage')).length, 2);
-  assert.strictEqual(ok(call(a, 'agentsManage')).length, 6);
+  assert.strictEqual(ok(call(a, 'agentsManage')).length, 7); // + le compte « Responsable pointage » créé d'après Setup
   fail(call(T.chef2, 'agentUpdate', T.agId, { nom: 'PIRATE' }), /pas modifier/);
   ok(call(T.chef, 'agentUpdate', T.agId, { affectation: 'Hassi', role: 'admin', acces_setup: true }));
   const upd = ok(call(a, 'agentsManage')).find((x) => x.id === T.agId);
@@ -302,7 +302,7 @@ test('représentant prestataire : responsable d’équipe par défaut, sinon aut
   set('AUTRE PERSONNE'); assert.strictEqual(att(), 'AUTRE PERSONNE');
   set('-'); assert.strictEqual(att(), '', 'aucun : laissé vide');
   set(''); assert.strictEqual(att(), 'CHEF UN');
-  assert.deepStrictEqual(ok(call(a, 'contratsGet')).chefs.map((c) => c.nom).sort(), ['CHEF DEUX', 'CHEF UN']);
+  assert.deepStrictEqual(ok(call(a, 'contratsGet')).chefs.map((c) => c.nom).sort(), ['CHEF DEUX', 'CHEF UN', 'Direction']);
 });
 
 test('chaîne contrat → agents/VH → attachement validé (figé) → facture', () => {

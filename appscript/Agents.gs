@@ -13,13 +13,16 @@ var Agents = (function () {
 
   // Agents visibles : admin = tous, chef = son groupe + lui-même, agent = lui-même.
   // Personnel pointé : ni administrateurs ni comptes client (consultation).
-  function isPerson(a) { return a.role !== 'admin' && a.role !== 'client'; }
+  function isPerson(a) { return a.role !== 'admin' && a.role !== 'client' && !a.origine; } // ni administrateur, ni compte de consultation, ni personnel administratif du prestataire (non pointé)
+  // Responsable pointage / staff avec droits : voit, pointe et traite les demandes de tous les agents.
+  function tous(u) { return !!u && u.role === 'chef' && u.portee === 'tous'; }
   function alpha(arr) { return arr.sort(function (a, b) { return String(a.nom).localeCompare(String(b.nom), 'fr', { sensitivity: 'base' }); }); }
   function visibleTo(user) { return alpha(visibleRaw(user)); }
   function visibleRaw(user) {
     var all = list().filter(function (a) { return a.actif === '1' && isPerson(a); });
     if (user.role === 'admin') return all;
     if (user.role === 'client') return user.contrat ? all.filter(function (a) { return a.contrat === user.contrat; }) : all; // le client suit le pointage (de son contrat)
+    if (tous(user)) return all;
     if (user.role === 'chef') return all.filter(function (a) { return a.chef_id === user.id || a.id === user.id; });
     return all.filter(function (a) { return a.id === user.id; });
   }
@@ -39,7 +42,7 @@ var Agents = (function () {
     o.jours_travail = t[1]; o.jours_repos = t[2];
     return o;
   }
-  function manageable(user, a) { return user.role === 'admin' || (user.role === 'chef' && a.chef_id === user.id && a.role === 'agent'); }
+  function manageable(user, a) { return user.role === 'admin' || (user.role === 'chef' && (a.chef_id === user.id || tous(user)) && a.role === 'agent' && !a.origine); }
 
   function create(user, data) {
     var nom = String(data.nom || '').trim();
@@ -162,5 +165,5 @@ var Agents = (function () {
     Store.writeTable('Agents', all.concat([admin]));
     return publicAgent(admin);
   }
-  return { alpha: alpha, sendAccess: sendAccess, list: list, get: get, publicAgent: publicAgent, visibleTo: visibleTo, manageable: manageable, create: create, update: update, isPerson: isPerson, updateMany: updateMany, rotationParams: rotationParams, normRotation: normRotation, setPassword: setPassword, changeOwnPassword: changeOwnPassword, ensureAdmin: ensureAdmin };
+  return { tous: tous, alpha: alpha, sendAccess: sendAccess, list: list, get: get, publicAgent: publicAgent, visibleTo: visibleTo, manageable: manageable, create: create, update: update, isPerson: isPerson, updateMany: updateMany, rotationParams: rotationParams, normRotation: normRotation, setPassword: setPassword, changeOwnPassword: changeOwnPassword, ensureAdmin: ensureAdmin };
 })();

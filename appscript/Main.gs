@@ -132,7 +132,7 @@ var HANDLERS = {
     roles: STAFF,
     fn: function (u) {
       var all = Agents.list();
-      if (u.role !== 'admin') all = all.filter(function (x) { return x.chef_id === u.id && x.role === 'agent'; });
+      if (u.role !== 'admin') all = all.filter(function (x) { return (x.chef_id === u.id || Agents.tous(u)) && x.role === 'agent' && !x.origine; });
       return Agents.alpha(all).map(Agents.publicAgent);
     }
   },
@@ -164,8 +164,18 @@ var HANDLERS = {
     }
   },
   // ----- onglet Setup : admin, ou chef avec accès accordé par l'admin -----
-  setupGet: { setup: true, fn: function (u) { var vals = Params.get(); if (!vals.client_emails) vals.client_emails = Contrats.contrats().map(function (c) { return c.client_email; }).filter(Boolean).join(', ').split(', ').filter(function (x, i, a) { return x && a.indexOf(x) === i; }).slice(0, 4).join(', '); return { defs: Params.defsForClient(), values: vals, isAdmin: u.role === 'admin', status: Setup.status() }; } },
-  setupSave: { setup: true, write: true, fn: function (u, a) { var o = a[0] || {}; var res = Params.set(o); if ('client_emails' in o && u.role === 'admin') res = Object.assign({}, res, { comptes: Contrats.ensureClientAccounts(u) }); return res; } },
+  setupGet: { setup: true, fn: function (u) { var vals = Params.get(); if (!vals.client_emails) vals.client_emails = Contrats.contrats().map(function (c) { return c.client_email; }).filter(Boolean).join(', ').split(', ').filter(function (x, i, a) { return x && a.indexOf(x) === i; }).slice(0, 4).join(', '); // Reprise des anciennes saisies : adresses tapées dans l'ancien champ « nom » = responsables pointage ; anciennes adresses de la direction = personnel administratif (consultation).
+    if (!vals.staff_emails && /@/.test(vals.direction_nom || '')) {
+      var resp = String(vals.direction_nom).split(/[\s,;]+/).filter(function (x) { return /@/.test(x); });
+      var anciens = String(vals.direction_email || '').split(/[\s,;]+/).filter(Boolean);
+      vals.direction_email = resp.slice(0, 2).join(', ');
+      vals.staff_emails = anciens.filter(function (x) { return resp.indexOf(x) < 0; }).slice(0, 4).map(function (x) { return x + '|0'; }).join(', ');
+    }
+    return { defs: Params.defsForClient(), values: vals, isAdmin: u.role === 'admin', status: Setup.status() }; } },
+  setupSave: { setup: true, write: true, fn: function (u, a) { var o = a[0] || {}; var res = Params.set(o); var comptes = [];
+    if ('client_emails' in o && u.role === 'admin') comptes = comptes.concat(Contrats.ensureClientAccounts(u));
+    if (('direction_email' in o || 'staff_emails' in o) && u.role === 'admin') { Params.set({ direction_nom: '' }); comptes = comptes.concat(Contrats.ensurePrestataireAccounts(u)); }
+    return ('client_emails' in o || 'direction_email' in o || 'staff_emails' in o) && u.role === 'admin' ? Object.assign({}, res, { comptes: comptes }) : res; } },
   logoUpload: { setup: true, write: true, fn: function (u, a) { return Params.logoUpload(a[0] || {}); } },
   logoRemove: { setup: true, write: true, fn: function (u, a) { return Params.logoRemove(a[0]); } },
   logoView: { setup: true, fn: function (u, a) { return Params.logoView(a[0]); } },

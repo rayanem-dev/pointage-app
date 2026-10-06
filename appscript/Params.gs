@@ -24,8 +24,9 @@ var Params = (function () {
     { key: 'couleur_ABS', label: 'Couleur ABS (absence)', group: 'Couleurs', type: 'color', def: '#E53935' },
     { key: 'couleur_T_prevu', label: 'Couleur T prévu', group: 'Couleurs', type: 'color', def: '#D6F0CC' },
     { key: 'couleur_R_prevu', label: 'Couleur R prévu', group: 'Couleurs', type: 'color', def: '#FBDCC8' },
-    { key: 'direction_nom', label: 'Nom du responsable pointage', group: 'Responsable pointage (prestataire)', type: 'text', def: '', hint: 'Destinataire des demandes des agents.' },
-    { key: 'direction_email', label: 'E-mails du responsable pointage (2 cases)', group: 'Responsable pointage (prestataire)', type: 'emails', n: 2, def: '', hint: 'Destinataires des demandes des agents (les demandes groupées leur sont envoyées).' },
+    { key: 'direction_nom', label: 'Ancien nom (non utilisé)', group: 'Responsable pointage (prestataire)', type: 'hidden', def: '' },
+    { key: 'direction_email', label: 'Responsable pointage (2 cases)', group: 'Responsable pointage (prestataire)', type: 'emails', n: 2, def: '', hint: 'Destinataires des demandes des agents. Un compte avec les droits de responsable pointage est créé pour chaque adresse ; les demandes groupées leur sont envoyées.' },
+    { key: 'staff_emails', label: 'Personnel administratif du prestataire (4 au maximum)', group: 'Personnel administratif (prestataire)', type: 'staff', def: '', hint: 'Un compte est créé par adresse. Par défaut : consultation seule. Case cochée : mêmes droits que le responsable pointage (pointer les agents, traiter les demandes).' },
     { key: 'client_nom', label: 'Client (société cliente du contrat)', group: 'Client', type: 'text', def: '' },
     { key: 'client_entete', label: 'En-tête client (fiche de pointage, une ligne par ligne)', group: 'Client', type: 'area', def: '' },
     { key: 'client_adresse_facture', label: 'Adresse de facturation (« DOIT »)', group: 'Client', type: 'area', def: '' },
@@ -43,6 +44,16 @@ var Params = (function () {
     Store.readTable('Params').forEach(function (r) { out[r.cle] = r.valeur; });
     return out;
   }
+  // « a@x|1, b@y|0 » : adresse + case « droits de responsable pointage » (1) ou consultation seule (0).
+  function parseStaff(v) {
+    var out = []; var seen = {};
+    String(v == null ? '' : v).split(/[\s,;]+/).filter(Boolean).forEach(function (t) {
+      var p = t.split('|'); var e = Format.emails(p[0], 'Personnel administratif', 1)[0];
+      if (e && !seen[e]) { seen[e] = 1; out.push({ email: e, droits: p[1] === '1' }); }
+    });
+    if (out.length > 4) throw httpErr_('Personnel administratif : 4 adresses au maximum');
+    return out;
+  }
   function set(values) {
     var cur = get();
     Object.keys(values || {}).forEach(function (k) {
@@ -51,6 +62,7 @@ var Params = (function () {
       var s = String(values[k] == null ? '' : values[k]);
       if (def.type === 'number' && !(Number(s) >= 1 && Number(s) % 1 === 0)) throw httpErr_(def.label + ' : entier ≥ 1 attendu');
       if (def.type === 'emails') s = Format.emails(s, k === 'client_emails' ? 'E-mails du contact client' : 'E-mails du responsable pointage', 4).join(', ');
+      if (def.type === 'staff') s = parseStaff(s).map(function (x) { return x.email + '|' + (x.droits ? '1' : '0'); }).join(', ');
       if (def.type === 'bool') { s = (values[k] === true || s === '1' || s === 'true') ? '1' : '0'; }
       if (def.type === 'color' && !/^#[0-9a-fA-F]{6}$/.test(s)) throw httpErr_(def.label + ' : couleur #RRGGBB attendue');
       cur[k] = s;
@@ -99,7 +111,7 @@ var Params = (function () {
     };
   }
   // Onglet du Setup où s'affiche chaque groupe de champs.
-  var TABS = { 'Prestataire': 'prestataire', 'Responsable pointage (prestataire)': 'prestataire', 'Client': 'client', 'Rotation': 'rotation', 'Couleurs': 'rotation', 'Attachement': 'contrat' };
-  function defsForClient() { return DEFS.map(function (d) { return { key: d.key, label: d.label, group: d.group, type: d.type, n: d.n, hint: d.hint, tab: TABS[d.group] || 'prestataire' }; }); }
-  return { DEFS: DEFS, DEFAULTS: DEFAULTS, get: get, set: set, pub: pub, defsForClient: defsForClient, logoUpload: logoUpload, logoRemove: logoRemove, logoView: logoView };
+  var TABS = { 'Prestataire': 'prestataire', 'Responsable pointage (prestataire)': 'prestataire', 'Personnel administratif (prestataire)': 'prestataire', 'Client': 'client', 'Rotation': 'rotation', 'Couleurs': 'rotation', 'Attachement': 'contrat' };
+  function defsForClient() { return DEFS.filter(function (d) { return d.type !== 'hidden'; }).map(function (d) { return { key: d.key, label: d.label, group: d.group, type: d.type, n: d.n, hint: d.hint, tab: TABS[d.group] || 'prestataire' }; }); }
+  return { parseStaff: parseStaff, DEFS: DEFS, DEFAULTS: DEFAULTS, get: get, set: set, pub: pub, defsForClient: defsForClient, logoUpload: logoUpload, logoRemove: logoRemove, logoView: logoView };
 })();

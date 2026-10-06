@@ -50,6 +50,41 @@ var Contrats = (function () {
     });
     return out;
   }
+  // Comptes du personnel du prestataire, créés d'après Setup → Prestataire :
+  //  - « Responsable pointage » (2 adresses) : droits de responsable sur tous les agents ;
+  //  - « Personnel administratif » (4 adresses) : consultation seule, ou mêmes droits si la case est cochée.
+  // Ces comptes ne sont pas pointés. Un compte existant qui n'a pas été créé ici n'est jamais modifié ; une adresse retirée désactive le compte créé ici.
+  function nomDepuisEmail(e, defaut) {
+    var base = String(e).split('@')[0].replace(/[._\-]+/g, ' ').replace(/\d+/g, '').trim();
+    return base ? base.replace(/\b([a-zà-ÿ])/g, function (m) { return m.toUpperCase(); }) : defaut;
+  }
+  function ensurePrestataireAccounts(user) {
+    var params = Params.get(); var voulus = {}; var out = [];
+    Format.emails(params.direction_email, 'E-mails du responsable pointage', 4).forEach(function (e) { voulus[e] = { origine: 'resp', droits: true, defaut: 'Responsable pointage' }; });
+    Params.parseStaff(params.staff_emails).forEach(function (x) { if (!voulus[x.email]) voulus[x.email] = { origine: 'staff', droits: x.droits, defaut: 'Personnel administratif' }; });
+    Object.keys(voulus).forEach(function (e) {
+      var v = voulus[e]; var role = v.droits ? 'chef' : 'client'; var portee = v.droits ? 'tous' : '';
+      var ex = Agents.list().filter(function (a) { return String(a.email).toLowerCase() === e; })[0];
+      if (!ex) {
+        try {
+          var r = Agents.create(user, { nom: nomDepuisEmail(e, v.defaut), email: e, role: role, contrat: '' });
+          var all = Agents.list(); var a = all.filter(function (x) { return x.id === r.agent.id; })[0];
+          a.origine = v.origine; a.portee = portee; a.acces_exports = v.droits ? '1' : '0';
+          Store.writeTable('Agents', all);
+          out.push({ id: a.id, nom: a.nom, email: e, role: role, droits: v.droits, password: r.password });
+        } catch (err) { Logger.log('Compte prestataire non créé (' + e + ') : ' + err.message); }
+      } else if (ex.origine) {
+        var all2 = Agents.list(); var b = all2.filter(function (x) { return x.id === ex.id; })[0];
+        b.role = role; b.portee = portee; b.origine = v.origine; b.actif = '1'; b.acces_exports = v.droits ? '1' : '0';
+        if (!v.droits) b.acces_setup = '0';
+        Store.writeTable('Agents', all2);
+      }
+    });
+    var all3 = Agents.list(); var change = false;
+    all3.forEach(function (a) { if (a.origine && a.actif === '1' && !voulus[String(a.email).toLowerCase()]) { a.actif = '0'; change = true; } });
+    if (change) Store.writeTable('Agents', all3);
+    return out;
+  }
   function saveFonctions(list) {
     var clean = (list || []).map(function (f) {
       var keys = ['positions', 'delai', 'prix_unitaire', 'qte_precedente_ref'];
@@ -172,5 +207,5 @@ var Contrats = (function () {
       return out;
     });
   }
-  return { info: info, dateFin: dateFin, ensureClientAccounts: ensureClientAccounts, synthese: synthese, effectifs: effectifs, checkAffectation: checkAffectation, besoin: besoin, contrats: contrats, fonctions: fonctions, saveContrats: saveContrats, saveFonctions: saveFonctions, saveOverride: saveOverride };
+  return { info: info, dateFin: dateFin, ensureClientAccounts: ensureClientAccounts, ensurePrestataireAccounts: ensurePrestataireAccounts, synthese: synthese, effectifs: effectifs, checkAffectation: checkAffectation, besoin: besoin, contrats: contrats, fonctions: fonctions, saveContrats: saveContrats, saveFonctions: saveFonctions, saveOverride: saveOverride };
 })();

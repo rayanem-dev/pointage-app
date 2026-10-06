@@ -2,6 +2,12 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.29.0 — 2026-10-06 — Responsable pointage et personnel administratif
+
+- Setup → Prestataire : deux cases « Responsable pointage ». Chaque adresse reçoit un compte qui voit et pointe tous les agents et traite leurs demandes ; les demandes groupées leur sont envoyées.
+- Nouveau bloc « Personnel administratif » (4 adresses) : un compte par adresse, en consultation seule, ou avec les mêmes droits que le responsable pointage si la case est cochée.
+- Ces comptes ne sont pas pointés comme des agents. Retirer une adresse désactive son compte.
+
 ## 3.28.1 — 2026-10-06 — Responsable pointage du prestataire
 
 - Dans Setup → Prestataire, le bloc « Direction du prestataire » devient « Responsable pointage (prestataire) » : un champ pour le nom et deux cases e-mail. Ce sont les destinataires des demandes des agents.

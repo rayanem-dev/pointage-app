@@ -5928,5 +5928,50 @@
 "E-mails du responsable pointage",
 "Attendance manager e-mails",
 "البريد الإلكتروني لمسؤول التسجيل"
+],
+[
+"Personnel administratif : 4 adresses au maximum",
+"Administrative staff: 4 addresses maximum",
+"الطاقم الإداري: 4 عناوين كحد أقصى"
+],
+[
+"Responsable pointage (2 cases)",
+"Attendance manager (2 boxes)",
+"مسؤول التسجيل (خانتان)"
+],
+[
+"Destinataires des demandes des agents. Un compte avec les droits de responsable pointage est créé pour chaque adresse ; les demandes groupées leur sont envoyées.",
+"Recipients of the agents' requests. An account with attendance-manager rights is created for each address; grouped requests are sent to them.",
+"مستلمو طلبات الأعوان. يُنشأ حساب بصلاحيات مسؤول التسجيل لكل عنوان، وتُرسل إليهم الطلبات المجمّعة."
+],
+[
+"Personnel administratif du prestataire (4 au maximum)",
+"Provider's administrative staff (4 maximum)",
+"الطاقم الإداري للمقاول (4 كحد أقصى)"
+],
+[
+"Personnel administratif (prestataire)",
+"Administrative staff (provider)",
+"الطاقم الإداري (المقاول)"
+],
+[
+"Un compte est créé par adresse. Par défaut : consultation seule. Case cochée : mêmes droits que le responsable pointage (pointer les agents, traiter les demandes).",
+"One account is created per address. By default: read-only. Box ticked: same rights as the attendance manager (record attendance, handle requests).",
+"يُنشأ حساب لكل عنوان. افتراضيًا: اطلاع فقط. عند التحديد: نفس صلاحيات مسؤول التسجيل (تسجيل الحضور ومعالجة الطلبات)."
+],
+[
+"Droits de responsable pointage",
+"Attendance-manager rights",
+"صلاحيات مسؤول التسجيل"
+],
+[
+"Compte créé",
+"Account created",
+"تم إنشاء الحساب"
+],
+[
+"mot de passe",
+"password",
+"كلمة المرور"
 ]
 ]
