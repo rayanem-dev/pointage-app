@@ -721,7 +721,7 @@ function DemandesPage() {
   }
   // Correction d'une demande encore en attente (oubli, mauvaise date…) par l'agent ou son chef.
   function editor(d, anchor) {
-    var types = CFG_TYPES();
+    var types = CFG_TYPES(); if (!types[d.type]) types[d.type] = d.type_label || d.type; // ancien type retiré de la liste : on le garde pour cette demande
     var type = h('select', null, Object.keys(types).map(function (k) { return h('option', { value: k }, types[k]); })); type.value = d.type;
     var d1 = h('input', { type: 'date', value: d.date_debut || '' }); var d2 = h('input', { type: 'date', value: d.date_fin || '' });
     var msg = h('textarea', { rows: 3, maxlength: 500 }); msg.value = d.message || '';
@@ -749,7 +749,7 @@ function DemandesPage() {
     } }, h('h2', null, 'Nouvelle demande'), h('p', { class: 'muted' }, 'Elle sera transmise ' + dest + '.'),
       h('div', { class: 'row' }, field('Type de demande', type, 'grow2'), field('Du (facultatif)', d1), field('Au (facultatif)', d2)), field('Message', msg), box, btn);
   }
-  function CFG_TYPES() { return { titre_conge: 'Titre de congé', attestation_travail: 'Attestation de travail', ats: 'ATS', fiche_emolument: "Fiche d'émoluments", contrat: 'Copie du contrat', attestation_cnas: 'Attestation CNAS', maj_cnas: 'Mise à jour CNAS', attestation_emoluments: "Attestation d'émoluments", prolongation_conge: 'Prolongation de congé', prolongation_sejour: 'Prolongation de séjour' }; }
+  function CFG_TYPES() { return { titre_conge: 'Titre de congé', attestation_travail: 'Attestation de travail', fiche_emolument: "Fiche d'émoluments", contrat: 'Copie du contrat', attestation_cnas: 'Attestation CNAS', maj_cnas: 'Mise à jour CNAS', prolongation_conge: 'Prolongation de congé', prolongation_sejour: 'Prolongation de séjour' }; }
 
   // Boîte du chef : demandes en attente regroupées par thème, une seule demande envoyée à la direction.
   function inbox(L) {

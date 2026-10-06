@@ -14,7 +14,7 @@ test('demandes : décision directe modifiable, annulable, supprimable ; jamais u
   const ag = ok(call(null, 'login', 'ad@t.fr', 'agentpw123')).token;
   const ae = ok(call(null, 'login', 'ae@t.fr', 'agentpw123')).token;
   const d1 = ok(call(ag, 'demandeCreate', { type: 'titre_conge', date_debut: '2026-11-01', date_fin: '2026-11-28' }));
-  const d2 = ok(call(ag, 'demandeCreate', { type: 'ats' }));
+  const d2 = ok(call(ag, 'demandeCreate', { type: 'attestation_cnas' }));
   const d3 = ok(call(ag, 'demandeCreate', { type: 'contrat' }));
   const d4 = ok(call(ag, 'demandeCreate', { type: 'attestation_cnas' }));
   // acceptation directe puis correction
@@ -48,7 +48,7 @@ test('demandes : une demande acceptée reste « en cours » et part à la direct
   const admin = ok(call(null, 'login', 'admin@t.fr', 'adminpw12')).token;
   ok(call(admin, 'agentCreate', { nom: 'AGENT ENV', email: 'ev@t.fr', role: 'agent', password: 'agentpw123' }));
   const ag = ok(call(null, 'login', 'ev@t.fr', 'agentpw123')).token;
-  const a = ok(call(ag, 'demandeCreate', { type: 'ats' })); const b = ok(call(ag, 'demandeCreate', { type: 'contrat' })); const c = ok(call(ag, 'demandeCreate', { type: 'attestation_cnas' }));
+  const a = ok(call(ag, 'demandeCreate', { type: 'attestation_travail' })); const b = ok(call(ag, 'demandeCreate', { type: 'contrat' })); const c = ok(call(ag, 'demandeCreate', { type: 'attestation_cnas' }));
   ok(call(admin, 'demandeRepondre', a.id, 'acceptee', 'ok'));
   ok(call(admin, 'demandeRepondre', c.id, 'refusee', 'non'));
   const r = ok(call(admin, 'demandesEnvoyer', [], ''));
@@ -56,4 +56,20 @@ test('demandes : une demande acceptée reste « en cours » et part à la direct
   const l = ok(call(admin, 'demandesList'));
   const st = Object.fromEntries(l.toHandle.map((d) => [d.id, d.statut]));
   assert.deepStrictEqual([st[a.id], st[b.id], st[c.id]], ['envoyee', 'envoyee', 'refusee']);
+});
+
+test('demandes : ATS et attestation d\'émoluments ne sont plus proposés, mais une ancienne demande reste visible', () => {
+  const app3 = loadApp(); const call3 = app3.call;
+  app3.run("Setup.install('admin@t.fr', 'adminpw12', 'Admin')");
+  const admin = ok(call3(null, 'login', 'admin@t.fr', 'adminpw12')).token;
+  ok(call3(admin, 'agentCreate', { nom: 'AGENT OLD', email: 'ol@t.fr', role: 'agent', password: 'agentpw123' }));
+  const ag = ok(call3(null, 'login', 'ol@t.fr', 'agentpw123')).token;
+  fail(call3(ag, 'demandeCreate', { type: 'ats' }), /Type de demande invalide/);
+  fail(call3(ag, 'demandeCreate', { type: 'attestation_emoluments' }), /Type de demande invalide/);
+  assert.ok(!('ats' in ok(call3(admin, 'demandesList')).types) && !('attestation_emoluments' in ok(call3(admin, 'demandesList')).types));
+  // ancienne demande déjà enregistrée dans le classeur
+  app3.run("Store.writeTable('Demandes', Store.readTable('Demandes').concat([{ id: 'D_OLD', agent_id: Agents.list().filter(function (a) { return a.role === 'agent'; })[0].id, type: 'ats', objet: 'ATS', message: '', date_debut: '', date_fin: '', date_creation: new Date().toISOString(), statut: 'en_attente', envoi_id: '', reponse: '', traite_par: '', date_traitement: '' }]))");
+  const l = ok(call3(admin, 'demandesList'));
+  assert.strictEqual(l.types.ats, 'ATS', 'le type reste listé tant qu\'une demande l\'utilise');
+  assert.strictEqual(l.toHandle[0].type_label, 'ATS');
 });

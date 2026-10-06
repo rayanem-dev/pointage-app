@@ -120,8 +120,8 @@ test('sécurité : un texte saisi commençant par = + - @ n\'est jamais une form
   const noms = ok(call(T.admin, 'agentsManage')).map((a) => a.nom);
   assert.deepStrictEqual(noms, [...noms].sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' })), 'ordre alphabétique');
   const ag = ok(call(null, 'login', 'evil@t.fr', 'evilpass12')).token;
-  for (let i = 0; i < 20; i += 1) ok(call(ag, 'demandeCreate', { type: 'ats', message: '=1+1' }));
-  fail(call(ag, 'demandeCreate', { type: 'ats' }), /Trop de demandes/);
+  for (let i = 0; i < 20; i += 1) ok(call(ag, 'demandeCreate', { type: 'attestation_cnas', message: '=1+1' }));
+  fail(call(ag, 'demandeCreate', { type: 'attestation_cnas' }), /Trop de demandes/);
   assert.deepStrictEqual(env.formulaCells, []);
 });
 test('logo : le contenu doit correspondre au format annoncé', () => {

@@ -13,7 +13,7 @@ test('personnel du prestataire : responsables pointage (droits sur tous les agen
   ok(call(admin, 'agentCreate', { nom: 'AGENT A', email: 'aa@t.fr', role: 'agent', password: 'agentpw123', chef_id: chefA.id }));
   const agB = ok(call(admin, 'agentCreate', { nom: 'AGENT B', email: 'ab@t.fr', role: 'agent', password: 'agentpw123' })).agent;
   const ag = ok(call(null, 'login', 'aa@t.fr', 'agentpw123')).token;
-  const dem = ok(call(ag, 'demandeCreate', { type: 'ats' }));
+  const dem = ok(call(ag, 'demandeCreate', { type: 'attestation_cnas' }));
 
   const r = ok(call(admin, 'setupSave', { direction_email: 'resp.un@p.dz, resp.deux@p.dz', staff_emails: 'cons@p.dz|0, droit@p.dz|1' }));
   assert.deepStrictEqual(r.comptes.map((c) => c.email).sort(), ['cons@p.dz', 'droit@p.dz', 'resp.deux@p.dz', 'resp.un@p.dz']);

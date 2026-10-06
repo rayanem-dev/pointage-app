@@ -117,10 +117,10 @@ test('demandes : 10 types, regroupement par thème par le chef, une seule demand
   assert.deepStrictEqual(Object.keys(run('CFG.TYPES_DEMANDE')), ['titre_conge', 'attestation_travail', 'ats', 'fiche_emolument', 'contrat', 'attestation_cnas', 'maj_cnas', 'attestation_emoluments', 'prolongation_conge', 'prolongation_sejour']);
   fail(call(T.ag, 'demandeCreate', { type: 'autre', objet: 'x' }), /Type/);
   fail(call(T.ag, 'demandeCreate', { type: 'titre_conge', date_debut: '2026-10-10', date_fin: '2026-10-01' }), /fin/);
-  fail(call(T.admin, 'demandeCreate', { type: 'ats' }), /administrateur/);
+  fail(call(T.admin, 'demandeCreate', { type: 'attestation_cnas' }), /administrateur/);
   const mk = (tok, type, extra = {}) => ok(call(tok, 'demandeCreate', { type, message: 'svp', ...extra }));
   const d1 = mk(T.ag, 'titre_conge', { date_debut: '2026-11-01', date_fin: '2026-11-28' });
-  mk(T.ag, 'ats');
+  mk(T.ag, 'attestation_cnas');
   const ag2 = ok(call(null, 'login', 'ag2@test.local', generatedPw())).token;
   mk(ag2, 'titre_conge'); mk(ag2, 'fiche_emolument'); mk(ag2, 'prolongation_sejour');
   mk(T.lone, 'attestation_travail');
@@ -133,7 +133,7 @@ test('demandes : 10 types, regroupement par thème par le chef, une seule demand
   assert.strictEqual(ok(call(T.admin, 'demandesList')).toHandle.length, 6);
   fail(call(T.chef2, 'demandeRepondre', d1.id, 'acceptee'), /accessible/);
   // une demande refusée directement ne part pas à la direction
-  const direct = ok(call(T.chef, 'demandeRepondre', l.toHandle.find((d) => d.type === 'ats').id, 'refusee', 'Non éligible'));
+  const direct = ok(call(T.chef, 'demandeRepondre', l.toHandle.find((d) => d.type === 'attestation_cnas').id, 'refusee', 'Non éligible'));
   assert.strictEqual(direct.statut, 'refusee');
   // envoi groupé : UNE seule demande, regroupée par thème
   assert.ok(env.mails.some((m) => /^Nouvelle demande/.test(m.subject)), 'le chef est prévenu à chaque demande d\'un agent');
@@ -157,7 +157,7 @@ test('demandes : 10 types, regroupement par thème par le chef, une seule demand
   const mine = ok(call(T.ag, 'demandesList')).mine;
   assert.strictEqual(mine.find((d) => d.id === d1.id).statut, 'acceptee');
   assert.strictEqual(mine.find((d) => d.id === d1.id).reponse, 'Accordé par la direction');
-  assert.strictEqual(mine.find((d) => d.type === 'ats').statut, 'refusee', 'la décision directe n\'est pas écrasée');
+  assert.strictEqual(mine.find((d) => d.type === 'attestation_cnas').statut, 'refusee', 'la décision directe n\'est pas écrasée');
   // agent sans chef : traité par l'admin
   const envAdmin = ok(call(T.admin, 'demandesEnvoyer'));
   assert.strictEqual(envAdmin.envoi.nb, 1);

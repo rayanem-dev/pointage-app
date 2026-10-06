@@ -7,6 +7,7 @@ var Demandes = (function () {
   var T = new Proxy({}, { get: function (t, k) { return CFG.TYPES_DEMANDE[k]; }, ownKeys: function () { return Object.keys(CFG.TYPES_DEMANDE); }, getOwnPropertyDescriptor: function (t, k) { return k in CFG.TYPES_DEMANDE ? { enumerable: true, configurable: true, value: CFG.TYPES_DEMANDE[k] } : undefined; } });
 
   var DECIDEES = ['acceptee', 'refusee', 'traitee'];
+  function masque(t) { return CFG.TYPES_DEMANDE_MASQUES.indexOf(t) >= 0; }
   function byId(list) { var m = {}; list.forEach(function (x) { m[x.id] = x; }); return m; }
   // Qui traite la demande d'un agent : son responsable d’équipe actif, sinon l'admin.
   function handlerId(agent, agentsById) {
@@ -36,7 +37,7 @@ var Demandes = (function () {
 
   function create(user, data) {
     if (user.role === 'admin') throw httpErr_("L'administrateur ne fait pas de demande", 'FORBIDDEN');
-    if (!T[data.type]) throw httpErr_('Type de demande invalide');
+    if (!T[data.type] || masque(data.type)) throw httpErr_('Type de demande invalide');
     ['date_debut', 'date_fin'].forEach(function (k) { if (data[k] && !Dates.isDate(data[k])) throw httpErr_('Date invalide'); });
     if (data.date_debut && data.date_fin && data.date_fin < data.date_debut) throw httpErr_('La date de fin précède la date de début');
     if (!Format.allow('DEM_' + Store.tenantCode() + '_' + user.id, 20, 3600)) throw httpErr_('Trop de demandes en peu de temps, réessayez plus tard');
@@ -70,7 +71,7 @@ var Demandes = (function () {
     var decidee = DECIDEES.indexOf(d.statut) >= 0 && !d.envoi_id;
     if (d.statut !== 'en_attente' && !(decidee && canHandle(user, d, agentsById))) throw httpErr_('Cette demande est déjà transmise à la direction ou traitée par elle : elle ne peut plus être modifiée');
     var type = data.type || d.type;
-    if (!T[type]) throw httpErr_('Type de demande invalide');
+    if (!T[type] || (type !== d.type && masque(type))) throw httpErr_('Type de demande invalide');
     var debut = data.date_debut !== undefined ? data.date_debut : d.date_debut; var fin = data.date_fin !== undefined ? data.date_fin : d.date_fin;
     [debut, fin].forEach(function (x) { if (x && !Dates.isDate(x)) throw httpErr_('Date invalide'); });
     if (debut && fin && fin < debut) throw httpErr_('La date de fin précède la date de début');
@@ -132,7 +133,9 @@ var Demandes = (function () {
           return o;
         });
     }
-    return { mine: mine, toHandle: toHandle, envois: envois, types: T, statuts: CFG.STATUTS_DEMANDE };
+    var utilises = {}; all.forEach(function (d) { utilises[d.type] = 1; });
+    var types = {}; Object.keys(T).forEach(function (k) { if (!masque(k) || utilises[k]) types[k] = T[k]; }); // les types retirés ne restent que s'ils servent encore
+    return { mine: mine, toHandle: toHandle, envois: envois, types: types, statuts: CFG.STATUTS_DEMANDE };
   }
 
   // Décision directe (sans passer par la direction) ou réponse individuelle.

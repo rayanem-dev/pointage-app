@@ -2,6 +2,10 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.29.4 — 2026-10-06 — Types de demandes simplifiés
+
+- « ATS » et « Attestation d'émoluments » ne sont plus proposés dans les nouvelles demandes (on garde « Fiche d'émoluments »). Les demandes déjà faites de ces types restent visibles et peuvent être traitées normalement.
+
 ## 3.29.3 — 2026-10-06 — Même modèle de message pour toutes les demandes
 
 - Toutes les demandes envoyées à la direction suivent le modèle du titre de congé : « Je vous remercie de bien vouloir préparer … pour : », le nom de chaque agent, ses dates (et la durée en jours) puis « Cordialement ». Une phrase d'introduction par type de demande.
