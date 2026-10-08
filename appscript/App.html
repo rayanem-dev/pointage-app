@@ -777,7 +777,7 @@ function DemandesPage() {
           var decide = function (st, b) { var rep = window.prompt(st === 'refusee' ? 'Motif du refus (facultatif) :' : 'Réponse à l’agent (facultatif) :', ''); if (rep === null) return; act(b, box, function () { return call('demandeRepondre', d.id, st, rep); }, 'Réponse enregistrée').then(function (r) { if (r) { flash = { text: 'Réponse enregistrée', ok: true }; load(); } }); };
           rb.onclick = function () { decide('refusee', rb); }; ab.onclick = function () { decide('acceptee', ab); };
           var accepted = d.statut === 'acceptee'; var un = h('button', { type: 'button' }, 'Annuler la décision'); un.onclick = function () { reouvrirDem(d, un); };
-          var rowEl = h('div', { class: 'pick' }, c, h('div', null, h('b', null, d.agent_nom), d.agent_fonction ? ' · ' + d.agent_fonction : '', accepted ? h('span', { class: 'badge acceptee' }, 'Acceptée') : null, h('small', null, frDateTime(d.date_creation) + (d.date_debut ? ' · du ' + frDate(d.date_debut) + (d.date_fin ? ' au ' + frDate(d.date_fin) : '') + (d.reprise ? ' · reprise prévue le ' + frDate(d.reprise) : '') : '')), d.message ? h('div', null, d.message) : null, d.reponse ? h('div', { class: 'reply' }, 'Réponse : ' + d.reponse) : null), h('span', null, accepted ? [un] : [ab, rb], ' ', mb, ' ', supBtn(d))); return rowEl;
+          var rowEl = h('div', { class: 'pick' }, c, h('div', null, h('b', null, d.agent_nom), d.agent_fonction ? ' · ' + d.agent_fonction : '', accepted ? h('span', { class: 'badge acceptee' }, 'Acceptée') : null, h('small', null, frDateTime(d.date_creation) + (d.date_debut ? ' · du ' + frDate(d.date_debut) + (d.date_fin ? ' au ' + frDate(d.date_fin) : '') + (d.reprise ? ' · reprise prévue le ' + frDate(d.reprise) : '') : '')), d.message ? h('div', null, d.message) : null, d.reponse ? h('div', { class: 'reply' }, 'Réponse : ' + d.reponse) : null, qui(d)), h('span', null, accepted ? [un] : [ab, rb], ' ', mb, ' ', supBtn(d))); return rowEl;
         }));
     }).filter(Boolean);
     send.onclick = function () {
@@ -793,6 +793,11 @@ function DemandesPage() {
       h('p', { class: 'muted' }, "Les demandes de votre groupe arrivent ici, regroupées par thème. Acceptez ou refusez ; tant qu’une demande n’est pas envoyée, vous pouvez la modifier, annuler votre décision ou la supprimer. Cochez celles à transmettre : une seule demande groupée part à la direction."),
       themes.length ? themes : h('p', { class: 'muted' }, 'Aucune demande en cours.'), box,
       themes.length ? h('div', { class: 'sendbar' }, note, send) : null);
+  }
+  // Pour l'administrateur : à qui revient la demande (responsable d'équipe de l'agent) ; sans responsable, c'est l'administrateur.
+  function qui(d) {
+    if (!isAdmin) return null;
+    return h('small', { class: d.responsable_nom ? 'muted' : 'muted', style: d.responsable_nom ? '' : 'color:var(--warn-fg)' }, d.responsable_nom ? tr('Équipe de') + ' ' + d.responsable_nom : tr('⚠ Aucun responsable d’équipe pour cet agent : la demande revient à l’administrateur'));
   }
   // Ligne d'une demande déjà envoyée (réponse de la direction attendue) : corriger, retirer de l'envoi ou supprimer.
   function envoiLigne(d) {

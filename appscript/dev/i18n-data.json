@@ -6053,5 +6053,15 @@
 "La direction a répondu à cet envoi : il ne peut plus être annulé",
 "Management has replied to this batch: it can no longer be cancelled",
 "ردّت الإدارة على هذا الإرسال: لا يمكن إلغاؤه بعد الآن"
+],
+[
+"Équipe de",
+"Team of",
+"فريق"
+],
+[
+"⚠ Aucun responsable d’équipe pour cet agent : la demande revient à l’administrateur",
+"⚠ No team leader for this agent: the request goes to the administrator",
+"⚠ لا يوجد مسؤول فريق لهذا العون: يعود الطلب إلى المسؤول"
 ]
 ]

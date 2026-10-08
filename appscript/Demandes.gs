@@ -24,6 +24,7 @@ var Demandes = (function () {
     Object.keys(d).forEach(function (k) { o[k] = d[k]; });
     o.agent_nom = a.nom || '?'; o.agent_fonction = a.fonction || ''; o.type_label = T[d.type] || d.type;
     o.reprise = reprise(d, a);
+    var hid = handlerId(a, agentsById); o.responsable_nom = hid === 'admin' ? '' : (agentsById[hid] || {}).nom || ''; // qui traite : le responsable d'équipe de l'agent, sinon l'administrateur
     return o;
   }
   // Titre de congé : date de reprise = fin du congé + 1 jour ; sans date de fin, départ + durée du repos de la rotation de l'agent (ex. 16/10 + 28 j = 13/11).

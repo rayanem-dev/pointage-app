@@ -93,3 +93,23 @@ test('demandes : ATS et attestation d\'émoluments ne sont plus proposés, mais 
   assert.strictEqual(l.types.ats, 'ATS', 'le type reste listé tant qu\'une demande l\'utilise');
   assert.strictEqual(l.toHandle[0].type_label, 'ATS');
 });
+
+test('demandes : le responsable d\'équipe voit et gère toutes les demandes de SON équipe ; l\'administrateur voit à qui elles reviennent', () => {
+  const app4 = loadApp(); const call4 = app4.call;
+  app4.run("Setup.install('admin@t.fr', 'adminpw12', 'Admin')");
+  const admin = ok(call4(null, 'login', 'admin@t.fr', 'adminpw12')).token;
+  const chef = ok(call4(admin, 'agentCreate', { nom: 'CHEF EQ', email: 'ce@t.fr', role: 'chef', password: 'chefeqpw12' })).agent;
+  ok(call4(admin, 'agentCreate', { nom: 'AG EQUIPE', email: 'ae@t.fr', role: 'agent', password: 'agentpw123', chef_id: chef.id }));
+  ok(call4(admin, 'agentCreate', { nom: 'AG LIBRE', email: 'al@t.fr', role: 'agent', password: 'agentpw123' }));
+  const tc = ok(call4(null, 'login', 'ce@t.fr', 'chefeqpw12')).token;
+  const ae = ok(call4(null, 'login', 'ae@t.fr', 'agentpw123')).token; const al = ok(call4(null, 'login', 'al@t.fr', 'agentpw123')).token;
+  const d1 = ok(call4(ae, 'demandeCreate', { type: 'contrat' })); const d2 = ok(call4(ae, 'demandeCreate', { type: 'attestation_cnas' })); ok(call4(al, 'demandeCreate', { type: 'contrat' }));
+  const l = ok(call4(tc, 'demandesList'));
+  assert.deepStrictEqual(l.toHandle.map((d) => d.agent_nom).sort(), ['AG EQUIPE', 'AG EQUIPE'], 'toutes les demandes de son équipe, aucune autre');
+  ok(call4(tc, 'demandeModifier', d1.id, { message: 'ok' })); ok(call4(tc, 'demandeRepondre', d2.id, 'acceptee', 'oui'));
+  ok(call4(tc, 'demandeReouvrir', d2.id)); ok(call4(tc, 'demandeSupprimer', d2.id));
+  assert.strictEqual(Number(ok(call4(tc, 'demandesEnvoyer', null, '')).envoi.nb), 1);
+  const la = ok(call4(admin, 'demandesList')).toHandle;
+  assert.strictEqual(la.find((d) => d.agent_nom === 'AG LIBRE').responsable_nom, '', 'sans responsable : revient à l\'administrateur');
+  assert.strictEqual(la.find((d) => d.agent_nom === 'AG EQUIPE').responsable_nom, 'CHEF EQ');
+});
