@@ -118,7 +118,6 @@
     <p id="launcher-msg"></p>
     <p><button id="launcher-open" type="button">Ouvrir l'application</button></p>
     <p id="launcher-diag"><small></small> <button id="launcher-clear" type="button" hidden style="background:none;color:#b3261e;text-decoration:underline;padding:0">Effacer l'adresse personnalisée</button></p>
-    <p><small>Pour l'installer sur votre appareil : bouton « Installer » ci-dessus, ou menu du navigateur → « Installer Sijil » / « Ajouter à l'écran d'accueil » (iPhone : Partager → Sur l'écran d'accueil).</small></p>
     <p><button id="launcher-change" type="button" style="background:none;color:#6b7785;text-decoration:underline;padding:0">Changer d'entreprise</button></p>
     <small>© 2026 Rayane M. — Tous droits réservés · <a href="confidentialite.html">Confidentialité</a></small>
   </section>
@@ -285,9 +284,7 @@
       setup.hidden = true; launcher.hidden = false;
       // Diagnostic : quelle adresse /exec sera ouverte, et d'où elle vient (adresse personnalisée, exec.json publié par l'application, ou secours).
       remoteUrl().then(function (remote) {
-        var custom = store.get('app-url-custom'); var t = target(remote);
-        var src = custom ? T('adresse personnalisée saisie sur cet appareil') : remote ? T('exec.json publié par l\'application') : T('adresse de secours');
-        document.querySelector('#launcher-diag small').textContent = T('Adresse utilisée : …') + (t.url.match(/\/s\/([\w-]+)\//) || [, ''])[1].slice(-8) + ' (' + src + ')';
+        var custom = store.get('app-url-custom');
         document.getElementById('launcher-clear').hidden = !custom;
       });
     }

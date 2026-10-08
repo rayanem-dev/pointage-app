@@ -2,6 +2,10 @@
 
 © 2026 Rayane M. — Tous droits réservés
 
+## 3.31.2 — 2026-10-08 — Page d'accueil épurée
+
+- La page d'accueil (avant l'ouverture de l'application) n'affiche plus l'adresse technique ni le long texte d'aide à l'installation : le bouton « Ouvrir l'application » suffit.
+
 ## 3.31.0 — 2026-10-06 — E-mails aux couleurs de Sijil
 
 - Tous les e-mails de Sijil (accès, nouveau document, demandes, remarques, code de réinitialisation) ont maintenant un en-tête avec le logo et les couleurs de Sijil, un bouton pour ouvrir l'application et un pied de page.
