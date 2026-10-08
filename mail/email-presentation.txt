@@ -1,22 +1,25 @@
-Objet : Présentation de Sijil — votre pointage, simple et à jour
+Objet : Présentation de Sijil — du pointage à l'attachement et à la facture
 
 Bonjour,
 
-Nous avons le plaisir de vous présenter Sijil : le pointage, les demandes (titre de congé, attestation…), les documents et le suivi du contrat au même endroit, sur téléphone comme sur ordinateur, en français, arabe et anglais.
+Nous avons le plaisir de vous présenter Sijil, l'outil qui remplace les fichiers et les messages éparpillés. Il gère le pointage du personnel, puis l'attachement et la facture du contrat qui en découlent ; les demandes (titre de congé, attestation…) et les documents des agents s'y trouvent aussi. Tout est accessible depuis un téléphone ou un ordinateur, en français, en arabe et en anglais.
 
-POUR L'AGENT : sa situation du jour, les jours restants, son solde et sa date de reprise ; pointage sur 1 mois, 3, 6 ou 12 mois.
-POUR LE RESPONSABLE D’ÉQUIPE : pointage en un clic (T, R, ABS), rattrapage des jours oubliés d'un seul bouton, prévisions de rotation.
-POUR LA DIRECTION : une seule demande groupée par e-mail ; la réponse s'applique à toutes les demandes.
-DOCUMENTS : fiches de paie, titres de congé, attestations rangés par agent, avec notification.
-PROTECTION : chacun ne voit que ce qui le concerne ; mots de passe jamais en clair ; mot de passe oublié par e-mail.
+POUR L'AGENT : sa situation du jour, les jours restants, son solde et sa date de reprise ; pointage sur 1 mois, 3, 6 ou 12 mois ; ses documents ; une remarque possible sur un jour de son pointage.
+LES DEMANDES : l'agent demande en deux clics ; le responsable d'équipe les regroupe par thème et envoie une seule demande à la direction, avec un message prêt à lire. La date de reprise est calculée.
+POUR LE RESPONSABLE D'ÉQUIPE : pointage en un clic (T, R, ABS) ; case « Pointage automatique » : Sijil recopie chaque jour le pointage de la veille à l'heure choisie, il n'intervient que pour les changements (départ, entrée, absence).
+DE L'ATTACHEMENT À LA FACTURE : les quantités viennent des jours réellement pointés ; l'attachement validé fige le mois ; la facture s'en déduit ; fiche de pointage, attachement et facture s'exportent en Excel et PDF, avec votre logo.
+DIRECTION ET RH : une demande groupée par e-mail ; la réponse s'applique à toutes les demandes.
+DOCUMENTS : fiches de paie, titres de congé, attestations déposés en vrac, reconnus, classés par agent et notifiés.
+COMPTE CLIENT : le client suit le pointage et consulte les attachements et factures validés, en lecture seule.
+PROTECTION : chacun ne voit que ce qui le concerne ; mots de passe jamais en clair ; mot de passe oublié par e-mail ; option « Rester connecté ».
 
 Se connecter à l'application : https://rayanem-dev.github.io/pointage-app/
-Identifiant et mot de passe : transmis par e-mail ou par votre responsable d’équipe.
+Identifiant et mot de passe : transmis par e-mail ou par votre responsable d'équipe.
 
 Présentation : https://docs.google.com/presentation/d/1ziQ3U7c2lvkEywjihQnhlqHUNaRj0OjS/edit?usp=sharing&ouid=100581094853869883670&rtpof=true&sd=true
-Document : https://drive.google.com/file/d/1A5EqFAm2lkxheq45ONfrDexYiD7oTxrp/view?usp=sharing
+Manuel d'utilisation : https://drive.google.com/file/d/1A5EqFAm2lkxheq45ONfrDexYiD7oTxrp/view?usp=sharing
 
-Nous restons à votre disposition pour une démonstration.
+Nous restons à votre disposition pour une démonstration ou pour répondre à vos questions.
 
 Cordialement,
 Rayane M.
