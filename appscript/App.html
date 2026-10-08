@@ -714,17 +714,17 @@ function DemandesPage() {
     return card;
   }
   function boxAfter(b) { var m = msgBox(); if (b.parentNode) b.parentNode.after(m); return m; }
-  function supBtn(d) {
+  function supBtn(d, question) {
     var b = h('button', { type: 'button', class: 'danger' }, 'Supprimer');
     b.onclick = function () {
-      if (!window.confirm(tr('Supprimer cette demande définitivement ?'))) return;
+      if (!window.confirm(tr(question || 'Supprimer cette demande définitivement ?'))) return;
       act(b, boxAfter(b), function () { return call('demandeSupprimer', d.id); }).then(function (r) { if (r) { flash = { text: 'Demande supprimée.', ok: true }; load(); } });
     };
     return b;
   }
-  function reouvrirDem(d, b) {
-    if (!window.confirm(tr('Annuler la décision ? La demande repasse « en attente » : vous pourrez la modifier, la transmettre à la direction ou la supprimer.'))) return;
-    act(b, boxAfter(b), function () { return call('demandeReouvrir', d.id); }).then(function (r) { if (r) { flash = { text: 'Décision annulée : la demande est de nouveau en attente.', ok: true }; load(); } });
+  function reouvrirDem(d, b, question) {
+    if (!window.confirm(tr(question || 'Annuler la décision ? La demande repasse « en attente » : vous pourrez la modifier, la transmettre à la direction ou la supprimer.'))) return;
+    act(b, boxAfter(b), function () { return call('demandeReouvrir', d.id); }).then(function (r) { if (r) { flash = { text: question ? 'Demande retirée de l\u2019envoi : elle est de nouveau en attente.' : 'Décision annulée : la demande est de nouveau en attente.', ok: true }; load(); } });
   }
   // Correction d'une demande encore en attente (oubli, mauvaise date…) par l'agent ou son chef.
   function editor(d, anchor) {
@@ -740,7 +740,7 @@ function DemandesPage() {
       ev.preventDefault();
       var patch = { type: type.value, date_debut: d1.value, date_fin: d2.value, message: msg.value }; if (direct) { patch.statut = st.value; patch.reponse = rep.value; }
       act(ok, box, function () { return call('demandeModifier', d.id, patch); }, 'Demande modifiée').then(function (r) { if (r) { flash = { text: 'Demande modifiée.', ok: true }; load(); } });
-    } }, h('div', { class: 'row' }, field('Type de demande', type, 'grow2'), field('Du', d1), field('Au', d2)), field('Message', msg), direct ? h('div', { class: 'row' }, field('Décision', st), field('Réponse à l’agent', rep, 'grow2')) : null, box, h('div', { class: 'sendbar' }, ok, no));
+    } }, h('div', { class: 'row' }, field('Type de demande', type, 'grow2'), field('Du', d1), field('Au', d2)), field('Message', msg), d.statut === 'envoyee' ? h('p', { class: 'msg warn' }, 'Cette demande est déjà chez la direction : la correction n\u2019est pas renvoyée automatiquement. Prévenez-la si nécessaire.') : null, direct ? h('div', { class: 'row' }, field('Décision', st), field('Réponse à l’agent', rep, 'grow2')) : null, box, h('div', { class: 'sendbar' }, ok, no));
     no.onclick = function () { form.remove(); };
     anchor.after(form);
   }
@@ -794,6 +794,22 @@ function DemandesPage() {
       themes.length ? themes : h('p', { class: 'muted' }, 'Aucune demande en cours.'), box,
       themes.length ? h('div', { class: 'sendbar' }, note, send) : null);
   }
+  // Ligne d'une demande déjà envoyée (réponse de la direction attendue) : corriger, retirer de l'envoi ou supprimer.
+  function envoiLigne(d) {
+    var row = h('div', { class: 'pick' });
+    var mb = h('button', { type: 'button' }, 'Modifier'); mb.onclick = function () { editor(d, row); };
+    var rb = h('button', { type: 'button' }, 'Retirer de l\u2019envoi'); rb.onclick = function () { reouvrirDem(d, rb, 'Retirer cette demande de l\u2019envoi ? Elle repasse « en attente ». Le message déjà envoyé à la direction n\u2019est pas rappelé.'); };
+    row.append(h('div', null, h('b', null, d.agent_nom), d.agent_fonction ? ' · ' + d.agent_fonction : '', h('small', null, (d.date_debut ? 'du ' + frDate(d.date_debut) + (d.date_fin ? ' au ' + frDate(d.date_fin) : '') + (d.reprise ? ' · reprise prévue le ' + frDate(d.reprise) : '') : '')), d.message ? h('div', null, d.message) : null), h('span', null, mb, ' ', rb, ' ', supBtn(d, 'Supprimer cette demande définitivement ? Le message déjà envoyé à la direction n\u2019est pas rappelé.')));
+    return row;
+  }
+  function annulerBouton(e) {
+    var b = h('button', { type: 'button', class: 'danger' }, 'Annuler l\u2019envoi'); var m = msgBox();
+    b.onclick = function () {
+      if (!window.confirm(tr('Annuler tout l\u2019envoi ? Les demandes repassent « en attente ». Le message déjà envoyé à la direction n\u2019est pas rappelé.'))) return;
+      act(b, m, function () { return call('envoiAnnuler', e.id); }).then(function (r) { if (r) { flash = { text: 'Envoi annulé : les demandes sont de nouveau en attente.', ok: true }; load(); } });
+    };
+    return h('div', { class: 'sendbar' }, b, m);
+  }
   function envoisView(L) {
     return h('section', { class: 'card' }, h('h2', null, 'Historique des demandes transmises à la direction'),
       L.envois.length ? L.envois.map(function (e) {
@@ -803,7 +819,11 @@ function DemandesPage() {
         btn.onclick = function () { act(btn, box, function () { return call('envoiTraiter', e.id, res.value, rep.value); }, 'Réponse appliquée à toutes les demandes').then(function (r) { if (r) { flash = { text: 'Réponse de la direction appliquée à toutes les demandes de l’envoi.', ok: true }; load(); } }); };
         return h('article', { class: 'item' }, h('div', null, h('b', null, 'Envoi du ' + frDateTime(e.date_envoi)), h('span', { class: 'badge ' + (e.statut === 'envoye' ? 'envoyee' : 'traitee') }, e.statut === 'envoye' ? 'En attente de la direction' : 'Réponse reçue')),
           h('small', null, plural(+e.nb, 'demande') + ' · par ' + e.chef_nom + (e.note ? ' · ' + e.note : '')),
-          e.groupes.map(function (g) { return h('p', null, h('b', null, g.label + ' (' + g.items.length + ') : '), g.items.map(function (d) { return d.agent_nom; }).join(', ')); }),
+          e.statut === 'envoye'
+            ? [h('p', { class: 'muted' }, 'La direction n\u2019a pas encore répondu : vous pouvez corriger, retirer ou supprimer une demande, ou annuler tout l\u2019envoi. Le message déjà envoyé à la direction n\u2019est pas rappelé.'),
+              e.groupes.map(function (g) { return h('div', { class: 'theme' }, h('h3', null, g.label, h('span', { class: 'badge' }, g.items.length)), g.items.map(function (d) { return envoiLigne(d); })); }),
+              annulerBouton(e)]
+            : e.groupes.map(function (g) { return h('p', null, h('b', null, g.label + ' (' + g.items.length + ') : '), g.items.map(function (d) { return d.agent_nom; }).join(', ')); }),
           e.statut === 'envoye' ? h('div', { class: 'sendbar' }, res, rep, btn) : (e.reponse ? h('p', { class: 'reply' }, 'Réponse : ' + e.reponse) : null), box);
       }) : h('p', { class: 'muted' }, 'Aucune demande transmise pour le moment.'));
   }

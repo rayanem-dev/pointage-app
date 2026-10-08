@@ -5988,5 +5988,70 @@
 "site",
 "site",
 "الموقع"
+],
+[
+"La direction n’a pas encore répondu : vous pouvez corriger, retirer ou supprimer une demande, ou annuler tout l’envoi. Le message déjà envoyé à la direction n’est pas rappelé.",
+"Management has not replied yet: you can correct, withdraw or delete a request, or cancel the whole batch. The message already sent to management is not recalled.",
+"لم ترد الإدارة بعد: يمكنك تصحيح طلب أو سحبه أو حذفه، أو إلغاء الإرسال بأكمله. الرسالة المرسلة سابقًا إلى الإدارة لا تُسترجع."
+],
+[
+"Retirer de l’envoi",
+"Withdraw from the batch",
+"سحب من الإرسال"
+],
+[
+"Retirer cette demande de l’envoi ? Elle repasse « en attente ». Le message déjà envoyé à la direction n’est pas rappelé.",
+"Withdraw this request from the batch? It goes back to \"pending\". The message already sent to management is not recalled.",
+"سحب هذا الطلب من الإرسال؟ يعود «قيد الانتظار». الرسالة المرسلة سابقًا إلى الإدارة لا تُسترجع."
+],
+[
+"Supprimer cette demande définitivement ? Le message déjà envoyé à la direction n’est pas rappelé.",
+"Delete this request permanently? The message already sent to management is not recalled.",
+"حذف هذا الطلب نهائيًا؟ الرسالة المرسلة سابقًا إلى الإدارة لا تُسترجع."
+],
+[
+"Annuler l’envoi",
+"Cancel the batch",
+"إلغاء الإرسال"
+],
+[
+"Annuler tout l’envoi ? Les demandes repassent « en attente ». Le message déjà envoyé à la direction n’est pas rappelé.",
+"Cancel the whole batch? The requests go back to \"pending\". The message already sent to management is not recalled.",
+"إلغاء الإرسال بأكمله؟ تعود الطلبات «قيد الانتظار». الرسالة المرسلة سابقًا إلى الإدارة لا تُسترجع."
+],
+[
+"Envoi annulé : les demandes sont de nouveau en attente.",
+"Batch cancelled: the requests are pending again.",
+"أُلغي الإرسال: الطلبات قيد الانتظار من جديد."
+],
+[
+"Demande retirée de l’envoi : elle est de nouveau en attente.",
+"Request withdrawn from the batch: it is pending again.",
+"سُحب الطلب من الإرسال: هو قيد الانتظار من جديد."
+],
+[
+"Cette demande est déjà chez la direction : la correction n’est pas renvoyée automatiquement. Prévenez-la si nécessaire.",
+"This request is already with management: the correction is not resent automatically. Let them know if needed.",
+"هذا الطلب لدى الإدارة بالفعل: لا يُعاد إرسال التصحيح تلقائيًا. أبلغهم عند الحاجة."
+],
+[
+"La direction a répondu à cette demande : elle ne peut plus être modifiée",
+"Management has replied to this request: it can no longer be edited",
+"ردّت الإدارة على هذا الطلب: لا يمكن تعديله بعد الآن"
+],
+[
+"La direction a répondu à cette demande : elle ne peut plus être annulée",
+"Management has replied to this request: it can no longer be cancelled",
+"ردّت الإدارة على هذا الطلب: لا يمكن إلغاؤه بعد الآن"
+],
+[
+"La direction a répondu à cette demande : elle ne peut plus être supprimée",
+"Management has replied to this request: it can no longer be deleted",
+"ردّت الإدارة على هذا الطلب: لا يمكن حذفه بعد الآن"
+],
+[
+"La direction a répondu à cet envoi : il ne peut plus être annulé",
+"Management has replied to this batch: it can no longer be cancelled",
+"ردّت الإدارة على هذا الإرسال: لا يمكن إلغاؤه بعد الآن"
 ]
 ]

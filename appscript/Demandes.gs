@@ -69,7 +69,8 @@ var Demandes = (function () {
     if (!d) throw httpErr_('Demande introuvable');
     if (!(d.agent_id === user.id || canHandle(user, d, agentsById))) throw httpErr_('Demande non accessible', 'FORBIDDEN');
     var decidee = DECIDEES.indexOf(d.statut) >= 0 && !d.envoi_id;
-    if (d.statut !== 'en_attente' && !(decidee && canHandle(user, d, agentsById))) throw httpErr_('Cette demande est déjà transmise à la direction ou traitée par elle : elle ne peut plus être modifiée');
+    var attenteDirection = d.statut === 'envoyee'; // envoyée, la direction n'a pas encore répondu
+    if (d.statut !== 'en_attente' && !((decidee || attenteDirection) && canHandle(user, d, agentsById))) throw httpErr_(attenteDirection ? 'Cette demande est déjà transmise à la direction : seul votre responsable peut la corriger' : 'La direction a répondu à cette demande : elle ne peut plus être modifiée');
     var type = data.type || d.type;
     if (!T[type] || (type !== d.type && masque(type))) throw httpErr_('Type de demande invalide');
     var debut = data.date_debut !== undefined ? data.date_debut : d.date_debut; var fin = data.date_fin !== undefined ? data.date_fin : d.date_fin;
@@ -93,9 +94,11 @@ var Demandes = (function () {
     var d = all.filter(function (x) { return x.id === id; })[0];
     if (!d || !canHandle(user, d, agentsById)) throw httpErr_('Demande non accessible', 'FORBIDDEN');
     if (d.statut === 'en_attente') return enrich(d, agentsById);
-    if (d.statut === 'envoyee' || d.envoi_id) throw httpErr_('Cette demande a été transmise à la direction : elle ne peut plus être annulée');
-    d.statut = 'en_attente'; d.reponse = ''; d.traite_par = ''; d.date_traitement = '';
+    if (d.statut !== 'envoyee' && d.envoi_id) throw httpErr_('La direction a répondu à cette demande : elle ne peut plus être annulée');
+    var envoi = d.envoi_id;
+    d.statut = 'en_attente'; d.reponse = ''; d.traite_par = ''; d.date_traitement = ''; d.envoi_id = '';
     Store.writeTable('Demandes', all);
+    if (envoi) majEnvoi(envoi, all);
     return enrich(d, agentsById);
   }
 
@@ -106,9 +109,31 @@ var Demandes = (function () {
     if (!d) throw httpErr_('Demande introuvable');
     var handler = canHandle(user, d, agentsById);
     if (!(handler || (d.agent_id === user.id && d.statut === 'en_attente'))) throw httpErr_('Demande non accessible', 'FORBIDDEN');
-    if (d.statut === 'envoyee' || d.envoi_id) throw httpErr_('Cette demande a été transmise à la direction : elle ne peut plus être supprimée');
-    Store.writeTable('Demandes', all.filter(function (x) { return x.id !== id; }));
+    if (d.statut !== 'envoyee' && d.envoi_id) throw httpErr_('La direction a répondu à cette demande : elle ne peut plus être supprimée');
+    if (d.statut === 'envoyee' && !handler) throw httpErr_('Demande non accessible', 'FORBIDDEN');
+    var reste = all.filter(function (x) { return x.id !== id; });
+    Store.writeTable('Demandes', reste);
+    if (d.envoi_id) majEnvoi(d.envoi_id, reste);
     return { ok: true, id: id };
+  }
+
+  // Après qu'une demande quitte un envoi (retirée ou supprimée) : l'envoi est recalculé, ou supprimé s'il est vide.
+  function majEnvoi(envoiId, demandes) {
+    var envois = Store.readTable('Envois'); var e = envois.filter(function (x) { return x.id === envoiId; })[0]; if (!e) return;
+    var items = demandes.filter(function (d) { return d.envoi_id === envoiId; });
+    if (!items.length) { Store.writeTable('Envois', envois.filter(function (x) { return x.id !== envoiId; })); return; }
+    e.nb = items.length; e.themes = groupBy(items).map(function (g) { return g.label + ' (' + g.items.length + ')'; }).join(', ');
+    Store.writeTable('Envois', envois);
+  }
+  // Annule un envoi dont la direction n'a pas encore répondu : toutes ses demandes redeviennent « en attente ».
+  function annulerEnvoi(user, envoiId) {
+    var envois = Store.readTable('Envois'); var e = envois.filter(function (x) { return x.id === envoiId; })[0];
+    if (!e || (user.role !== 'admin' && !Agents.tous(user) && e.chef_id !== user.id)) throw httpErr_('Envoi introuvable', 'FORBIDDEN');
+    if (e.statut !== 'envoye') throw httpErr_('La direction a répondu à cet envoi : il ne peut plus être annulé');
+    var all = Store.readTable('Demandes'); var n = 0;
+    all.forEach(function (d) { if (d.envoi_id === envoiId && d.statut === 'envoyee') { d.statut = 'en_attente'; d.envoi_id = ''; n += 1; } });
+    Store.writeTable('Demandes', all); Store.writeTable('Envois', envois.filter(function (x) { return x.id !== envoiId; }));
+    return { ok: true, remises: n };
   }
 
   function groupBy(items) {
@@ -235,5 +260,5 @@ var Demandes = (function () {
       a_traiter: user.role === 'agent' ? 0 : all.filter(function (d) { return d.statut === 'en_attente' && canHandle(user, d, agentsById); }).length
     };
   }
-  return { modifier: modifier, reouvrir: reouvrir, supprimer: supprimer, create: create, list: list, repondre: repondre, envoyerDirection: envoyerDirection, traiterEnvoi: traiterEnvoi, counts: counts };
+  return { modifier: modifier, reouvrir: reouvrir, supprimer: supprimer, annulerEnvoi: annulerEnvoi, create: create, list: list, repondre: repondre, envoyerDirection: envoyerDirection, traiterEnvoi: traiterEnvoi, counts: counts };
 })();

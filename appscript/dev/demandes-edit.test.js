@@ -36,14 +36,34 @@ test('demandes : décision directe modifiable, annulable, supprimable ; jamais u
   ok(call(admin, 'demandeSupprimer', d3.id));
   const l = ok(call(admin, 'demandesList'));
   assert.deepStrictEqual(l.toHandle.map((d) => d.id).sort(), [d1.id, d4.id].sort());
-  // transmise à la direction : plus rien n'est possible
-  ok(call(admin, 'demandesEnvoyer', [d1.id, d4.id], ''));
-  fail(call(admin, 'demandeSupprimer', d1.id), /transmise/);
-  fail(call(admin, 'demandeReouvrir', d1.id), /transmise/);
-  fail(call(admin, 'demandeModifier', d1.id, { message: 'x' }), /ne peut plus/);
+  // transmise à la direction, pas encore de réponse : le responsable peut corriger, retirer, supprimer ou annuler l'envoi
+  const env = ok(call(admin, 'demandesEnvoyer', [d1.id, d4.id], '')).envoi;
+  assert.strictEqual(Number(env.nb), 2);
+  fail(call(ag, 'demandeModifier', d1.id, { message: 'x' }), /seul votre responsable/);
+  fail(call(ag, 'demandeSupprimer', d1.id), /accessible/);
+  assert.strictEqual(ok(call(admin, 'demandeModifier', d1.id, { message: 'corrigé' })).message, 'corrigé');
+  ok(call(admin, 'demandeReouvrir', d4.id));
+  let l2 = ok(call(admin, 'demandesList'));
+  assert.strictEqual(Number(l2.envois[0].nb), 1, 'l\'envoi est recalculé');
+  assert.strictEqual(l2.toHandle.find((d) => d.id === d4.id).statut, 'en_attente');
+  ok(call(admin, 'demandeSupprimer', d1.id));
+  l2 = ok(call(admin, 'demandesList'));
+  assert.strictEqual(l2.envois.length, 0, 'envoi vide : supprimé');
+  // annuler tout un envoi
+  const env2 = ok(call(admin, 'demandesEnvoyer', null, '')).envoi;
+  assert.strictEqual(ok(call(admin, 'envoiAnnuler', env2.id)).remises, 1);
+  assert.strictEqual(ok(call(admin, 'demandesList')).toHandle.find((d) => d.id === d4.id).statut, 'en_attente');
+  // la direction a répondu : tout est verrouillé
+  const env3 = ok(call(admin, 'demandesEnvoyer', null, '')).envoi;
+  ok(call(admin, 'envoiTraiter', env3.id, 'acceptee', 'ok'));
+  fail(call(admin, 'demandeSupprimer', d4.id), /a répondu/);
+  fail(call(admin, 'demandeReouvrir', d4.id), /a répondu/);
+  fail(call(admin, 'demandeModifier', d4.id, { message: 'x' }), /ne peut plus/);
+  fail(call(admin, 'envoiAnnuler', env3.id), /a répondu/);
 });
 
 test('demandes : une demande acceptée reste « en cours » et part à la direction avec les autres', () => {
+  const app2 = loadApp(); const call = app2.call; const run = app2.run;
   run("Setup.install('admin@t.fr', 'adminpw12', 'Admin')");
   const admin = ok(call(null, 'login', 'admin@t.fr', 'adminpw12')).token;
   ok(call(admin, 'agentCreate', { nom: 'AGENT ENV', email: 'ev@t.fr', role: 'agent', password: 'agentpw123' }));

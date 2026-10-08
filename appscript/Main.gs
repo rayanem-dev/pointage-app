@@ -109,6 +109,7 @@ var HANDLERS = {
   },
   demandeModifier: { roles: WORKERS, write: true, fn: function (u, a) { return Demandes.modifier(u, a[0], a[1] || {}); } },
   demandeReouvrir: { roles: STAFF, write: true, fn: function (u, a) { return Demandes.reouvrir(u, a[0]); } },
+  envoiAnnuler: { roles: STAFF, write: true, fn: function (u, a) { return Demandes.annulerEnvoi(u, a[0]); } },
   demandeSupprimer: { roles: WORKERS, write: true, fn: function (u, a) { return Demandes.supprimer(u, a[0]); } },
   demandesList: { roles: WORKERS, fn: function (u) { return Demandes.list(u); } },
   demandeCreate: { roles: WORKERS, write: true, fn: function (u, a) { return Demandes.create(u, a[0] || {}); } },
