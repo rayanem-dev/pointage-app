@@ -207,7 +207,7 @@ function loginView() {
     info.installed === false ? h('p', { class: 'msg warn' }, "Application non installée : le propriétaire du classeur doit lancer le menu « Sijil → Installer / mettre à jour la structure ».") : null,
     info.multi ? field('Code entreprise', code) : null, field('Email', email), field('Mot de passe', pw),
     h('div', { class: 'loginopts' }, h('label', { class: 'inline' }, remember, ' Rester connecté'), h('a', { href: '#', onclick: function (ev) { ev.preventDefault(); S.loginMode = 'forgot'; S.forgotStep = 1; S.forgotEmail = email.value; S.forgotCode = code.value; render(); } }, 'Mot de passe oublié ?')), box, btn);
-  return h('div', { class: 'login' }, form, h('p', { class: 'copyright' }, info.copyright || '', ' · ', h('a', { href: '#/confidentialite', onclick: function (ev) { ev.preventDefault(); S.charte = true; render(); } }, 'Confidentialité'),
+  return h('div', { class: 'login' }, form, h('p', { class: 'copyright' }, copyrightNodes(info.copyright), ' · ', h('a', { href: '#/confidentialite', onclick: function (ev) { ev.preventDefault(); S.charte = true; render(); } }, 'Confidentialité'),
     info.multi && info.shell ? [' · ', h('a', { href: info.shell + '?change', target: '_top', rel: 'noopener' }, "Changer d'entreprise")] : null));
 }
 
@@ -321,6 +321,13 @@ function navHeight() {
   document.documentElement.style.setProperty('--navh', top.offsetHeight + 'px');
   if (!top._ro && window.ResizeObserver) { top._ro = new ResizeObserver(function () { document.documentElement.style.setProperty('--navh', top.offsetHeight + 'px'); }); top._ro.observe(top); }
 }
+// « © 2026 JawlaDev — Tous droits réservés » : le mot JawlaDev est un lien vers le portfolio, dans un nouvel onglet.
+var MARQUE = 'JawlaDev'; var MARQUE_URL = 'https://rayanem-dev.github.io/JawlaDev/';
+function copyrightNodes(texte) {
+  texte = String(texte || ''); var i = texte.indexOf(MARQUE);
+  if (i < 0) return [texte];
+  return [texte.slice(0, i), h('a', { href: MARQUE_URL, target: '_blank', rel: 'noopener', title: 'Portfolio JawlaDev' }, MARQUE), texte.slice(i + MARQUE.length)];
+}
 function render() {
   var root = $app();
   if (!S.user) { root.replaceChildren(S.charte ? h('div', { class: 'login', style: 'max-width:760px' }, CharteBlock(function () { S.charte = false; render(); })) : loginView()); return; }
@@ -343,7 +350,7 @@ function render() {
   var main = h('main', null);
   var back = S.back ? h('div', { class: 'msg warn', style: 'margin:0;border-radius:0;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap' }, 'Mode support : vous êtes dans l\'espace de « ' + S.back.societe + ' » en tant que ' + S.user.nom + ' (' + tr(ROLE_LIB[S.user.role] || S.user.role) + ').',
     h('button', { type: 'button', class: 'primary', onclick: function () { call('logout').catch(function () {}).then(function () { S.token = S.back.token; setBack(null); S.path = null; try { sessionStorage.setItem('tk', S.token); } catch (e) { /* ignore */ } boot(); }); } }, "‹ Retour à l'administration")) : null;
-  root.replaceChildren.apply(root, [back, bar, main, h('footer', { class: 'muted', style: 'text-align:center;padding:14px;font-size:.8rem' }, 'Sijil · ', h('a', { href: '#/nouveautes', onclick: navClick('/nouveautes') }, 'version ' + ((S.info && S.info.version) || '?') + ' (nouveautés)'), h('br'), (S.info && S.info.copyright) || '', ' · ', h('a', { href: '#/confidentialite', onclick: navClick('/confidentialite') }, 'Confidentialité'), ' · ', h('a', { href: '#', title: 'Relire les données depuis le serveur', onclick: function (ev) { ev.preventDefault(); actualiser(); } }, '↻ Actualiser'))].filter(Boolean));
+  root.replaceChildren.apply(root, [back, bar, main, h('footer', { class: 'muted', style: 'text-align:center;padding:14px;font-size:.8rem' }, 'Sijil · ', h('a', { href: '#/nouveautes', onclick: navClick('/nouveautes') }, 'version ' + ((S.info && S.info.version) || '?') + ' (nouveautés)'), h('br'), copyrightNodes(S.info && S.info.copyright), ' · ', h('a', { href: '#/confidentialite', onclick: navClick('/confidentialite') }, 'Confidentialité'), ' · ', h('a', { href: '#', title: 'Relire les données depuis le serveur', onclick: function (ev) { ev.preventDefault(); actualiser(); } }, '↻ Actualiser'))].filter(Boolean));
   if (S.owner) checkVersion().then(function (r) { var fl = document.querySelector('footer a[href="#/nouveautes"]'); if (fl && r.c !== null) { fl.textContent += r.c === 0 ? ' ✓' : ' ⚠'; fl.title = r.c === 0 ? tr('✓ Tout est à jour') : (r.c < 0 ? tr('⚠ Le serveur est en retard : v' + r.srv + ' au lieu de v' + r.site + '. À déployer.') : tr('⚠ Le site est en retard : v' + r.site + ' au lieu de v' + r.srv + '. À publier (patientez 1 à 2 minutes).')); } var a = document.querySelector('a[data-path="/version"]'); if (a) { a.textContent = tr('Version') + (r.c === 0 ? ' ✓' : r.c === null ? '' : ' ⚠'); a.title = r.c === 0 ? tr('✓ Tout est à jour') : ''; } });
   setTimeout(refreshBadges, 0);
   main.append(ROUTES[path]());
@@ -1141,7 +1148,7 @@ function CharteBlock(back) {
     return call('charte').then(function (c) {
       return h('section', { class: 'card' }, back ? h('p', null, h('button', { type: 'button', onclick: back }, '‹ Retour')) : null, h('h2', null, 'Charte de confidentialité'),
         c.sections.map(function (s) { return h('article', null, h('h3', null, s.titre), h('p', null, s.texte)); }),
-        h('p', { class: 'muted' }, 'Dernière mise à jour : ' + frDate(c.maj) + ' · ' + c.copyright));
+        h('p', { class: 'muted' }, 'Dernière mise à jour : ' + frDate(c.maj) + ' · ', copyrightNodes(c.copyright)));
     });
   });
 }
@@ -1333,7 +1340,7 @@ function NouveautesPage() {
       return h('section', { class: 'card' }, h('h2', null, 'Nouveautés — historique des versions'),
         c.versions.map(function (v) {
           return h('article', { class: 'release' }, h('h3', null, 'Version ' + v.v, h('small', null, frDate(v.date) + ' · ' + v.titre)), h('ul', null, v.points.map(function (p) { return h('li', null, p); })));
-        }), h('p', { class: 'muted' }, c.copyright));
+        }), h('p', { class: 'muted' }, copyrightNodes(c.copyright)));
     });
   });
 }

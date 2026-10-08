@@ -1,6 +1,10 @@
 # Historique des versions
 
-© 2026 Rayane M. — Tous droits réservés
+© 2026 JawlaDev — Tous droits réservés
+
+## 3.33.0 — 2026-10-08 — Signature JawlaDev
+
+- Le pied de page, la page d'accueil, la confidentialité et les e-mails portent la mention « © 2026 JawlaDev — Tous droits réservés », avec un lien vers le portfolio JawlaDev (ouvert dans un nouvel onglet).
 
 ## 3.31.2 — 2026-10-08 — Page d'accueil épurée
 

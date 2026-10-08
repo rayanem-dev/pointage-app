@@ -12,10 +12,10 @@ from docx.oxml import OxmlElement
 from PIL import Image
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-VERSION = '3.32.1'; DATE = 'Octobre 2026'
+VERSION = '3.33.0'; DATE = 'Octobre 2026'
 NAVY = RGBColor(0x0E, 0x43, 0x77); BLUE = RGBColor(0x16, 0x59, 0x8D); TEAL = RGBColor(0x2F, 0xB5, 0xB4); GREY = RGBColor(0x6B, 0x77, 0x85)
 LOGO = os.path.join(ROOT, 'brand', 'logo-sijil-complet.png')
-COPY = '© 2026 Rayane M. — Tous droits réservés'
+COPY = '© 2026 JawlaDev — Tous droits réservés'
 
 def shade(cell, hexcolor):
     tcPr = cell._tc.get_or_add_tcPr(); shd = OxmlElement('w:shd'); shd.set(qn('w:val'), 'clear'); shd.set(qn('w:color'), 'auto'); shd.set(qn('w:fill'), hexcolor); tcPr.append(shd)
@@ -97,7 +97,7 @@ def build_docx(path):
                 cells[1].paragraphs[0].add_run(b).font.size = Pt(9.5)
                 cells[0].width = Cm(5.2); cells[1].width = Cm(11.6)
             d.add_paragraph()
-    d.core_properties.title = "Sijil — Manuel d'utilisation"; d.core_properties.author = 'Rayane M.'
+    d.core_properties.title = "Sijil — Manuel d'utilisation"; d.core_properties.author = 'JawlaDev'
     d.save(path)
 
 def build_html(path):

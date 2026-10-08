@@ -54,7 +54,7 @@ def title(slide, t, sub=None):
     bar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, prs.slide_width, Inches(0.12)); bar.fill.solid(); bar.fill.fore_color.rgb = TEAL; bar.line.fill.background()
     text(slide, 0.6, 0.35, 12.1, 0.8, t, size=32, color=NAVY, bold=True)
     if sub: text(slide, 0.6, 1.1, 12.1, 0.5, sub, size=17, color=GREY)
-    text(slide, 0.6, 7.08, 9, 0.3, '© 2026 Rayane M. — Tous droits réservés', size=10, color=GREY)
+    text(slide, 0.6, 7.08, 9, 0.3, '© 2026 JawlaDev — Tous droits réservés', size=10, color=GREY)
 
 def new(bgc=WHITE):
     s = prs.slides.add_slide(BL); bg(s, bgc); return s
@@ -71,7 +71,7 @@ pic(s, os.path.join(ROOT, 'brand', 'logo-sijil-complet.png'), 0.9, 1.15, h=5.1, 
 text(s, 5.6, 1.9, 7.2, 1.4, 'Gestion du temps de travail', size=40, color=NAVY, bold=True)
 text(s, 5.6, 3.55, 7.0, 1.2, "La mise à disposition et le personnel de prestation de services, de A à Z : du bordereau des prix jusqu'à l'attachement et à la facture.", size=20, color=INK)
 text(s, 5.6, 5.4, 7, 0.5, 'En français, en arabe et en anglais · sur ordinateur et sur téléphone', size=16, color=BLUE, bold=True)
-text(s, 5.6, 6.6, 7, 0.4, "Version 3.32.1 · Octobre 2026 · Captures : entreprise fictive", size=11, color=GREY)
+text(s, 5.6, 6.6, 7, 0.4, "Version 3.33.0 · Octobre 2026 · Captures : entreprise fictive", size=11, color=GREY)
 
 # 2 problème
 s = new(); title(s, "Un personnel en rotation, c'est vite le désordre", "Fichiers Excel, messages, papiers : chacun a sa version")
@@ -188,6 +188,6 @@ pic(s, os.path.join(ROOT, 'brand', 'logo-sijil-symbole.png'), 5.67, 0.9, h=2.0, 
 text(s, 0.5, 3.2, 12.3, 1.0, 'Sijil', size=54, color=WHITE, bold=True, align=PP_ALIGN.CENTER)
 text(s, 0.5, 4.3, 12.3, 0.7, 'Gestion du temps de travail', size=26, color=TEAL, bold=True, align=PP_ALIGN.CENTER)
 text(s, 0.5, 5.4, 12.3, 0.6, "Demandez votre essai gratuit depuis la page d'accueil.", size=20, color=WHITE, align=PP_ALIGN.CENTER)
-text(s, 0.5, 6.7, 12.3, 0.4, '© 2026 Rayane M. — Tous droits réservés', size=11, color=RGBColor(0xB8, 0xC8, 0xD8), align=PP_ALIGN.CENTER)
+text(s, 0.5, 6.7, 12.3, 0.4, '© 2026 JawlaDev — Tous droits réservés', size=11, color=RGBColor(0xB8, 0xC8, 0xD8), align=PP_ALIGN.CENTER)
 
 out = os.path.join(ROOT, 'docs', 'Sijil-Presentation.pptx'); prs.save(out); print('ok', out, len(prs.slides._sldIdLst), 'diapositives')

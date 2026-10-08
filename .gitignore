@@ -4,3 +4,5 @@ node_modules/
 appscript/.clasp.json
 .deployment-id
 appscript/.deployment-id
+__pycache__/
+*.pyc

@@ -9,6 +9,8 @@ var Mail = (function () {
   var BLEU = '#16598D'; var BLEU2 = '#0E4377'; var FOND = '#F3F6FA';
   function esc(t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   function shell() { return CFG.APP_SHELL_URL; }
+  // « © 2026 JawlaDev — Tous droits réservés » : JawlaDev est un lien vers le portfolio (nouvel onglet).
+  function copyright() { var c = String(CFG.COPYRIGHT || ''); var m = CFG.MARQUE || ''; var i = m ? c.indexOf(m) : -1; return i < 0 ? esc(c) : esc(c.slice(0, i)) + '<a href="' + esc(CFG.MARQUE_URL) + '" target="_blank" rel="noopener" style="color:' + BLEU + '">' + esc(m) + '</a>' + esc(c.slice(i + m.length)); }
   /** Lien d'ouverture de l'espace courant (avec le code entreprise), sinon la page d'accueil. */
   function lien() { try { var c = Tenants.codeActuel(); return c ? Tenants.lien(c) : shell(); } catch (e) { return shell(); } }
   function texteVersHtml(t) {
@@ -29,7 +31,7 @@ var Mail = (function () {
       + (o.societe ? '<tr><td style="padding:14px 24px 0;color:#5b6b7d;font-size:12px;text-transform:uppercase;letter-spacing:.8px">' + esc(o.societe) + '</td></tr>' : '')
       + '<tr><td style="padding:' + (o.societe ? '8' : '22') + 'px 24px 22px">' + contenu + code + bouton + '</td></tr>'
       + '<tr><td style="background:' + FOND + ';padding:14px 24px;color:#7a8794;font-size:12px;line-height:1.5;border-top:1px solid #e6ecf3">'
-      + '<b style="color:' + BLEU + '">Sijil</b> · <a href="' + shell() + '" style="color:' + BLEU + '">' + shell().replace(/^https?:\/\//, '').replace(/\/$/, '') + '</a><br>' + esc(CFG.COPYRIGHT || '') + '</td></tr>'
+      + '<b style="color:' + BLEU + '">Sijil</b> · <a href="' + shell() + '" style="color:' + BLEU + '">' + shell().replace(/^https?:\/\//, '').replace(/\/$/, '') + '</a><br>' + copyright() + '</td></tr>'
       + '</table></td></tr></table></body></html>';
   }
   function send(o) {

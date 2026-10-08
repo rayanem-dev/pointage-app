@@ -35,7 +35,7 @@ def page(title, preheader, hero_t, hero_s, intro, blocks, extra, cta_rows, sign)
 {extra}
 {cta}
 <tr><td style="padding:18px 24px 26px;font:15px/1.6 Arial,Helvetica,sans-serif;color:{INK}">{sign}</td></tr>
-<tr><td bgcolor="{NAVY}" align="center" style="padding:16px 24px;font:12px/1.5 Arial,Helvetica,sans-serif;color:#B8C8D8">Sijil · Gestion du temps de travail<br>© 2026 Rayane M. — Tous droits réservés</td></tr>
+<tr><td bgcolor="{NAVY}" align="center" style="padding:16px 24px;font:12px/1.5 Arial,Helvetica,sans-serif;color:#B8C8D8">Sijil · Gestion du temps de travail<br>© 2026 <a href="https://rayanem-dev.github.io/JawlaDev/" target="_blank" style="color:#B8C8D8">JawlaDev</a> — Tous droits réservés</td></tr>
 </table></td></tr></table></body></html>'''
 
 def ul(items):
