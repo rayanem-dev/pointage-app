@@ -181,3 +181,15 @@ test('faute de frappe dans le nom : agent proposé (orthographe proche), message
   assert.ok(!/Agent non reconnu/.test(y.avertissement), 'message obsolète effacé');
   ok(call(T.admin, 'depotRejeter', [r.id, x.id]));
 });
+
+test('dépôt : un texte lu avec des « dates » impossibles (tampon, bruit) ne fait jamais échouer l\'analyse', () => {
+  const { loadApp: charger } = require('./load'); const a2 = charger(); const c2 = a2.call;
+  a2.run("Setup.install('admin@t.fr', 'adminpw12', 'Admin')");
+  const tk = ok(c2(null, 'login', 'admin@t.fr', 'adminpw12')).token;
+  ok(c2(tk, 'agentCreate', { nom: 'BENRITAB ABDESSLAM', email: 'b@t.fr', role: 'agent', password: 'benripw123' }));
+  const bruit = 'Titre de congé\nNom & Prénom : BENRITAB ABDESSALEM\nN° 33/00/2026 et 31/02/2026 et 00/13/2026 et 2026-00-33\nDate de départ congé : 11/10/2026 Au : 31/10/2026\nFait à In Amenas le : 09/10/2026';
+  a2.env.fetchHandler = (url) => { if (url.startsWith('https://www.googleapis.com/upload/drive/v3/files')) return { code: 200, body: JSON.stringify({ id: 'ocr1' }) }; if (url.includes('/files/ocr1/export')) return { code: 200, body: bruit }; return null; };
+  const r = ok(c2(tk, 'depotAdd', { nom: 'BENRITAB ABDESSALEM.jpg', mime: 'image/jpeg', base64: JPG, pdf: true }));
+  assert.deepStrictEqual([r.type, r.champs.date, r.pret], ['titre_conge', '2026-10-11', true], 'les vraies dates sont lues, les fausses ignorées');
+  assert.strictEqual(a2.run("Dates.isDate('2026-00-33')"), false); assert.strictEqual(a2.run("Dates.isDate('2026-02-30')"), false); assert.strictEqual(a2.run("Dates.isDate('2026-10-11')"), true);
+});

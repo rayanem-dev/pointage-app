@@ -810,8 +810,11 @@ function DemandesPage() {
   function envoiLigne(d) {
     var row = h('div', { class: 'pick' });
     var mb = h('button', { type: 'button' }, 'Modifier'); mb.onclick = function () { editor(d, row); };
+    var repond = function (st, b) { var rep = window.prompt(tr(st === 'refusee' ? 'Motif du refus (facultatif) :' : 'Réponse (facultative) :'), ''); if (rep === null) return; act(b, boxAfter(b), function () { return call('demandeReponseDirection', d.id, st, rep); }).then(function (r) { if (r) { flash = { text: 'Réponse enregistrée', ok: true }; load(); } }); };
+    var ab = h('button', { type: 'button' }, 'Réponse : acceptée'); ab.onclick = function () { repond('acceptee', ab); };
+    var nb = h('button', { type: 'button' }, 'Réponse : refusée'); nb.onclick = function () { repond('refusee', nb); };
     var rb = h('button', { type: 'button' }, 'Retirer de l\u2019envoi'); rb.onclick = function () { reouvrirDem(d, rb, 'Retirer cette demande de l\u2019envoi ? Elle repasse « en attente ». Le message déjà envoyé à la direction n\u2019est pas rappelé.'); };
-    row.append(h('div', null, h('b', null, d.agent_nom), d.agent_fonction ? ' · ' + d.agent_fonction : '', h('small', null, (d.date_debut ? 'du ' + frDate(d.date_debut) + (d.date_fin ? ' au ' + frDate(d.date_fin) : '') + (d.reprise ? ' · reprise prévue le ' + frDate(d.reprise) : '') : '')), d.message ? h('div', null, d.message) : null), h('span', null, mb, ' ', rb, ' ', supBtn(d, 'Supprimer cette demande définitivement ? Le message déjà envoyé à la direction n\u2019est pas rappelé.')));
+    row.append(h('div', null, h('b', null, d.agent_nom), d.agent_fonction ? ' · ' + d.agent_fonction : '', h('small', null, (d.date_debut ? 'du ' + frDate(d.date_debut) + (d.date_fin ? ' au ' + frDate(d.date_fin) : '') + (d.reprise ? ' · reprise prévue le ' + frDate(d.reprise) : '') : '')), d.message ? h('div', null, d.message) : null), h('span', null, ab, ' ', nb, ' ', mb, ' ', rb, ' ', supBtn(d, 'Supprimer cette demande définitivement ? Le message déjà envoyé à la direction n\u2019est pas rappelé.')));
     return row;
   }
   function annulerBouton(e) {
@@ -830,13 +833,13 @@ function DemandesPage() {
         var rep = h('input', { placeholder: 'Réponse de la direction (facultative)' }); var btn = h('button', { class: 'primary' }, 'Enregistrer la réponse');
         btn.onclick = function () { act(btn, box, function () { return call('envoiTraiter', e.id, res.value, rep.value); }, 'Réponse appliquée à toutes les demandes').then(function (r) { if (r) { flash = { text: 'Réponse de la direction appliquée à toutes les demandes de l’envoi.', ok: true }; load(); } }); };
         return h('article', { class: 'item' }, h('div', null, h('b', null, 'Envoi du ' + frDateTime(e.date_envoi)), h('span', { class: 'badge ' + (e.statut === 'envoye' ? 'envoyee' : 'traitee') }, e.statut === 'envoye' ? 'En attente de la direction' : 'Réponse reçue')),
-          h('small', null, plural(+e.nb, 'demande') + ' · par ' + e.chef_nom + (e.note ? ' · ' + e.note : '')),
+          h('small', null, (isAdmin ? plural(+e.nb, 'demande') + ' · par ' : plural(+e.nb, 'demande') + ' de votre équipe · envoyé par ') + e.chef_nom + (e.note ? ' · ' + e.note : '')),
           e.statut === 'envoye'
             ? [h('p', { class: 'muted' }, 'La direction n\u2019a pas encore répondu : vous pouvez corriger, retirer ou supprimer une demande, ou annuler tout l\u2019envoi. Le message déjà envoyé à la direction n\u2019est pas rappelé.'),
               e.groupes.map(function (g) { return h('div', { class: 'theme' }, h('h3', null, g.label, h('span', { class: 'badge' }, g.items.length)), g.items.map(function (d) { return envoiLigne(d); })); }),
-              annulerBouton(e)]
-            : e.groupes.map(function (g) { return h('p', null, h('b', null, g.label + ' (' + g.items.length + ') : '), g.items.map(function (d) { return d.agent_nom; }).join(', ')); }),
-          e.statut === 'envoye' ? h('div', { class: 'sendbar' }, res, rep, btn) : (e.reponse ? h('p', { class: 'reply' }, 'Réponse : ' + e.reponse) : null), box);
+              e.peut_agir ? annulerBouton(e) : null]
+            : e.groupes.map(function (g) { return h('div', { class: 'theme' }, h('h3', null, g.label, h('span', { class: 'badge' }, g.items.length)), g.items.map(function (d) { return h('div', { class: 'pick' }, h('div', null, h('b', null, d.agent_nom), ' ', h('span', { class: 'badge ' + d.statut }, STATUT_LABEL[d.statut] || d.statut), d.reponse ? h('div', { class: 'reply' }, 'Réponse' + (d.traite_par ? ' (' + d.traite_par + ')' : '') + ' : ' + d.reponse) : null)); })); }),
+          e.statut === 'envoye' && e.peut_agir ? h('div', { class: 'sendbar' }, res, rep, btn) : (e.reponse ? h('p', { class: 'reply' }, 'Réponse : ' + e.reponse) : null), box);
       }) : h('p', { class: 'muted' }, 'Aucune demande transmise pour le moment.'));
   }
   function view(L) {
@@ -932,10 +935,12 @@ function DocumentsPage() {
       var refresh = h('button', { type: 'button', title: 'Relire la liste depuis le serveur' }, 'Actualiser la liste'); refresh.onclick = function () { reloadQueue(); };
       var rmChecked = h('button', { type: 'button' }, 'Retirer les documents cochés');
       rmChecked.onclick = function () { var ids = Q.filter(function (x) { return chk[x.id]; }).map(function (x) { return x.id; }); if (!ids.length || !window.confirm(tr('Retirer ces documents de la liste ? Ils ne seront pas envoyés.'))) return; call('depotRejeter', ids).then(function () { Q = Q.filter(function (x) { return ids.indexOf(x.id) < 0; }); ids.forEach(function (i) { delete chk[i]; }); drawQueue(); }); };
+      var viderTout = h('button', { type: 'button', class: 'danger' }, 'Tout retirer');
+      viderTout.onclick = function () { if (!window.confirm(tr('Retirer TOUS les documents de la liste ? Ils ne seront pas envoyés.'))) return; viderTout.disabled = true; call('depotVider').then(function () { Q = []; chk = {}; drawQueue(); }).catch(function (e) { viderTout.disabled = false; qBox.show(e.message, false); }); };
       queue.replaceChildren(h('h2', null, 'À vérifier avant envoi (' + Q.length + ')'),
-        h('p', { class: 'muted' }, 'Rien n’est encore dans l’espace des agents. Corrigez si besoin (agent, type, dates, nom), cochez les documents à envoyer, puis envoyez : chaque agent est prévenu par e-mail.'),
+        h('p', { class: 'muted' }, 'Rien n’est encore dans l’espace des agents. Corrigez si besoin (agent, type, dates, nom), cochez les documents à envoyer, puis envoyez : chaque agent est prévenu par e-mail. Un document non envoyé est retiré automatiquement de la liste après 3 jours.'),
         h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, [all, 'Fichier déposé', 'Agent', 'Type', 'Dates', 'Nom final', 'État', ''].map(function (t) { return h('th', null, t); }))), h('tbody', null, Q.map(qRow)))),
-        qBox, h('div', { class: 'sendbar' }, sendBtn, rmChecked, refresh));
+        qBox, h('div', { class: 'sendbar' }, sendBtn, rmChecked, viderTout, refresh));
       countBtn();
     }
     sendBtn.onclick = function () {

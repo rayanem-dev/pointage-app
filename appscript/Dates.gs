@@ -7,7 +7,7 @@ var Dates = (function () {
   function isMonthKey(k) { return /^\d{4}-(0[1-9]|1[0-2])$/.test(k || ''); }
   function fmt(d) { return d.toISOString().slice(0, 10); }
   function parse(s) { return new Date(s + 'T00:00:00Z'); }
-  function isDate(s) { return /^\d{4}-\d{2}-\d{2}$/.test(s || '') && fmt(parse(s)) === s; }
+  function isDate(s) { if (!/^\d{4}-\d{2}-\d{2}$/.test(s || '')) return false; var d = parse(s); return !isNaN(d.getTime()) && fmt(d) === s; } // jamais d'exception sur une date impossible (33/00/2026, 31/02/2026…)
   function addDays(s, n) { var d = parse(s); d.setUTCDate(d.getUTCDate() + n); return fmt(d); }
   function diffDays(a, b) { return Math.round((parse(b) - parse(a)) / 86400000); }
   function today() { return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'); }

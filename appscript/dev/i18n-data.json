@@ -6063,5 +6063,45 @@
 "⚠ Aucun responsable d’équipe pour cet agent : la demande revient à l’administrateur",
 "⚠ No team leader for this agent: the request goes to the administrator",
 "⚠ لا يوجد مسؤول فريق لهذا العون: يعود الطلب إلى المسؤول"
+],
+[
+"Réponse : acceptée",
+"Reply: accepted",
+"الرد: مقبول"
+],
+[
+"Réponse : refusée",
+"Reply: refused",
+"الرد: مرفوض"
+],
+[
+"Réponse (facultative) :",
+"Reply (optional):",
+"الرد (اختياري):"
+],
+[
+"Cette demande n’attend pas de réponse de la direction",
+"This request is not waiting for a reply from management",
+"هذا الطلب لا ينتظر ردًّا من الإدارة"
+],
+[
+"Tout retirer",
+"Remove all",
+"إزالة الكل"
+],
+[
+"Retirer TOUS les documents de la liste ? Ils ne seront pas envoyés.",
+"Remove ALL documents from the list? They will not be sent.",
+"إزالة جميع المستندات من القائمة؟ لن تُرسل."
+],
+[
+"Rien n’est encore dans l’espace des agents. Corrigez si besoin (agent, type, dates, nom), cochez les documents à envoyer, puis envoyez : chaque agent est prévenu par e-mail. Un document non envoyé est retiré automatiquement de la liste après 3 jours.",
+"Nothing is in the agents' space yet. Correct if needed (agent, type, dates, name), tick the documents to send, then send: each agent is notified by e-mail. A document that is not sent is automatically removed from the list after 3 days.",
+"لا شيء في فضاء الأعوان بعد. صحّح عند الحاجة (العون، النوع، التواريخ، الاسم)، حدّد المستندات المراد إرسالها ثم أرسل: يُبلَّغ كل عون بالبريد الإلكتروني. يُزال تلقائيًا من القائمة أي مستند لم يُرسل بعد 3 أيام."
+],
+[
+"de votre équipe · envoyé par",
+"of your team · sent by",
+"من فريقك · أرسلها"
 ]
 ]

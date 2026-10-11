@@ -113,3 +113,47 @@ test('demandes : le responsable d\'équipe voit et gère toutes les demandes de 
   assert.strictEqual(la.find((d) => d.agent_nom === 'AG LIBRE').responsable_nom, '', 'sans responsable : revient à l\'administrateur');
   assert.strictEqual(la.find((d) => d.agent_nom === 'AG EQUIPE').responsable_nom, 'CHEF EQ');
 });
+
+test('demandes : le responsable d\'équipe voit l\'état des demandes de son équipe même envoyées par un autre, et enregistre la réponse', () => {
+  const app5 = loadApp(); const c5 = app5.call;
+  app5.run("Setup.install('admin@t.fr', 'adminpw12', 'Admin')");
+  const admin = ok(c5(null, 'login', 'admin@t.fr', 'adminpw12')).token;
+  const chef = ok(c5(admin, 'agentCreate', { nom: 'CHEF G', email: 'cg@t.fr', role: 'chef', password: 'chefgpw123' })).agent;
+  const autre = ok(c5(admin, 'agentCreate', { nom: 'CHEF H', email: 'ch@t.fr', role: 'chef', password: 'chefhpw123' })).agent;
+  ok(c5(admin, 'agentCreate', { nom: 'AG MON GROUPE', email: 'ag1@t.fr', role: 'agent', password: 'agentpw123', chef_id: chef.id }));
+  ok(c5(admin, 'agentCreate', { nom: 'AG AUTRE GROUPE', email: 'ag2@t.fr', role: 'agent', password: 'agentpw123', chef_id: autre.id }));
+  const tg = ok(c5(null, 'login', 'cg@t.fr', 'chefgpw123')).token;
+  const a1 = ok(c5(null, 'login', 'ag1@t.fr', 'agentpw123')).token; const a2 = ok(c5(null, 'login', 'ag2@t.fr', 'agentpw123')).token;
+  const d1 = ok(c5(a1, 'demandeCreate', { type: 'contrat' })); const d2 = ok(c5(a2, 'demandeCreate', { type: 'contrat' }));
+  // l'administrateur envoie TOUT à la direction : une demande de chaque groupe
+  const env = ok(c5(admin, 'demandesEnvoyer', null, '')).envoi;
+  const l = ok(c5(tg, 'demandesList'));
+  assert.strictEqual(l.envois.length, 1, 'l\'envoi de l\'administrateur apparaît dans l\'historique du responsable');
+  assert.deepStrictEqual(l.envois[0].groupes.flatMap((g) => g.items.map((d) => d.agent_nom)), ['AG MON GROUPE'], 'seulement les demandes de SON équipe');
+  assert.strictEqual(l.envois[0].peut_agir, false, 'il ne gère pas l\'envoi entier');
+  fail(c5(tg, 'envoiAnnuler', env.id), /introuvable/);
+  fail(c5(tg, 'envoiTraiter', env.id, 'acceptee', 'x'), /introuvable/);
+  fail(c5(tg, 'demandeReponseDirection', d2.id, 'acceptee', 'x'), /accessible/);
+  const r = ok(c5(tg, 'demandeReponseDirection', d1.id, 'acceptee', 'titre établi'));
+  assert.deepStrictEqual([r.statut, r.reponse], ['acceptee', 'titre établi']);
+  assert.strictEqual(ok(c5(a1, 'demandesList')).mine[0].statut, 'acceptee', 'l\'agent voit la réponse');
+  const la = ok(c5(admin, 'demandesList')).envois[0];
+  assert.strictEqual(la.statut, 'envoye', 'l\'envoi reste ouvert tant que l\'autre groupe n\'a pas sa réponse');
+  ok(c5(admin, 'demandeReponseDirection', d2.id, 'refusee', 'non'));
+  assert.strictEqual(ok(c5(admin, 'demandesList')).envois[0].statut, 'traite', 'toutes les réponses reçues : envoi clos');
+  fail(c5(tg, 'demandeReponseDirection', d1.id, 'refusee', ''), /n’attend pas/);
+});
+
+test('dépôt : la liste retire les documents non envoyés depuis plus de 3 jours, et « Tout retirer » vide la liste', () => {
+  const app6 = loadApp(); const c6 = app6.call;
+  app6.run("Setup.install('admin@t.fr', 'adminpw12', 'Admin')");
+  const tk = ok(c6(null, 'login', 'admin@t.fr', 'adminpw12')).token;
+  ok(c6(tk, 'agentCreate', { nom: 'KADRI SOFIANE', email: 'k@t.fr', role: 'agent', password: 'kadripw12' }));
+  const pdf = (i) => Buffer.from('%PDF-1.4 ancien ' + i).toString('base64');
+  ok(c6(tk, 'depotAdd', { nom: 'KADRI_Sofiane_FDP_mars_2026.pdf', mime: 'application/pdf', base64: pdf(1) }));
+  ok(c6(tk, 'depotAdd', { nom: 'KADRI_Sofiane_FDP_avril_2026.pdf', mime: 'application/pdf', base64: pdf(2) }));
+  app6.run("var r = Store.readTable('Depots'); r[0].date_depot = new Date(Date.now() - 5 * 86400000).toISOString(); Store.writeTable('Depots', r);");
+  assert.strictEqual(ok(c6(tk, 'depotList')).length, 1, 'le dépôt de 5 jours est retiré, le récent reste');
+  ok(c6(tk, 'depotVider'));
+  assert.strictEqual(ok(c6(tk, 'depotList')).length, 0);
+});

@@ -150,12 +150,18 @@ var Demandes = (function () {
     var toHandle = user.role === 'agent' ? [] : all.filter(function (d) { return canHandle(user, d, agentsById); }).sort(sortDesc);
     var envois = [];
     if (user.role !== 'agent') {
-      envois = Store.readTable('Envois').filter(function (e) { return user.role === 'admin' || Agents.tous(user) || e.chef_id === user.id; })
-        .sort(function (a, b) { return a.date_envoi < b.date_envoi ? 1 : -1; }).slice(0, 40)
-        .map(function (e) {
-          var items = all.filter(function (d) { return d.envoi_id === e.id; });
-          var o = {}; Object.keys(e).forEach(function (k) { o[k] = e[k]; });
-          o.chef_nom = (agentsById[e.chef_id] || {}).nom || 'Administration'; o.groupes = groupBy(items);
+      // Historique : l'administrateur voit tout ; un responsable voit tout envoi qui contient AU MOINS UNE demande de son équipe (même envoyé par un autre),
+      // mais seulement les demandes de son équipe.
+      envois = Store.readTable('Envois').map(function (e) {
+        var tous = all.filter(function (d) { return d.envoi_id === e.id; });
+        var items = user.role === 'admin' ? tous : tous.filter(function (d) { return canHandle(user, d, agentsById); });
+        return { e: e, items: items };
+      }).filter(function (x) { return user.role === 'admin' || x.items.length || x.e.chef_id === user.id; })
+        .sort(function (a, b) { return a.e.date_envoi < b.e.date_envoi ? 1 : -1; }).slice(0, 40)
+        .map(function (x) {
+          var e = x.e; var o = {}; Object.keys(e).forEach(function (k) { o[k] = e[k]; });
+          o.chef_nom = (agentsById[e.chef_id] || {}).nom || 'Administration'; o.groupes = groupBy(x.items); o.nb = x.items.length;
+          o.peut_agir = user.role === 'admin' || Agents.tous(user) || e.chef_id === user.id; // annuler l'envoi / enregistrer la réponse de la direction pour tout l'envoi
           return o;
         });
     }
@@ -252,6 +258,23 @@ var Demandes = (function () {
     Store.writeTable('Demandes', all); Store.writeTable('Envois', envois);
     return e;
   }
+  // Enregistre la réponse de la direction pour UNE demande déjà envoyée (le responsable d'équipe répond pour les demandes de son équipe, même envoyées par un autre).
+  function repondreDirection(user, id, statut, reponse) {
+    if (['acceptee', 'refusee', 'traitee'].indexOf(statut) < 0) throw httpErr_('Statut invalide');
+    var agentsById = byId(Agents.list()); var all = Store.readTable('Demandes');
+    var d = all.filter(function (x) { return x.id === id; })[0];
+    if (!d || !canHandle(user, d, agentsById)) throw httpErr_('Demande non accessible', 'FORBIDDEN');
+    if (d.statut !== 'envoyee') throw httpErr_('Cette demande n’attend pas de réponse de la direction');
+    var now = new Date().toISOString();
+    d.statut = statut; d.reponse = String(reponse || '').slice(0, 500); d.traite_par = user.nom; d.date_traitement = now;
+    Store.writeTable('Demandes', all);
+    var restent = all.some(function (x) { return x.envoi_id === d.envoi_id && x.statut === 'envoyee'; });
+    if (!restent) { // toutes les demandes de l'envoi ont leur réponse : l'envoi est clos
+      var envois = Store.readTable('Envois'); var e = envois.filter(function (x) { return x.id === d.envoi_id; })[0];
+      if (e) { e.statut = 'traite'; e.date_reponse = now; Store.writeTable('Envois', envois); }
+    }
+    return enrich(d, agentsById);
+  }
   function counts(user) {
     var agentsById = byId(Agents.list());
     var all = Store.readTable('Demandes');
@@ -261,5 +284,5 @@ var Demandes = (function () {
       a_traiter: user.role === 'agent' ? 0 : all.filter(function (d) { return d.statut === 'en_attente' && canHandle(user, d, agentsById); }).length
     };
   }
-  return { modifier: modifier, reouvrir: reouvrir, supprimer: supprimer, annulerEnvoi: annulerEnvoi, create: create, list: list, repondre: repondre, envoyerDirection: envoyerDirection, traiterEnvoi: traiterEnvoi, counts: counts };
+  return { modifier: modifier, reouvrir: reouvrir, supprimer: supprimer, annulerEnvoi: annulerEnvoi, repondreDirection: repondreDirection, create: create, list: list, repondre: repondre, envoyerDirection: envoyerDirection, traiterEnvoi: traiterEnvoi, counts: counts };
 })();

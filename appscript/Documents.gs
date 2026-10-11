@@ -448,8 +448,27 @@ var Documents = (function () {
     var rows = Store.readTable('Depots');
     return user.role === 'admin' ? rows : rows.filter(function (r) { return r.depose_id === user.id; });
   }
+  // Les documents déposés mais jamais envoyés ne restent pas indéfiniment dans la liste : retirés (fichier compris) après DEPOT_JOURS jours.
+  var DEPOT_JOURS = 3;
+  function purgerAnciens() {
+    var lim = new Date(Date.now() - DEPOT_JOURS * 86400000).toISOString();
+    var vieux = Store.readTable('Depots').some(function (r) { return r.date_depot && r.date_depot < lim; });
+    if (!vieux) return 0;
+    return Store.withLock(function () {
+      var gone = {}; var n = 0;
+      Store.readTable('Depots').forEach(function (r) { if (r.date_depot && r.date_depot < lim) { try { DriveApp.getFileById(r.file_id).setTrashed(true); } catch (e) { /* déjà supprimé */ } gone[r.id] = true; n += 1; } });
+      Store.writeTable('Depots', Store.readTable('Depots').filter(function (x) { return !gone[x.id]; }));
+      return n;
+    });
+  }
+  // Vide toute la liste de dépôt de l'utilisateur (l'administrateur vide celle de tous).
+  function depotVider(user) {
+    if (user.role === 'agent') throw httpErr_('Accès refusé', 'FORBIDDEN');
+    return depotRejeter(user, depotRows(user).map(function (r) { return r.id; }));
+  }
   function depotList(user) {
     if (user.role === 'agent') throw httpErr_('Accès refusé', 'FORBIDDEN');
+    purgerAnciens();
     var by = {}; visibles(user).forEach(function (a) { by[a.id] = a; });
     var ctx = ctxDepots();
     return depotRows(user).sort(function (a, b) { return a.date_depot < b.date_depot ? -1 : 1; }).map(function (r) { return depotPub(r, by, ctx); });
@@ -536,5 +555,5 @@ var Documents = (function () {
     return { retires: Object.keys(gone).length };
   }
   return { marquerLus: marquerLus, nouveaux: nouveaux, list: list, upload: upload, update: update, download: download, remove: remove, count: count, purgeFiles: purgeFiles, analyse: function (t) { var ty = detectType(t); return { type: ty, champs: ty ? extract(ty, t) : null }; }, fileName: fileName, nameFor: nameFor, detectType: detectType, extract: extract,
-    imageToPdf: imageToPdf, depotAdd: depotAdd, depotList: depotList, depotUpdate: depotUpdate, depotValider: depotValider, depotApercu: depotApercu, depotRejeter: depotRejeter};
+    imageToPdf: imageToPdf, depotAdd: depotAdd, depotList: depotList, depotUpdate: depotUpdate, depotValider: depotValider, depotApercu: depotApercu, depotRejeter: depotRejeter, depotVider: depotVider, purgerAnciens: purgerAnciens};
 })();
