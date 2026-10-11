@@ -4,7 +4,7 @@ var CFG = {
   CODE_EDITEUR: 'ADMIN', // code réservé : connexion à la console de l'éditeur (gestion des clients)
   APP_SHELL_URL: 'https://rayanem-dev.github.io/pointage-app/', // page d'accueil installable (liens d'invitation ?c=CODE)
   COPYRIGHT: '© 2026 JawlaDev — Tous droits réservés', MARQUE: 'JawlaDev', MARQUE_URL: 'https://rayanem-dev.github.io/JawlaDev/', // propriétaire du logiciel : à modifier ici, affiché sur toutes les pages
-  VERSION: '3.34.0',
+  VERSION: '3.35.0',
   TABLES: {
     Params: ['cle', 'valeur'],
     Agents: ['id', 'nom', 'fonction', 'affectation', 'contrat', 'email', 'role', 'chef_id', 'actif', 'acces_setup', 'password_hash', 'salt', 'date_entree', 'type', 'rotation', 'acces_exports', 'portee', 'origine'],
@@ -13,7 +13,7 @@ var CFG = {
     Attachements: ['contrat', 'mois', 'designation', 'qte_mois'],
     // Attachement validé = copie figée (lignes en JSON) : la facture est générée à partir d'elle
     AttachementsValides: ['contrat', 'mois', 'numero', 'statut', 'valide_par', 'date_validation', 'rep_prestataire', 'total_ht', 'lignes', 'facture_numero', 'facture_date', 'facture_par'],
-    Demandes: ['id', 'agent_id', 'type', 'objet', 'message', 'date_debut', 'date_fin', 'date_creation', 'statut', 'envoi_id', 'reponse', 'traite_par', 'date_traitement'],
+    Demandes: ['id', 'agent_id', 'type', 'objet', 'message', 'date_debut', 'date_fin', 'date_creation', 'statut', 'envoi_id', 'reponse', 'traite_par', 'date_traitement', 'date_cloture', 'cloture_par', 'document_id'],
     Envois: ['id', 'chef_id', 'date_envoi', 'nb', 'themes', 'note', 'statut', 'reponse', 'date_reponse'],
     Clients: ['code', 'nom', 'classeur_id', 'statut', 'fin_licence', 'contact', 'exec_url', 'cree_le', 'note', 'vitrine'], // vitrine = 1 : affiché sur la page d'accueil (« Ils nous font confiance »)
   Prospects: ['id', 'date', 'societe', 'nom', 'email', 'tel', 'message', 'statut', 'note', 'client'], // demandes d'essai reçues depuis la page d'accueil (classeur principal) // annuaire des clients (classeur principal uniquement)

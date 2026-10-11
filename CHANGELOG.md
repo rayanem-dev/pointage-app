@@ -2,6 +2,10 @@
 
 © 2026 JawlaDev — Tous droits réservés
 
+## 3.35.0 — 2026-10-11 — Suivi et clôture des demandes
+
+- Chaque demande affiche son avancement : reçue, transmise à la direction, réponse, clôturée. L'agent suit ses propres demandes et retrouve, une fois la demande clôturée, le document remis.
+
 ## 3.33.0 — 2026-10-08 — Signature JawlaDev
 
 - Le pied de page, la page d'accueil, la confidentialité et les e-mails portent la mention « © 2026 JawlaDev — Tous droits réservés », avec un lien vers le portfolio JawlaDev (ouvert dans un nouvel onglet).

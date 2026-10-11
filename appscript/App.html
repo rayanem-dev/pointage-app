@@ -712,13 +712,52 @@ function DemandesPage() {
     var periode = d.date_debut ? ' · du ' + frDate(d.date_debut) + (d.date_fin ? ' au ' + frDate(d.date_fin) : '') + (d.reprise ? ' · reprise prévue le ' + frDate(d.reprise) : '') : '';
     var transmise = d.statut === 'envoyee' ? h('p', { class: 'muted' }, 'Transmise à la direction (' + (S.params.prestataire || 'prestataire') + '), en attente de sa réponse') : null;
     var direct = ['acceptee', 'refusee', 'traitee'].indexOf(d.statut) >= 0 && !d.envoi_id; // décision prise sans passer par la direction
-    var mod = (d.statut === 'en_attente' || (direct && !mine)) ? h('button', { type: 'button', onclick: function () { editor(d, card); } }, 'Modifier') : null;
-    var rouvre = direct && !mine ? h('button', { type: 'button', onclick: function () { reouvrirDem(d, rouvre); } }, 'Annuler la décision') : null;
-    var sup = (d.statut === 'en_attente' || (direct && !mine)) ? supBtn(d) : null;
+    var ferme = d.cloturee; // clôturée : plus de modification sans annuler la clôture
+    var mod = (d.statut === 'en_attente' || (direct && !mine && !ferme)) ? h('button', { type: 'button', onclick: function () { editor(d, card); } }, 'Modifier') : null;
+    var rouvre = direct && !mine && !ferme ? h('button', { type: 'button', onclick: function () { reouvrirDem(d, rouvre); } }, 'Annuler la décision') : null;
+    var sup = (d.statut === 'en_attente' || (direct && !mine && !ferme)) ? supBtn(d) : null;
     var card = h('article', { class: 'item' }, h('div', null, h('b', null, d.type_label), h('span', { class: 'badge ' + d.statut }, STATUT_LABEL[d.statut]), ' ', mod, ' ', rouvre, ' ', sup),
       h('small', null, (mine ? '' : d.agent_nom + ' · ') + frDateTime(d.date_creation) + periode),
-      transmise, d.message ? h('p', null, d.message) : null, d.reponse ? h('p', { class: 'reply' }, 'Réponse' + (d.traite_par ? ' (' + d.traite_par + ')' : '') + ' : ' + d.reponse) : null);
+      stepper(d), transmise, d.message ? h('p', null, d.message) : null, d.reponse ? h('p', { class: 'reply' }, 'Réponse' + (d.traite_par ? ' (' + d.traite_par + ')' : '') + ' : ' + d.reponse) : null,
+      docBloc(d), !mine && d.a_cloturer ? clotureCtl(d) : null, !mine && ferme ? annulCloture(d) : null);
     return card;
+  }
+  // Avancement : reçue → transmise à la direction → réponse → clôturée (document remis). Visible de l'agent (pour ses demandes), du responsable et de l'administrateur.
+  function stepper(d) {
+    var et = d.etapes || []; if (!et.length) return null;
+    return h('ol', { class: 'etapes', 'aria-label': tr('Avancement de la demande'), style: 'list-style:none;display:flex;gap:6px;flex-wrap:wrap;padding:0;margin:8px 0' }, et.map(function (s, i) {
+      var fait = s.etat === 'fait';
+      return h('li', { title: s.date ? frDateTime(s.date) : '', style: 'display:flex;align-items:center;gap:5px;font-size:.8rem;padding:3px 9px;border-radius:12px;border:1px solid var(--line);' + (fait ? 'background:var(--ok-bg);color:var(--ok-fg)' : 'color:var(--muted)') },
+        h('span', { 'aria-hidden': 'true' }, fait ? '●' : '○'), tr(s.label), s.date && fait ? h('small', { style: 'opacity:.8' }, frDate(String(s.date).slice(0, 10))) : null);
+    }));
+  }
+  // Document remis à la clôture : visible de l'agent, du responsable et de l'administrateur.
+  function docBloc(d) {
+    if (!d.cloturee || !d.document) return null;
+    var pv = h('button', { type: 'button' }, 'Aperçu'); var dl = h('button', { type: 'button' }, 'Télécharger'); var m = msgBox();
+    pv.onclick = function () { act(pv, m, function () { return call('documentDownload', d.document.id).then(previewFile); }); };
+    dl.onclick = function () { act(dl, m, function () { return call('documentDownload', d.document.id).then(saveFile); }); };
+    return h('div', { class: 'reply' }, h('b', null, tr('Document remis') + ' : '), d.document.nom, ' ', pv, ' ', dl, d.cloture_par ? h('small', { class: 'muted' }, ' · ' + tr('clôturée par') + ' ' + d.cloture_par) : null, m);
+  }
+  // Clôture (responsable ou administrateur) : choisir le document à remettre, parmi ceux déjà classés chez l'agent.
+  function clotureCtl(d) {
+    var zone = h('div', { style: 'margin-top:8px' }); var ouvrir = h('button', { type: 'button', class: 'primary' }, 'Clôturer et remettre le document');
+    ouvrir.onclick = function () {
+      ouvrir.disabled = true; zone.replaceChildren(loading());
+      call('demandeDocuments', d.id).then(function (docs) {
+        var sel = h('select', null, h('option', { value: '' }, d.statut === 'refusee' ? tr('— sans document —') : tr('— choisir le document —')), docs.map(function (x) { return h('option', { value: x.id }, (x.correspond ? '★ ' : '') + x.nom + (x.periode ? ' · ' + x.periode : '')); }));
+        var m = msgBox(); var ok = h('button', { type: 'button', class: 'primary' }, 'Clôturer'); var no = h('button', { type: 'button' }, 'Annuler');
+        ok.onclick = function () { act(ok, m, function () { return call('demandeCloturer', d.id, sel.value); }).then(function (r) { if (r) { flash = { text: 'Demande clôturée : l’agent est prévenu.', ok: true }; load(); } }); };
+        no.onclick = function () { zone.replaceChildren(); ouvrir.disabled = false; };
+        zone.replaceChildren(h('p', { class: 'muted' }, docs.length ? tr('Documents classés chez cet agent (★ = type correspondant). Pour en ajouter un, déposez-le d’abord dans l’onglet Documents.') : tr('Aucun document chez cet agent : déposez-le d’abord dans l’onglet Documents.')), field('Document à remettre', sel), m, h('div', { class: 'sendbar' }, ok, no));
+      }).catch(function (e) { zone.replaceChildren(h('p', { class: 'msg err' }, e.message)); ouvrir.disabled = false; });
+    };
+    return h('div', null, ouvrir, zone);
+  }
+  function annulCloture(d) {
+    var b = h('button', { type: 'button' }, 'Annuler la clôture');
+    b.onclick = function () { if (!window.confirm(tr('Annuler la clôture ? Le document n’est plus associé à la demande (il reste dans les documents de l’agent).'))) return; act(b, boxAfter(b), function () { return call('demandeAnnulerCloture', d.id); }).then(function (r) { if (r) { flash = { text: 'Clôture annulée.', ok: true }; load(); } }); };
+    return h('div', { style: 'margin-top:6px' }, b);
   }
   function boxAfter(b) { var m = msgBox(); if (b.parentNode) b.parentNode.after(m); return m; }
   function supBtn(d, question) {
@@ -846,7 +885,12 @@ function DemandesPage() {
     var out = [];
     if (!isAdmin) out.push(newForm());
     if (staff) {
-      out.push(inbox(L), envoisView(L));
+      out.push(inbox(L));
+      var aClore = L.toHandle.filter(function (d) { return d.a_cloturer; });
+      if (aClore.length) out.push(h('section', { class: 'card' }, h('h2', null, 'À clôturer (' + aClore.length + ')'), h('p', { class: 'muted' }, 'La réponse est arrivée : remettez le document à l’agent et clôturez la demande. L’agent voit l’avancement, la clôture et le document.'), aClore.map(function (d) { return demandeCard(d, false); })));
+      out.push(envoisView(L));
+      var closes = L.toHandle.filter(function (d) { return d.cloturee; }).sort(function (a, b) { return a.date_cloture < b.date_cloture ? 1 : -1; }).slice(0, 25);
+      if (closes.length) out.push(h('section', { class: 'card' }, h('h2', null, 'Demandes clôturées'), closes.map(function (d) { return demandeCard(d, false); })));
       var done = L.toHandle.filter(function (d) { return ['refusee', 'traitee'].indexOf(d.statut) >= 0 && !d.envoi_id; }).slice(0, 25); // les demandes envoyées sont dans « Envois à la direction »
       if (done.length) out.push(h('section', { class: 'card' }, h('h2', null, 'Demandes refusées ou traitées directement'), h('p', { class: 'muted' }, 'Une erreur ? Vous pouvez modifier la demande, annuler votre décision (elle repasse en cours) ou la supprimer.'), done.map(function (d) { return demandeCard(d, false); })));
     }

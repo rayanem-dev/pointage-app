@@ -6103,5 +6103,125 @@
 "de votre équipe · envoyé par",
 "of your team · sent by",
 "من فريقك · أرسلها"
+],
+[
+"Avancement de la demande",
+"Request progress",
+"تقدّم الطلب"
+],
+[
+"Document remis",
+"Document delivered",
+"المستند المسلَّم"
+],
+[
+"clôturée par",
+"closed by",
+"أغلقه"
+],
+[
+"— sans document —",
+"— no document —",
+"— بدون مستند —"
+],
+[
+"— choisir le document —",
+"— choose the document —",
+"— اختر المستند —"
+],
+[
+"Documents classés chez cet agent (★ = type correspondant). Pour en ajouter un, déposez-le d’abord dans l’onglet Documents.",
+"Documents filed for this agent (★ = matching type). To add one, upload it first in the Documents tab.",
+"المستندات المحفوظة لدى هذا العون (★ = النوع المطابق). لإضافة مستند، أودعه أولًا في تبويب المستندات."
+],
+[
+"Aucun document chez cet agent : déposez-le d’abord dans l’onglet Documents.",
+"No document for this agent: upload it first in the Documents tab.",
+"لا يوجد مستند لدى هذا العون: أودعه أولًا في تبويب المستندات."
+],
+[
+"Document à remettre",
+"Document to deliver",
+"المستند المراد تسليمه"
+],
+[
+"Clôturer et remettre le document",
+"Close and deliver the document",
+"إغلاق الطلب وتسليم المستند"
+],
+[
+"Clôturer",
+"Close",
+"إغلاق"
+],
+[
+"Demande clôturée : l’agent est prévenu.",
+"Request closed: the agent has been notified.",
+"أُغلق الطلب: تم إبلاغ العون."
+],
+[
+"Annuler la clôture",
+"Cancel the closure",
+"إلغاء الإغلاق"
+],
+[
+"Annuler la clôture ? Le document n’est plus associé à la demande (il reste dans les documents de l’agent).",
+"Cancel the closure? The document is no longer linked to the request (it stays in the agent's documents).",
+"إلغاء الإغلاق؟ لم يعد المستند مرتبطًا بالطلب (يبقى ضمن مستندات العون)."
+],
+[
+"Clôture annulée.",
+"Closure cancelled.",
+"أُلغي الإغلاق."
+],
+[
+"Demandes clôturées",
+"Closed requests",
+"الطلبات المغلقة"
+],
+[
+"Clôturée",
+"Closed",
+"مغلق"
+],
+[
+"Demande reçue",
+"Request received",
+"تم استلام الطلب"
+],
+[
+"Transmise à la direction",
+"Sent to management",
+"أُحيل إلى الإدارة"
+],
+[
+"La réponse est arrivée : remettez le document à l’agent et clôturez la demande. L’agent voit l’avancement, la clôture et le document.",
+"The reply has arrived: give the document to the agent and close the request. The agent sees the progress, the closure and the document.",
+"وصل الرد: سلّم المستند للعون وأغلق الطلب. يرى العون التقدّم والإغلاق والمستند."
+],
+[
+"Cette demande est clôturée : annulez d’abord la clôture",
+"This request is closed: cancel the closure first",
+"هذا الطلب مغلق: ألغِ الإغلاق أولًا"
+],
+[
+"Cette demande est déjà clôturée",
+"This request is already closed",
+"هذا الطلب مغلق بالفعل"
+],
+[
+"La demande n’a pas encore reçu de réponse : elle ne peut pas être clôturée",
+"The request has not been answered yet: it cannot be closed",
+"لم يُردّ على الطلب بعد: لا يمكن إغلاقه"
+],
+[
+"Choisissez le document à remettre à l’agent (ou déposez-le d’abord dans l’onglet Documents)",
+"Choose the document to give to the agent (or upload it first in the Documents tab)",
+"اختر المستند المراد تسليمه للعون (أو أودعه أولًا في تبويب المستندات)"
+],
+[
+"Document introuvable chez cet agent",
+"Document not found for this agent",
+"المستند غير موجود لدى هذا العون"
 ]
 ]

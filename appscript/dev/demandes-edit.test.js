@@ -157,3 +157,40 @@ test('dépôt : la liste retire les documents non envoyés depuis plus de 3 jour
   ok(c6(tk, 'depotVider'));
   assert.strictEqual(ok(c6(tk, 'depotList')).length, 0);
 });
+
+test('demandes : parcours complet reçue → transmise → réponse → clôture avec document ; l\'agent ne voit que les siennes', () => {
+  const app7 = loadApp(); const c7 = app7.call;
+  app7.run("Setup.install('admin@t.fr', 'adminpw12', 'Admin')");
+  const admin = ok(c7(null, 'login', 'admin@t.fr', 'adminpw12')).token;
+  const chef = ok(c7(admin, 'agentCreate', { nom: 'CHEF P', email: 'cp@t.fr', role: 'chef', password: 'chefppw123' })).agent;
+  const ag1 = ok(c7(admin, 'agentCreate', { nom: 'AG UN', email: 'u1@t.fr', role: 'agent', password: 'agentpw123', chef_id: chef.id })).agent;
+  ok(c7(admin, 'agentCreate', { nom: 'AG DEUX', email: 'u2@t.fr', role: 'agent', password: 'agentpw123', chef_id: chef.id }));
+  const tc = ok(c7(null, 'login', 'cp@t.fr', 'chefppw123')).token; const t1 = ok(c7(null, 'login', 'u1@t.fr', 'agentpw123')).token; const t2 = ok(c7(null, 'login', 'u2@t.fr', 'agentpw123')).token;
+  const d1 = ok(c7(t1, 'demandeCreate', { type: 'titre_conge', date_debut: '2026-11-01', date_fin: '2026-11-28' })); const d2 = ok(c7(t2, 'demandeCreate', { type: 'titre_conge' }));
+  const etat = (l, id) => (l.find((d) => d.id === id) || {}).etapes.map((e) => e.cle + ':' + e.etat).join(' ');
+  assert.strictEqual(etat(ok(c7(t1, 'demandesList')).mine, d1.id), 'recue:fait transmise:attente reponse:attente cloturee:attente');
+  // le responsable transmet à la direction (l'administrateur) ; tous voient l'avancement
+  const env = ok(c7(tc, 'demandesEnvoyer', null, '')).envoi;
+  assert.strictEqual(etat(ok(c7(t1, 'demandesList')).mine, d1.id), 'recue:fait transmise:fait reponse:attente cloturee:attente');
+  ok(c7(admin, 'envoiTraiter', env.id, 'acceptee', 'titre établi'));
+  assert.strictEqual(etat(ok(c7(tc, 'demandesList')).toHandle, d1.id), 'recue:fait transmise:fait reponse:fait cloturee:attente');
+  assert.strictEqual(ok(c7(tc, 'demandesList')).toHandle.find((d) => d.id === d1.id).a_cloturer, true);
+  // pas de clôture sans document (hors refus) ; l'agent ne peut pas clôturer ; document d'un autre agent refusé
+  fail(c7(tc, 'demandeCloturer', d1.id, ''), /Choisissez le document/);
+  fail(c7(t1, 'demandeCloturer', d1.id, ''), /./);
+  const pdf = Buffer.from('%PDF-1.4 tc').toString('base64');
+  const doc = ok(c7(tc, 'documentUpload', { agent_id: ag1.id, type: 'titre_conge', nom: 'TC_AG_Un_2026-11-01.pdf', base64: pdf }));
+  const docs = ok(c7(tc, 'demandeDocuments', d1.id)); assert.strictEqual(docs[0].correspond, true);
+  fail(c7(tc, 'demandeCloturer', d1.id, 'inconnu'), /introuvable/);
+  const r = ok(c7(tc, 'demandeCloturer', d1.id, doc.id));
+  assert.deepStrictEqual([r.cloturee, r.document.id, r.a_cloturer], [true, doc.id, false]);
+  // l'agent voit l'avancement complet, la clôture et le document ; mais pas la demande d'un autre
+  const mine = ok(c7(t1, 'demandesList')).mine; assert.strictEqual(mine.length, 1);
+  assert.strictEqual(etat(mine, d1.id), 'recue:fait transmise:fait reponse:fait cloturee:fait'); assert.strictEqual(mine[0].document.id, doc.id);
+  assert.ok(ok(c7(t1, 'documentDownload', doc.id)).base64, 'l\'agent télécharge le document remis');
+  assert.strictEqual(ok(c7(t1, 'demandesList')).toHandle.length, 0, 'l\'agent n\'a aucun historique des autres');
+  // clôturée : plus de modification sans annuler la clôture
+  fail(c7(tc, 'demandeModifier', d1.id, { message: 'x' }), /clôturée/); fail(c7(tc, 'demandeSupprimer', d1.id), /clôturée/);
+  ok(c7(tc, 'demandeAnnulerCloture', d1.id)); assert.strictEqual(ok(c7(tc, 'demandesList')).toHandle.find((d) => d.id === d1.id).cloturee, false);
+  assert.ok(d2.id);
+});

@@ -18,12 +18,32 @@ var Demandes = (function () {
     if (user.role === 'admin') return true;
     return user.role === 'chef' && demande.agent_id !== user.id && (Agents.tous(user) || handlerId(agentsById[demande.agent_id], agentsById) === user.id);
   }
-  function enrich(d, agentsById) {
+  var REPONSES = ['acceptee', 'refusee', 'traitee'];
+  // Contexte de lecture (envois et documents) : lu une fois pour toute une liste.
+  function contexte() {
+    var e = {}; Store.readTable('Envois').forEach(function (x) { e[x.id] = x; });
+    var dc = {}; Store.readTable('Documents').forEach(function (x) { dc[x.id] = x; });
+    return { envois: e, docs: dc };
+  }
+  // Avancement d'une demande : reçue → transmise à la direction → réponse → clôturée (document remis). Une décision prise directement saute la transmission.
+  function etapes(d, ctx) {
+    var rep = REPONSES.indexOf(d.statut) >= 0; var direct = !d.envoi_id && rep && d.statut !== 'envoyee'; var env = ctx.envois[d.envoi_id];
+    var out = [{ cle: 'recue', label: 'Demande reçue', date: d.date_creation, etat: 'fait' }];
+    if (!direct) out.push({ cle: 'transmise', label: 'Transmise à la direction', date: env ? env.date_envoi : '', etat: d.envoi_id ? 'fait' : 'attente' });
+    out.push({ cle: 'reponse', label: rep ? 'Réponse : ' + (CFG.STATUTS_DEMANDE[d.statut] || d.statut) : 'Réponse', date: rep ? d.date_traitement : '', etat: rep ? 'fait' : 'attente' });
+    out.push({ cle: 'cloturee', label: 'Clôturée', date: d.date_cloture || '', etat: d.date_cloture ? 'fait' : 'attente' });
+    return out;
+  }
+  function enrich(d, agentsById, ctx) {
+    ctx = ctx || contexte();
     var a = agentsById[d.agent_id] || {};
     var o = {};
     Object.keys(d).forEach(function (k) { o[k] = d[k]; });
     o.agent_nom = a.nom || '?'; o.agent_fonction = a.fonction || ''; o.type_label = T[d.type] || d.type;
     o.reprise = reprise(d, a);
+    o.cloturee = !!d.date_cloture; o.etapes = etapes(d, ctx);
+    var doc = d.document_id && ctx.docs[d.document_id]; o.document = doc ? { id: doc.id, nom: doc.nom_original || doc.titre, type: doc.type, periode: doc.periode || '' } : null;
+    o.a_cloturer = REPONSES.indexOf(d.statut) >= 0 && !d.date_cloture;
     var hid = handlerId(a, agentsById); o.responsable_nom = hid === 'admin' ? '' : (agentsById[hid] || {}).nom || ''; // qui traite : le responsable d'équipe de l'agent, sinon l'administrateur
     return o;
   }
@@ -69,6 +89,7 @@ var Demandes = (function () {
     var d = all.filter(function (x) { return x.id === id; })[0];
     if (!d) throw httpErr_('Demande introuvable');
     if (!(d.agent_id === user.id || canHandle(user, d, agentsById))) throw httpErr_('Demande non accessible', 'FORBIDDEN');
+    if (d.date_cloture) throw httpErr_('Cette demande est clôturée : annulez d’abord la clôture');
     var decidee = DECIDEES.indexOf(d.statut) >= 0 && !d.envoi_id;
     var attenteDirection = d.statut === 'envoyee'; // envoyée, la direction n'a pas encore répondu
     if (d.statut !== 'en_attente' && !((decidee || attenteDirection) && canHandle(user, d, agentsById))) throw httpErr_(attenteDirection ? 'Cette demande est déjà transmise à la direction : seul votre responsable peut la corriger' : 'La direction a répondu à cette demande : elle ne peut plus être modifiée');
@@ -95,6 +116,7 @@ var Demandes = (function () {
     var d = all.filter(function (x) { return x.id === id; })[0];
     if (!d || !canHandle(user, d, agentsById)) throw httpErr_('Demande non accessible', 'FORBIDDEN');
     if (d.statut === 'en_attente') return enrich(d, agentsById);
+    if (d.date_cloture) throw httpErr_('Cette demande est clôturée : annulez d’abord la clôture');
     if (d.statut !== 'envoyee' && d.envoi_id) throw httpErr_('La direction a répondu à cette demande : elle ne peut plus être annulée');
     var envoi = d.envoi_id;
     d.statut = 'en_attente'; d.reponse = ''; d.traite_par = ''; d.date_traitement = ''; d.envoi_id = '';
@@ -109,6 +131,7 @@ var Demandes = (function () {
     var d = all.filter(function (x) { return x.id === id; })[0];
     if (!d) throw httpErr_('Demande introuvable');
     var handler = canHandle(user, d, agentsById);
+    if (d.date_cloture && handler) throw httpErr_('Cette demande est clôturée : annulez d’abord la clôture');
     if (!(handler || (d.agent_id === user.id && d.statut === 'en_attente'))) throw httpErr_('Demande non accessible', 'FORBIDDEN');
     if (d.statut !== 'envoyee' && d.envoi_id) throw httpErr_('La direction a répondu à cette demande : elle ne peut plus être supprimée');
     if (d.statut === 'envoyee' && !handler) throw httpErr_('Demande non accessible', 'FORBIDDEN');
@@ -145,7 +168,7 @@ var Demandes = (function () {
 
   function list(user) {
     var agentsById = byId(Agents.list());
-    var all = Store.readTable('Demandes').map(function (d) { return enrich(d, agentsById); });
+    var ctx = contexte(); var all = Store.readTable('Demandes').map(function (d) { return enrich(d, agentsById, ctx); });
     var mine = all.filter(function (d) { return d.agent_id === user.id; }).sort(sortDesc);
     var toHandle = user.role === 'agent' ? [] : all.filter(function (d) { return canHandle(user, d, agentsById); }).sort(sortDesc);
     var envois = [];
@@ -275,14 +298,54 @@ var Demandes = (function () {
     }
     return enrich(d, agentsById);
   }
+  // Type de document attendu pour chaque type de demande (les autres demandes acceptent n'importe quel document).
+  var DOC_DE = { titre_conge: 'titre_conge', attestation_travail: 'attestation_travail', fiche_emolument: 'fiche_emolument', contrat: 'contrat', attestation_cnas: 'attestation_cnas', maj_cnas: 'maj_cnas', attestation_emoluments: 'attestation_emoluments' };
+  // Documents déjà classés chez l'agent de la demande (ceux du bon type d'abord) : le responsable ou l'administrateur choisit celui à remettre.
+  function documentsPour(user, id) {
+    var agentsById = byId(Agents.list()); var d = Store.readTable('Demandes').filter(function (x) { return x.id === id; })[0];
+    if (!d || !canHandle(user, d, agentsById)) throw httpErr_('Demande non accessible', 'FORBIDDEN');
+    var voulu = DOC_DE[d.type] || '';
+    return Store.readTable('Documents').filter(function (x) { return x.agent_id === d.agent_id; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; }).map(function (x) {
+      return { id: x.id, nom: x.nom_original || x.titre, type: x.type, type_label: CFG.TYPES_DOC[x.type] || x.type, periode: x.periode || '', date: x.date, correspond: !!voulu && x.type === voulu };
+    }).sort(function (a, b) { return (b.correspond ? 1 : 0) - (a.correspond ? 1 : 0); });
+  }
+  // Clôture : la demande a reçu sa réponse ; le document (déjà dans l'espace de l'agent) lui est associé et l'agent est prévenu. Un refus peut être clôturé sans document.
+  function cloturer(user, id, docId) {
+    var agentsById = byId(Agents.list()); var all = Store.readTable('Demandes');
+    var d = all.filter(function (x) { return x.id === id; })[0];
+    if (!d || !canHandle(user, d, agentsById)) throw httpErr_('Demande non accessible', 'FORBIDDEN');
+    if (d.date_cloture) throw httpErr_('Cette demande est déjà clôturée');
+    if (REPONSES.indexOf(d.statut) < 0) throw httpErr_('La demande n’a pas encore reçu de réponse : elle ne peut pas être clôturée');
+    if (docId) {
+      var doc = Store.readTable('Documents').filter(function (x) { return x.id === docId; })[0];
+      if (!doc || doc.agent_id !== d.agent_id) throw httpErr_('Document introuvable chez cet agent');
+      d.document_id = docId;
+    } else if (d.statut !== 'refusee') throw httpErr_('Choisissez le document à remettre à l’agent (ou déposez-le d’abord dans l’onglet Documents)');
+    d.date_cloture = new Date().toISOString(); d.cloture_par = user.nom;
+    Store.writeTable('Demandes', all);
+    try {
+      var ag = agentsById[d.agent_id];
+      if (ag && /^\S+@\S+\.\S+$/.test(ag.email || '')) Mail.send({ to: ag.email, replyTo: user.email || undefined, subject: 'Votre demande est clôturée — ' + (T[d.type] || d.type), cta: { label: 'Ouvrir mes demandes', url: Mail.lien() }, societe: Params.get().prestataire_nom,
+        body: 'Bonjour ' + ag.nom + ',\n\nVotre demande « ' + (T[d.type] || d.type) + ' » est clôturée (' + (CFG.STATUTS_DEMANDE[d.statut] || d.statut) + ').' + (d.document_id ? '\nLe document est disponible dans votre espace Sijil, onglet « Mes documents » et sur la demande.' : '') + (d.reponse ? '\n\nRéponse : ' + d.reponse : '') });
+    } catch (e) { Logger.log('Clôture non notifiée : ' + e.message); }
+    return enrich(d, agentsById);
+  }
+  function annulerCloture(user, id) {
+    var agentsById = byId(Agents.list()); var all = Store.readTable('Demandes');
+    var d = all.filter(function (x) { return x.id === id; })[0];
+    if (!d || !canHandle(user, d, agentsById)) throw httpErr_('Demande non accessible', 'FORBIDDEN');
+    d.date_cloture = ''; d.cloture_par = ''; d.document_id = '';
+    Store.writeTable('Demandes', all);
+    return enrich(d, agentsById);
+  }
   function counts(user) {
     var agentsById = byId(Agents.list());
     var all = Store.readTable('Demandes');
     var mine = all.filter(function (d) { return d.agent_id === user.id; });
     return {
       total: mine.length, en_attente: mine.filter(function (d) { return d.statut === 'en_attente' || d.statut === 'envoyee'; }).length,
-      a_traiter: user.role === 'agent' ? 0 : all.filter(function (d) { return d.statut === 'en_attente' && canHandle(user, d, agentsById); }).length
+      a_traiter: user.role === 'agent' ? 0 : all.filter(function (d) { return (d.statut === 'en_attente' || (REPONSES.indexOf(d.statut) >= 0 && !d.date_cloture && d.envoi_id)) && canHandle(user, d, agentsById); }).length
     };
   }
-  return { modifier: modifier, reouvrir: reouvrir, supprimer: supprimer, annulerEnvoi: annulerEnvoi, repondreDirection: repondreDirection, create: create, list: list, repondre: repondre, envoyerDirection: envoyerDirection, traiterEnvoi: traiterEnvoi, counts: counts };
+  return { modifier: modifier, reouvrir: reouvrir, supprimer: supprimer, annulerEnvoi: annulerEnvoi, repondreDirection: repondreDirection, cloturer: cloturer, annulerCloture: annulerCloture, documentsPour: documentsPour, create: create, list: list, repondre: repondre, envoyerDirection: envoyerDirection, traiterEnvoi: traiterEnvoi, counts: counts };
 })();
