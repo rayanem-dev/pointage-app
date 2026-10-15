@@ -77,6 +77,12 @@ table { border-collapse: collapse; width: 100%; }
 .stat { text-align: center; } .stat b { font-size: 1.8rem; display: block; } .stat.st-T, .stat.st-R, .stat.st-ABS { color: #fff; } .stat.st-T small, .stat.st-R small, .stat.st-ABS small { color: #fff; opacity: .9; }
 .stat.pos b { color: var(--pos); } .stat.neg b { color: var(--neg); }
 .card.today { display: grid; gap: 6px; border-left: 8px solid var(--line); } .card.today.s-T { border-color: var(--c-T); } .card.today.s-R { border-color: var(--c-R); } .card.today.s-ABS { border-color: var(--c-ABS); } /* carte « aujourd'hui » seulement : jamais la colonne du jour dans la grille */
+/* carte « Aujourd'hui » de l'agent : anneau + état + phrase + barre */
+.hero { display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: center; border-left: 8px solid var(--line); } .hero.s-T { border-color: var(--c-T); } .hero.s-R { border-color: var(--c-R); }
+.hero .ring { position: relative; width: 104px; height: 104px; } .hero .ring svg { display: block; } .hero .ring b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 1.9rem; }
+.hero-body { display: grid; gap: 8px; min-width: 0; } .hero-date { font-weight: 700; font-size: .95rem; } .hero .days { margin: 0; }
+.pastille { justify-self: start; padding: 3px 12px; border-radius: 14px; font-weight: 700; font-size: .9rem; color: #fff; } .pastille.st-T { background: var(--c-T); } .pastille.st-R { background: var(--c-R); }
+@media (max-width: 560px) { .hero { grid-template-columns: 1fr; justify-items: center; text-align: center; } .hero-body { justify-items: center; } .pastille { justify-self: center; } }
 .today .big { font-size: 1.6rem; font-weight: 700; } .today .days { font-size: 1.1rem; }
 .tile { text-decoration: none; color: inherit; display: block; cursor: pointer; } .tile b { font-size: 1.4rem; }
 .bar { height: 14px; border-radius: 7px; background: var(--track); overflow: hidden; margin: 8px 0; } .bar div { height: 100%; }

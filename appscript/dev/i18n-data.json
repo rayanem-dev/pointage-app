@@ -6223,5 +6223,60 @@
 "Document introuvable chez cet agent",
 "Document not found for this agent",
 "المستند غير موجود لدى هذا العون"
+],
+[
+"Au travail",
+"At work",
+"في العمل"
+],
+[
+"En congé",
+"On leave",
+"في عطلة"
+],
+[
+"restants",
+"remaining",
+"متبقية"
+],
+[
+"(prévu)",
+"(planned)",
+"(متوقع)"
+],
+[
+"Vous êtes au travail depuis le ",
+"You have been at work since ",
+"أنت في العمل منذ "
+],
+[
+"Vous êtes en congé depuis le ",
+"You have been on leave since ",
+"أنت في عطلة منذ "
+],
+[
+" (jour ",
+" (day ",
+" (اليوم "
+],
+[
+"), il vous reste ",
+"), you have ",
+" ، تبقّى لك "
+],
+[
+" — début du repos le ",
+" — rest starts on ",
+" — يبدأ الراحة في "
+],
+[
+" — reprise du travail le ",
+" — back to work on ",
+" — استئناف العمل في "
+],
+[
+" → prochain changement le ",
+" → next change on ",
+" ← التغيير القادم في "
 ]
 ]

@@ -439,6 +439,30 @@ function contratPeriode(c) {
   if (c.date_fin) parts.push(h('span', null, 'Fin : ', h('b', null, frDate(c.date_fin))));
   return parts.map(function (p, i) { return i ? [' · ', p] : p; });
 }
+// Carte « Aujourd'hui » de l'agent : anneau des jours restants, pastille d'état (jour X sur Y), phrase d'explication, barre de progression, prochain changement,
+// puis le départ en congé / la reprise et le solde (T − CR) prévu ce jour-là.
+function todayHero(o, a) {
+  var travail = a.status === 'T'; var color = travail ? 'var(--c-T)' : 'var(--c-R)';
+  var ligneDate = h('div', { class: 'hero-date' }, "Aujourd'hui — " + frDate(o.today));
+  if (a.status === 'ABS') return h('section', { class: 'card today s-ABS' }, ligneDate, h('div', { class: 'big' }, STATUS_LABEL.ABS), h('div', { class: 'muted' }, 'Absence pointée.'));
+  var rot = o.rotation || {}; var base = Number(travail ? rot.travail : rot.repos) || a.remaining; var total = Math.max(base, a.remaining);
+  var jour = Math.max(1, Math.min(total, total - a.remaining + 1)); var debut = addDays(o.today, -(jour - 1)); var pct = Math.round(jour / total * 100);
+  var R = 44; var circ = 2 * Math.PI * R;
+  var ring = h('div', { class: 'ring', role: 'img', 'aria-label': plural(a.remaining, 'jour') + ' ' + tr('restants') },
+    (function () { var d = document.createElement('div'); d.innerHTML = '<svg viewBox="0 0 100 100" width="104" height="104" aria-hidden="true"><circle cx="50" cy="50" r="' + R + '" fill="none" stroke="var(--track)" stroke-width="9"/><circle cx="50" cy="50" r="' + R + '" fill="none" stroke="' + color + '" stroke-width="9" stroke-linecap="round" stroke-dasharray="' + (circ * pct / 100).toFixed(1) + ' ' + circ.toFixed(1) + '" transform="rotate(-90 50 50)"/></svg>'; return d.firstChild; })(),
+    h('b', null, String(a.remaining)));
+  var pastille = h('span', { class: 'pastille ' + (travail ? 'st-T' : 'st-R') }, tr(travail ? 'Au travail' : 'En congé') + ' · ' + tr('jour') + ' ' + jour + '/' + total + (a.prevu ? ' ' + tr('(prévu)') : ''));
+  var phrase = [travail ? 'Vous êtes au travail depuis le ' : 'Vous êtes en congé depuis le ', frDate(debut), ' (jour ' + jour + ' sur ' + total + '), il vous reste ', h('b', null, plural(a.remaining, 'jour')), " (aujourd'hui compris)"]
+    .concat(a.change ? [' — ' + (a.changeStatus === 'R' ? 'début du repos le ' : 'reprise du travail le '), h('b', null, frDate(a.change)), '.'] : ['.']);
+  var bas = a.change ? [
+    h('div', { class: 'muted' }, (a.changeStatus === 'R' ? 'Départ en congé le ' : 'Reprise du travail le ') + frDate(a.change) + ' (rotation ' + (rot.travail || '?') + ' T / ' + (rot.repos || '?') + ' R).'),
+    o.soldeChange != null ? h('div', { class: 'days' }, (a.changeStatus === 'R' ? 'Le jour de votre départ' : 'Le jour de votre reprise') + ', votre solde (T − CR) sera de ', h('b', { class: o.soldeChange < 0 ? 'neg' : 'pos' }, signed(o.soldeChange) + ' ' + (Math.abs(o.soldeChange) > 1 ? 'jours' : 'jour')), '.') : null] : [];
+  return h('section', { class: 'card hero s-' + a.status },
+    ring,
+    h('div', { class: 'hero-body' }, ligneDate, pastille, h('p', { class: 'days' }, phrase),
+      h('div', { class: 'bar' }, h('div', { class: travail ? 'st-T' : 'st-R', style: 'width:' + pct + '%' })),
+      a.change ? h('div', { class: 'muted' }, 'Du ' + frDate(debut) + ' → prochain changement le ' + frDate(a.change)) : null, bas));
+}
 // ---------- accueil de l'agent ----------
 function HomePage() {
   var month = thisMonth();
@@ -451,15 +475,7 @@ function HomePage() {
     var a = o.aujourdhui; var c = o.cycle;
     var todayCard;
     if (a) {
-      var last = a.change ? addDays(a.change, -1) : null;
-      todayCard = h('section', { class: 'card today s-' + a.status },
-        h('h3', null, "Aujourd'hui — " + frDate(o.today)),
-        h('div', { class: 'big' }, STATUS_LABEL[a.status] + (a.prevu ? ' (prévu)' : '')),
-        a.status === 'ABS' ? h('div', { class: 'muted' }, 'Absence pointée.') : [
-          h('div', { class: 'days' }, 'Il vous reste ', h('b', null, plural(a.remaining, 'jour')), a.status === 'T' ? ' de travail' : ' de congé', " (aujourd'hui compris)" + (last ? ', jusqu\'au ' + frDate(last) : '') + '.'),
-          a.change ? h('div', { class: 'muted' }, (a.changeStatus === 'R' ? 'Départ en congé le ' : 'Reprise du travail le ') + frDate(a.change) + ' (rotation ' + o.rotation.travail + ' T / ' + o.rotation.repos + ' R).') : null,
-          a.change && o.soldeChange != null ? h('div', { class: 'days' }, (a.changeStatus === 'R' ? 'Le jour de votre départ' : 'Le jour de votre reprise') + ', votre solde (T − CR) sera de ', h('b', { class: o.soldeChange < 0 ? 'neg' : 'pos' }, signed(o.soldeChange) + ' ' + (Math.abs(o.soldeChange) > 1 ? 'jours' : 'jour')), '.') : null
-        ]);
+      todayCard = todayHero(o, a);
     } else {
       todayCard = h('section', { class: 'card today' }, h('h3', null, "Aujourd'hui — " + frDate(o.today)), h('div', { class: 'muted' }, 'Aucun pointage enregistré : votre situation sera calculée dès le premier pointage par votre responsable d’équipe.'));
     }
@@ -477,10 +493,6 @@ function HomePage() {
       h('section', { class: 'card' }, h('h2', null, 'Bonjour ' + o.agent.nom), h('p', { class: 'muted' }, [o.agent.fonction, o.agent.affectation, o.agent.contrat && 'Contrat ' + o.agent.contrat, o.chef && 'Responsable d’équipe : ' + o.chef.nom].filter(Boolean).join(' · ')), o.contrat && (o.contrat.date_debut || o.contrat.duree_mois) ? h('p', null, contratPeriode(o.contrat)) : null),
       todayCard,
       h('div', { class: 'stats' }, stat('T ce mois', o.mois.T, 'st-T'), stat('CR ce mois', o.mois.R, 'st-R'), stat('ABS ce mois', o.mois.ABS, 'st-ABS'), stat('Total T', o.cumul.T), stat('Total CR', o.cumul.R), stat('Solde (T − CR)', signed(o.cumul.reliquat), o.cumul.reliquat < 0 ? 'neg' : 'pos')),
-      c && c.run ? h('section', { class: 'card' }, h('h3', null, 'Cycle en cours'),
-        h('p', null, chip(c.status), ' jour ', h('b', null, c.run), ' sur ' + c.total + (c.remaining > 0 ? ' — encore ' + plural(c.remaining, 'jour') : ' — cycle terminé')),
-        h('div', { class: 'bar' }, h('div', { class: 'st-' + c.status, style: 'width:' + pct + '%' })),
-        h('p', { class: 'muted' }, 'Prochain changement : ', h('b', null, frDate(c.next)), ' → ', chip(c.nextStatus, true))) : null,
       h('section', { class: 'card' }, h('div', { class: 'toolbar' }, h('h3', null, o.label), monthNav(month, function (mk) { month = mk; load(); })), cal,
         h('p', { class: 'legend' }, chip('T'), ' travail ', chip('R'), ' congé / repos ', chip('ABS'), ' absence ', chip('T', true), chip('R', true), ' prévus')),
       h('div', { class: 'stats' },
