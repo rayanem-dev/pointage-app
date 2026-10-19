@@ -57,17 +57,23 @@ var Demandes = (function () {
   function sortDesc(a, b) { return a.date_creation < b.date_creation ? 1 : -1; }
 
   function create(user, data) {
-    if (user.role === 'admin') throw httpErr_("L'administrateur ne fait pas de demande", 'FORBIDDEN');
+    // Le responsable d'équipe peut créer une demande POUR un agent de son équipe (liste « Pour » du formulaire) ; la demande appartient alors à l'agent.
+    var cible = user;
+    if (data.agent_id && data.agent_id !== user.id) {
+      var all = Agents.list(); var by = byId(all); var ag = by[data.agent_id];
+      if (user.role === 'agent' || !ag || !Agents.isPerson(ag) || ag.type === 'vehicule' || ag.actif !== '1' || !canHandle(user, { agent_id: ag.id }, by)) throw httpErr_('Agent non accessible', 'FORBIDDEN');
+      cible = ag;
+    } else if (user.role === 'admin') throw httpErr_("L'administrateur ne fait pas de demande", 'FORBIDDEN');
     if (!T[data.type] || masque(data.type)) throw httpErr_('Type de demande invalide');
     ['date_debut', 'date_fin'].forEach(function (k) { if (data[k] && !Dates.isDate(data[k])) throw httpErr_('Date invalide'); });
     if (data.date_debut && data.date_fin && data.date_fin < data.date_debut) throw httpErr_('La date de fin précède la date de début');
     if (!Format.allow('DEM_' + Store.tenantCode() + '_' + user.id, 20, 3600)) throw httpErr_('Trop de demandes en peu de temps, réessayez plus tard');
     var d = {
-      id: newId_('D'), agent_id: user.id, type: data.type, objet: String(data.objet || '').trim().slice(0, 120) || T[data.type], message: String(data.message || '').trim().slice(0, 500),
+      id: newId_('D'), agent_id: cible.id, type: data.type, objet: String(data.objet || '').trim().slice(0, 120) || T[data.type], message: String(data.message || '').trim().slice(0, 500),
       date_debut: data.date_debut || '', date_fin: data.date_fin || '', date_creation: new Date().toISOString(), statut: 'en_attente', envoi_id: '', reponse: '', traite_par: '', date_traitement: ''
     };
     Store.writeTable('Demandes', Store.readTable('Demandes').concat([d]));
-    notifyHandler(user, d);
+    if (cible === user) notifyHandler(user, d); // créée par celui qui la traite : inutile de le prévenir
     return d;
   }
   // Prévient par e-mail celui qui traite la demande (responsable d’équipe de l'agent, sinon les administrateurs).

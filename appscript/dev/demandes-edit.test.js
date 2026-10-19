@@ -194,3 +194,20 @@ test('demandes : parcours complet reçue → transmise → réponse → clôture
   ok(c7(tc, 'demandeAnnulerCloture', d1.id)); assert.strictEqual(ok(c7(tc, 'demandesList')).toHandle.find((d) => d.id === d1.id).cloturee, false);
   assert.ok(d2.id);
 });
+
+test('demandes : le responsable d’équipe crée une demande pour un agent de son équipe (jamais pour un autre)', () => {
+  const admin = ok(call(null, 'login', 'admin@t.fr', 'adminpw12')).token;
+  const chef = ok(call(admin, 'agentCreate', { nom: 'CHEF POUR', email: 'cp@t.fr', role: 'chef', password: 'chefpw1234' })).agent;
+  const tc = ok(call(null, 'login', 'cp@t.fr', 'chefpw1234')).token;
+  const mien = ok(call(tc, 'agentCreate', { nom: 'AGENT MIEN', email: 'am@t.fr', password: 'agentpw123' })).agent;
+  const autre = ok(call(admin, 'agentCreate', { nom: 'AGENT AUTRE', email: 'aa@t.fr', role: 'agent', password: 'agentpw123' })).agent;
+  const d = ok(call(tc, 'demandeCreate', { type: 'titre_conge', date_debut: '2026-11-01', date_fin: '2026-11-28', agent_id: mien.id }));
+  assert.strictEqual(d.agent_id, mien.id);
+  const l = ok(call(tc, 'demandesList'));
+  assert.ok(l.toHandle.some((x) => x.id === d.id && x.agent_nom === 'AGENT MIEN'), 'visible dans les demandes en cours du chef');
+  const am = ok(call(null, 'login', 'am@t.fr', 'agentpw123')).token;
+  assert.ok(ok(call(am, 'demandesList')).mine.some((x) => x.id === d.id), "l'agent voit sa demande");
+  fail(call(tc, 'demandeCreate', { type: 'contrat', agent_id: autre.id }), /Agent non accessible/);
+  fail(call(am, 'demandeCreate', { type: 'contrat', agent_id: mien.id === chef.id ? autre.id : chef.id }), /Agent non accessible/);
+  const pour = ok(call(tc, 'demandeCreate', { type: 'contrat', agent_id: chef.id })); assert.strictEqual(pour.agent_id, chef.id); // « Moi-même » = sans agent_id ou son propre id
+});

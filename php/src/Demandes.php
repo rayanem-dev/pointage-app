@@ -46,16 +46,22 @@ final class Demandes {
 
     public static function create(array $user, ?array $data): array {
         $data = $data ?? []; $T = self::T();
-        if ($user['role'] === 'admin') throw httpErr("L'administrateur ne fait pas de demande", 'FORBIDDEN');
+        // Le responsable d'équipe peut créer une demande POUR un agent de son équipe ; la demande appartient alors à l'agent.
+        $cible = $user;
+        if (!empty($data['agent_id']) && $data['agent_id'] !== $user['id']) {
+            $by = self::byId(Agents::list()); $ag = $by[$data['agent_id']] ?? null;
+            if ($user['role'] === 'agent' || !$ag || !Agents::isPerson($ag) || $ag['type'] === 'vehicule' || $ag['actif'] !== '1' || !self::canHandle($user, ['agent_id' => $ag['id']], $by)) throw httpErr('Agent non accessible', 'FORBIDDEN');
+            $cible = $ag;
+        } elseif ($user['role'] === 'admin') throw httpErr("L'administrateur ne fait pas de demande", 'FORBIDDEN');
         $type = $data['type'] ?? '';
         if (!isset($T[$type]) || self::masque($type)) throw httpErr('Type de demande invalide');
         foreach (['date_debut', 'date_fin'] as $k) if (!empty($data[$k]) && !Dates::isDate($data[$k])) throw httpErr('Date invalide');
         if (!empty($data['date_debut']) && !empty($data['date_fin']) && $data['date_fin'] < $data['date_debut']) throw httpErr('La date de fin précède la date de début');
         if (!Format::allow('DEM_' . $user['id'], 20, 3600)) throw httpErr('Trop de demandes en peu de temps, réessayez plus tard');
-        $d = ['id' => newId('D'), 'agent_id' => $user['id'], 'type' => $type, 'objet' => mb_substr(trim((string)($data['objet'] ?? '')), 0, 120) ?: $T[$type], 'message' => mb_substr(trim((string)($data['message'] ?? '')), 0, 500),
+        $d = ['id' => newId('D'), 'agent_id' => $cible['id'], 'type' => $type, 'objet' => mb_substr(trim((string)($data['objet'] ?? '')), 0, 120) ?: $T[$type], 'message' => mb_substr(trim((string)($data['message'] ?? '')), 0, 500),
             'date_debut' => $data['date_debut'] ?? '', 'date_fin' => $data['date_fin'] ?? '', 'date_creation' => nowIso(), 'statut' => 'en_attente', 'envoi_id' => '', 'reponse' => '', 'traite_par' => '', 'date_traitement' => ''];
         Store::writeTable('Demandes', array_merge(Store::readTable('Demandes'), [$d]));
-        self::notifyHandler($user, $d);
+        if ($cible['id'] === $user['id']) self::notifyHandler($user, $d);
         return $d;
     }
     private static function notifyHandler(array $user, array $d): void {

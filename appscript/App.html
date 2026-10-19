@@ -809,11 +809,18 @@ function DemandesPage() {
     var msg = h('textarea', { rows: 3, maxlength: 500, placeholder: 'Précisions utiles (motif, destination…)' });
     var box = msgBox(); var btn = h('button', { class: 'primary' }, 'Envoyer ma demande');
     var dest = S.user.chef_id ? 'à votre responsable d’équipe' : "à l'administration";
+    // Responsable d'équipe : liste « Pour » (lui-même ou un agent de son équipe) ; la demande est alors faite au nom de l'agent.
+    var pour = null; var chefMode = S.user.role === 'chef';
+    if (chefMode) {
+      pour = h('select', null, h('option', { value: '' }, 'Moi-même'));
+      call('agentsVisible', true).then(function (list) { list.filter(function (a) { return a.id !== S.user.id && a.role === 'agent'; }).forEach(function (a) { pour.append(h('option', { value: a.id }, a.nom + (a.fonction ? ' — ' + a.fonction : ''))); }); }).catch(function () { /* liste indisponible : « Moi-même » reste proposé */ });
+    }
     return h('form', { class: 'card', onsubmit: function (ev) {
       ev.preventDefault();
-      act(btn, box, function () { return call('demandeCreate', { type: type.value, message: msg.value, date_debut: d1.value, date_fin: d2.value }); }, 'Demande envoyée ' + dest).then(function (r) { if (r) { flash = { text: 'Demande envoyée ' + dest + '.', ok: true }; load(); } });
-    } }, h('h2', null, 'Nouvelle demande'), h('p', { class: 'muted' }, 'Elle sera transmise ' + dest + '.'),
-      h('div', { class: 'row' }, field('Type de demande', type, 'grow2'), field('Du (facultatif)', d1), field('Au (facultatif)', d2)), field('Message', msg), box, btn);
+      var forAgent = pour && pour.value; var ok = forAgent ? 'Demande créée pour ' + pour.options[pour.selectedIndex].text.split(' — ')[0] : 'Demande envoyée ' + dest;
+      act(btn, box, function () { return call('demandeCreate', { type: type.value, message: msg.value, date_debut: d1.value, date_fin: d2.value, agent_id: forAgent || undefined }); }, ok).then(function (r) { if (r) { flash = { text: ok + '.', ok: true }; load(); } });
+    } }, h('h2', null, 'Nouvelle demande'), h('p', { class: 'muted' }, chefMode ? 'Pour vous ou pour un agent de votre équipe ; elle arrive dans « Demandes en cours ».' : 'Elle sera transmise ' + dest + '.'),
+      h('div', { class: 'row' }, chefMode ? field('Pour', pour, 'grow2') : null, field('Type de demande', type, 'grow2'), field('Du (facultatif)', d1), field('Au (facultatif)', d2)), field('Message', msg), box, btn);
   }
   function CFG_TYPES() { return { titre_conge: 'Titre de congé', attestation_travail: 'Attestation de travail', fiche_emolument: "Fiche d'émoluments", contrat: 'Copie du contrat', attestation_cnas: 'Attestation CNAS', maj_cnas: 'Mise à jour CNAS', prolongation_conge: 'Prolongation de congé', prolongation_sejour: 'Prolongation de séjour' }; }
 

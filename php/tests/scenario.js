@@ -117,5 +117,8 @@ S('admin', 'connexions', [], { rec: false });
 S('admin', 'attachementQte', [{ contrat: C, mois: '2026-09', designation: 'Magasinier', qte_mois: 12 }], { rec: true });
 S('admin', 'attachementPreview', ['2026-09', C], { rec: true });
 S('admin', 'vider', ['donnees', 'nope'], { rec: true, expectError: true });
+S('karim', 'demandeCreate', [{ type: 'attestation_travail', message: 'créée par le chef', agent_id: { $: 'a2' } }], { save: { d6: 'id' }, rec: true });
+S('karim', 'demandesList', [], { rec: true }); S('amine', 'demandeCreate', [{ type: 'contrat', agent_id: { $: 'a2' } }], { rec: true, expectError: true });
+S('karim', 'demandeCreate', [{ type: 'contrat', agent_id: { $: 'chef' } }], { rec: true });
 module.exports = steps;
 if (require.main === module) require('fs').writeFileSync(__dirname + '/scenario.json', JSON.stringify(steps));
