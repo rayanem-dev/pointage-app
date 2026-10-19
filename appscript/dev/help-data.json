@@ -35,7 +35,15 @@
      "Ouvrez Sijil, saisissez le code de votre entreprise (donné par votre administrateur), votre e-mail et votre mot de passe. Le mot de passe provisoire reçu par e-mail se change dès la première connexion avec « Mot de passe » en haut à droite.",
      "Open Sijil, enter your company code (given by your administrator), your e-mail and your password. Change the temporary password you received by e-mail at your first sign-in, with \"Password\" at the top right.",
      "افتح Sijil وأدخل رمز مؤسستك (يسلّمه لك المسؤول) وبريدك الإلكتروني وكلمة المرور. غيّر كلمة المرور المؤقتة التي وصلتك بالبريد عند أول دخول عبر «كلمة المرور» أعلى اليمين."
-    ]
+    ],
+    "img": {
+     "f": "connexion",
+     "c": [
+      "L'écran de connexion (entreprise fictive).",
+      "The sign-in screen (fictional company).",
+      "شاشة تسجيل الدخول (شركة وهمية)."
+     ]
+    }
    },
    {
     "t": [
@@ -59,7 +67,15 @@
      "En bas à droite de l'écran : le globe change la langue (français, arabe, anglais) et la bascule soleil / lune passe en mode sombre. Votre choix est mémorisé.",
      "At the bottom right of the screen: the globe changes the language (French, Arabic, English) and the sun / moon switch turns dark mode on. Your choice is remembered.",
      "أسفل يمين الشاشة: الكرة الأرضية لتغيير اللغة (الفرنسية، العربية، الإنجليزية) ومفتاح الشمس / القمر للوضع الداكن. يُحفظ اختيارك."
-    ]
+    ],
+    "img": {
+     "f": "mobile-sombre",
+     "c": [
+      "Sijil sur téléphone, en mode sombre.",
+      "Sijil on a phone, in dark mode.",
+      "Sijil على الهاتف في الوضع الداكن."
+     ]
+    }
    },
    {
     "t": [
@@ -108,7 +124,15 @@
      "La carte « Aujourd'hui » dit si vous êtes en travail ou en congé, combien de jours il vous reste, la date du prochain départ ou de la reprise, et le solde (T − CR) que vous aurez ce jour-là. Plus bas : vos totaux et votre cycle en cours.",
      "The \"Today\" card says whether you are working or on leave, how many days are left, the date of the next departure or return, and the balance (T − CR) you will have that day. Below: your totals and your current cycle.",
      "تبيّن بطاقة «اليوم» إن كنت في عمل أو إجازة، وكم يوم بقي، وتاريخ المغادرة أو العودة القادمة، والرصيد (T − CR) الذي سيكون لديك ذلك اليوم. وأسفلها مجاميعك ودورتك الحالية."
-    ]
+    ],
+    "img": {
+     "f": "agent-accueil",
+     "c": [
+      "L'accueil de l'agent : jours restants, dates et solde.",
+      "The agent's home: days left, dates and balance.",
+      "الصفحة الرئيسية للعون: الأيام المتبقية والتواريخ والرصيد."
+     ]
+    }
    },
    {
     "t": [
@@ -120,7 +144,15 @@
      "Votre propre pointage, en lecture seule. Boutons Mois, 3 mois, 6 mois et 1 an : la grille s'étale à partir du mois choisi et montre aussi les jours prévus et les jours fériés.",
      "Your own attendance, read-only. Buttons Month, 3 months, 6 months and 1 year: the grid spreads out from the chosen month and also shows planned days and public holidays.",
      "حضورك أنت للاطلاع فقط. أزرار شهر و3 أشهر و6 أشهر وسنة: تمتد الشبكة ابتداءً من الشهر المختار وتُظهر أيضًا الأيام المتوقّعة والأعياد."
-    ]
+    ],
+    "img": {
+     "f": "mon-pointage",
+     "c": [
+      "Le pointage du mois de l'agent.",
+      "The agent's month of attendance.",
+      "حضور العون خلال الشهر."
+     ]
+    }
    },
    {
     "t": [
@@ -132,7 +164,15 @@
      "Choisissez le type (titre de congé, attestation de travail, ATS, fiche d'émoluments, prolongation de congé ou de séjour), les dates si besoin, un message, puis « Envoyer ma demande ». Elle part chez votre responsable d’équipe, qui est prévenu par e-mail. Pour un titre de congé, la date de reprise est calculée pour vous.",
      "Choose the type (leave certificate, work certificate, ATS, pay sheet, leave or stay extension), the dates if needed, a message, then \"Send my request\". It goes to your team manager, who is notified by e-mail. For a leave certificate, the return date is calculated for you.",
      "اختر النوع (وثيقة إجازة، شهادة عمل، ATS، كشف أجر، تمديد إجازة أو إقامة) والتواريخ عند الحاجة ورسالة ثم «إرسال طلبي». يصل الطلب إلى رئيس فريقك ويُبلَّغ بالبريد. وبالنسبة لوثيقة الإجازة تُحسب لك تاريخ العودة."
-    ]
+    ],
+    "img": {
+     "f": "agent-demandes",
+     "c": [
+      "Une nouvelle demande et le suivi de ses étapes.",
+      "A new request and its progress steps.",
+      "طلب جديد ومراحل متابعته."
+     ]
+    }
    },
    {
     "t": [
@@ -144,7 +184,15 @@
      "Vos fiches d'émoluments, titres de congé et attestations déposés par votre responsable. Une pastille et un e-mail vous préviennent d'un nouveau document ; « Télécharger » l'enregistre sur votre appareil.",
      "Your pay sheets, leave certificates and attestations uploaded by your manager. A bubble and an e-mail tell you about a new document; \"Download\" saves it on your device.",
      "كشوف أجورك ووثائق إجازتك وشهاداتك التي رفعها مسؤولك. تنبّهك إشارة وبريد إلكتروني بوثيقة جديدة، و«تنزيل» يحفظها على جهازك."
-    ]
+    ],
+    "img": {
+     "f": "agent-documents",
+     "c": [
+      "La liste des documents de l'agent.",
+      "The agent's documents.",
+      "وثائق العون."
+     ]
+    }
    },
    {
     "t": [
@@ -182,7 +230,15 @@
      "Page « Pointer » : choisissez l'agent, la date (et « Jusqu'au » pour une période), le statut T, R ou ABS, puis « Valider le pointage ». « Effacer » retire un pointage. Vous pouvez aussi cliquer directement sur une case de la grille.",
      "\"Record\" page: choose the agent, the date (and \"Until\" for a period), the status T, R or ABS, then \"Confirm\". \"Clear\" removes a record. You can also click a cell of the grid directly.",
      "صفحة «تسجيل»: اختر العون والتاريخ (و«حتى» لفترة) والحالة T أو R أو ABS ثم «اعتماد». «مسح» يزيل تسجيلًا. ويمكنك أيضًا النقر مباشرة على خانة في الشبكة."
-    ]
+    ],
+    "img": {
+     "f": "pointer",
+     "c": [
+      "Pointer un agent, compléter les jours, pointage automatique.",
+      "Record an agent, fill in days, automatic recording.",
+      "تسجيل حضور عون وإكمال الأيام والتسجيل التلقائي."
+     ]
+    }
    },
    {
     "t": [
@@ -230,7 +286,15 @@
      "Sur « Pointage global » (ou « Mon groupe »), les boutons Mois, 3 mois, 6 mois et 1 an étalent la grille à partir du mois choisi. Le jour d'aujourd'hui est marqué. Les fêtes nationales et religieuses algériennes sont marquées ; les dates religieuses sont estimées (un jour d'écart possible) et se corrigent dans Setup → Rotation.",
      "On \"Global attendance\" (or \"My group\"), the buttons Month, 3 months, 6 months and 1 year spread the grid from the chosen month. Today is marked. Algerian national and religious holidays are marked; religious dates are estimated (a one-day difference is possible) and can be corrected in Setup → Rotation.",
      "في «الحضور العام» (أو «فريقي») تمدّد أزرار شهر و3 أشهر و6 أشهر وسنة الشبكة ابتداءً من الشهر المختار. يُميَّز اليوم الحالي. وتُميَّز الأعياد الوطنية والدينية الجزائرية؛ والتواريخ الدينية تقديرية (قد يختلف يوم) ويمكن تصحيحها في الإعداد ← التناوب."
-    ]
+    ],
+    "img": {
+     "f": "pointage-global",
+     "c": [
+      "Le pointage global du mois, avec les jours prévus.",
+      "The month's global attendance, with forecast days.",
+      "الحضور الشهري الإجمالي مع الأيام المتوقعة."
+     ]
+    }
    },
    {
     "t": [
@@ -254,7 +318,15 @@
      "L'onglet « Exports » permet au responsable d’équipe d'extraire en Excel ou PDF la fiche de pointage. L'attachement du mois et la facture déjà établie ne sont disponibles que si l'administrateur a coché « Autoriser l'extraction de l'attachement et de la facture » dans la fiche du chef. Il consulte seulement : la validation et la facturation restent à l'administrateur.",
      "The \"Exports\" tab lets the team manager extract the attendance sheet as Excel or PDF. The month's statement and the issued invoice are only available if the administrator ticked \"Allow extracting the statement and the invoice\" in the leader's record. Read-only: validating and invoicing remain with the administrator.",
      "تتيح علامة «التصدير» لمسؤول الفريق استخراج ورقة الحضور بصيغة Excel أو PDF. لا يتوفر محضر الشهر والفاتورة الصادرة إلا إذا فعّل المسؤول خيار «السماح باستخراج المحضر والفاتورة» في بطاقة الرئيس. للاطلاع فقط: الاعتماد والفوترة يبقيان للمسؤول."
-    ]
+    ],
+    "img": {
+     "f": "exports",
+     "c": [
+      "Fiche de pointage, attachement et facture.",
+      "Attendance sheet, statement and invoice.",
+      "ورقة الحضور وكشف الإنجاز والفاتورة."
+     ]
+    }
    }
   ]
  },
@@ -280,7 +352,15 @@
      "Page « Agents » : nom, e-mail (c'est son identifiant), rôle, contrat, fonction, affectation, rotation, responsable d’équipe. Laissez le mot de passe vide : il est généré. La case « Envoyer ses accès par e-mail » lui envoie le lien, son identifiant et son mot de passe provisoire.",
      "\"Agents\" page: name, e-mail (this is the login), role, contract, function, assignment, rotation, team manager. Leave the password empty: it is generated. The \"Send access by e-mail\" box sends the link, the login and a temporary password.",
      "صفحة «الأعوان»: الاسم والبريد (وهو المعرّف) والدور والعقد والوظيفة والتعيين والتناوب ورئيس الفريق. اترك كلمة المرور فارغة: تُنشأ تلقائيًا. خانة «إرسال بيانات الدخول بالبريد» ترسل الرابط والمعرّف وكلمة المرور المؤقتة."
-    ]
+    ],
+    "img": {
+     "f": "agents",
+     "c": [
+      "Créer un agent et gérer la liste du personnel.",
+      "Create an agent and manage the staff list.",
+      "إنشاء عون وإدارة قائمة الأعوان."
+     ]
+    }
    },
    {
     "t": [
@@ -354,7 +434,15 @@
      "Les demandes de votre groupe arrivent dans « Demandes », regroupées par thème, avec une pastille et un e-mail. Pour un titre de congé, vous voyez les dates et la date de reprise prévue.",
      "Your group's requests arrive in \"Requests\", grouped by theme, with a bubble and an e-mail. For a leave certificate, you see the dates and the expected return date.",
      "تصلك طلبات فريقك في «الطلبات» مجمَّعة حسب الموضوع مع إشارة وبريد إلكتروني. وبالنسبة لوثيقة الإجازة ترى التواريخ وتاريخ العودة المتوقّع."
-    ]
+    ],
+    "img": {
+     "f": "demandes",
+     "c": [
+      "Demandes en cours, regroupées par thème.",
+      "Pending requests, grouped by theme.",
+      "الطلبات الجارية مجمّعة حسب الموضوع."
+     ]
+    }
    },
    {
     "t": [
@@ -416,7 +504,15 @@
      "Page « Documents » : choisissez plusieurs fichiers d'un coup (10 Mo maximum chacun) ; vous pouvez imposer un agent, ou laisser Sijil le reconnaître d'après le nom du fichier ou son contenu. Sijil reconnaît aussi le type et les dates, puis propose le nom : TC_NOM_Prenom_2026-02-14 (titre de congé, début du congé), NOM_Prenom_FDP_Mars2026 (fiche de paie), NOM_Prenom_2026-04-04_Contrat (début du contrat), NOM_Prenom_AttestationCNAS_n°_2026-05-07 (attestation CNAS, date du document), NOM_Prenom_MAJCNAS_Janvier2026_Mars2026 (mise à jour CNAS, mois couverts), NOM_Prenom_AttestationTravail_2026-05-04 (date d'établissement), NOM_Prenom_AttestationEmoluments_Janvier2026_Mars2026 (mois couverts). Le mois peut être abrégé dans le nom du fichier (FEVR 26, JANV 26, dec 25) ; il prime sur le contenu du document. Les photos et scans JPG ou PNG sont convertis en PDF au moment de l'envoi (l'aperçu montre l'image d'origine) ; les autres formats restent tels quels. Rien n'est envoyé aux agents : vous vérifiez la liste « À vérifier avant envoi » (agent, type, dates, nom modifiables), cochez, puis « Envoyer vers les espaces des agents » : chaque agent reçoit un seul e-mail récapitulatif.",
      "Page \"Documents\": pick several files at once (10 MB maximum each); you can force one agent, or let Sijil recognise the agent from the file name or content. Sijil also recognises the type and dates, then proposes the name: TC_NAME_Firstname_2026-02-14 (leave certificate, leave start), NAME_Firstname_FDP_Mars2026 (payslip), NAME_Firstname_2026-04-04_Contrat (contract start), NAME_Firstname_AttestationCNAS_no_2026-05-07 (CNAS certificate, document date), NAME_Firstname_MAJCNAS_Janvier2026_Mars2026 (CNAS update, months covered), NAME_Firstname_AttestationTravail_2026-05-04 (issue date), NAME_Firstname_AttestationEmoluments_Janvier2026_Mars2026 (months covered). The month can be abbreviated in the file name (FEVR 26, JANV 26, dec 25) and takes precedence over the document content. JPG or PNG photos and scans are converted to PDF when sent (the preview shows the original image); other formats stay as they are. Nothing is sent to agents: check the \"To check before sending\" list (agent, type, dates and name are editable), tick, then \"Send to the agents' spaces\": each agent gets a single summary e-mail.",
      "في صفحة «المستندات» اختر عدة ملفات دفعة واحدة (10 ميغابايت كحد أقصى لكل ملف)؛ يمكنك فرض عون معيّن أو ترك Sijil يتعرّف عليه من اسم الملف أو محتواه. يتعرّف أيضًا على النوع والتواريخ ثم يقترح الاسم: TC_NOM_Prenom_2026-02-14 وNOM_Prenom_FDP_Mars2026 وNOM_Prenom_2026-04-04_Contrat وNOM_Prenom_AttestationCNAS_n°_2026-05-07 وNOM_Prenom_MAJCNAS_Janvier2026_Mars2026 وNOM_Prenom_AttestationTravail_2026-05-04 وNOM_Prenom_AttestationEmoluments_Janvier2026_Mars2026. يمكن اختصار الشهر في اسم الملف (FEVR 26 وJANV 26 وdec 25) ويتقدّم على محتوى المستند. تُحوَّل صور JPG وPNG والمسح الضوئي إلى PDF عند الإرسال (تعرض المعاينة الصورة الأصلية)؛ وتبقى الصيغ الأخرى كما هي. لا يُرسل شيء إلى الأعوان: تراجع قائمة «للتحقق قبل الإرسال» (العون والنوع والتواريخ والاسم قابلة للتعديل) ثم تحدّد وتضغط «إرسال إلى مساحات الأعوان»: يتلقى كل عون بريدًا واحدًا ملخّصًا."
-    ]
+    ],
+    "img": {
+     "f": "documents",
+     "c": [
+      "Glisser-déposer des documents : Sijil reconnaît l'agent et le type.",
+      "Drag and drop documents: Sijil recognises the agent and the type.",
+      "اسحب الوثائق وأفلتها: يتعرّف Sijil على العون والنوع."
+     ]
+    }
    },
    {
     "t": [
@@ -477,7 +573,15 @@
      "Déposez le bordereau des prix du contrat (PDF scanné, photo, Excel ou CSV) : les fonctions, nombres, délais et prix sont lus automatiquement, avec un contrôle du total. Complétez le contrat : début, durée en mois (la fin est calculée et visible de tous). Les e-mails du contact client (4 au maximum) se saisissent dans l'onglet Client.",
      "Upload the contract's price schedule (scanned PDF, photo, Excel or CSV): functions, numbers, lead times and prices are read automatically, with a check of the total. Complete the contract: start, duration in months (the end is calculated and visible to all), client contact e-mail.",
      "ارفع جدول أسعار العقد (PDF ممسوح أو صورة أو Excel أو CSV): تُقرأ الوظائف والأعداد والآجال والأسعار تلقائيًا مع مراجعة المجموع. أكمل العقد: البداية والمدة بالأشهر (تُحسب النهاية ويراها الجميع) وبريد جهة اتصال الزبون."
-    ]
+    ],
+    "img": {
+     "f": "setup",
+     "c": [
+      "Setup : les réglages du prestataire et du contrat.",
+      "Setup: provider and contract settings.",
+      "الإعدادات: المتعامل والعقد."
+     ]
+    }
    },
    {
     "t": [
@@ -636,7 +740,15 @@
      "Le client suit le pointage (mois, 3 mois, 6 mois, 1 an), le contrat, les attachements et les factures validés. Il ne peut rien modifier.",
      "The client follows the attendance (month, 3 months, 6 months, 1 year), the contract, validated statements and invoices. They cannot change anything.",
      "يتابع الزبون الحضور (شهر و3 أشهر و6 أشهر وسنة) والعقد وكشوف الإنجاز والفواتير المعتمدة. ولا يستطيع تعديل أي شيء."
-    ]
+    ],
+    "img": {
+     "f": "client-pointage",
+     "c": [
+      "Ce que voit le client : le pointage, en lecture seule.",
+      "What the client sees: attendance, read-only.",
+      "ما يراه الزبون: الحضور للاطلاع فقط."
+     ]
+    }
    },
    {
     "t": [

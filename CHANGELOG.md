@@ -2,6 +2,10 @@
 
 © 2026 JawlaDev — Tous droits réservés
 
+## 3.37.0 — 2026-10-19 — Aide illustrée
+
+- La page « Aide » est illustrée par des captures d'écran (données fictives) : connexion, accueil de l'agent, pointage, demandes, documents, exports, réglages et vue du client. Cliquez sur une image pour l'agrandir.
+
 ## 3.36.0 — 2026-10-15 — Carte « Aujourd'hui » plus claire
 
 - Sur l'accueil, la carte « Aujourd'hui » montre d'un coup d'œil où vous en êtes : un cercle avec les jours restants, la mention « Au travail · jour 4/28 » ou « En congé », une phrase claire, une barre de progression, les dates de début et du prochain changement, et votre solde à la reprise.

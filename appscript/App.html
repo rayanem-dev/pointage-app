@@ -242,6 +242,7 @@ var NAV = {
   admin: [['#/pointer', 'Pointer'], ['#/groupe', 'Pointage global'], ['#/agents', 'Agents'], ['#/demandes', 'Demandes'], ['#/documents', 'Documents'], ['#/exports', 'Exports'], ['#/connexions', 'Connexions'], ['#/apropos', 'À propos'], ['#/aide', 'Aide']]
 };
 // ---------- aide ----------
+var HELP_IMG = 'https://rayanem-dev.github.io/pointage-app/help/'; // captures d'écran de l'aide (entreprise fictive), servies par le site
 function HelpPage() {
   var li = { fr: 0, en: 1, ar: 2 }[LANG] || 0; var role = S.user.role;
   var q = h('input', { type: 'search', placeholder: "Rechercher dans l'aide", 'aria-label': "Rechercher dans l'aide" });
@@ -252,13 +253,13 @@ function HelpPage() {
     function block(s, open) {
       var items = s.items.filter(function (it) { return !needle || (it.t[li] + ' ' + it.x[li]).toLowerCase().indexOf(needle) >= 0; });
       if (!items.length) return null;
-      return h('details', { class: 'card helpsec', open: open || !!needle }, h('summary', null, h('b', null, s.t[li])), items.map(function (it) { return h('div', { class: 'helpitem' }, h('h3', null, it.t[li]), h('p', null, it.x[li])); }));
+      return h('details', { class: 'card helpsec', open: open || !!needle }, h('summary', null, h('b', null, s.t[li])), items.map(function (it) { return h('div', { class: 'helpitem' }, h('h3', null, it.t[li]), h('p', null, it.x[li]), it.img ? h('figure', { class: 'helpfig' }, h('img', { src: HELP_IMG + it.img.f + '.jpg', alt: it.img.c[li], loading: 'lazy', onclick: function () { window.open(HELP_IMG + it.img.f + '.jpg', '_blank', 'noopener'); } }), h('figcaption', null, it.img.c[li])) : null); }));
     }
     var a1 = mine.map(function (s) { return block(s, true); }).filter(Boolean); var a2 = others.map(function (s) { return block(s, false); }).filter(Boolean);
     host.replaceChildren.apply(host, [].concat(a1, a2.length ? [h('h2', { style: 'margin-top:10px' }, 'Pour les autres rôles')] : [], a2, !a1.length && !a2.length ? [h('p', { class: 'muted' }, 'Aucun résultat.')] : []));
   }
   q.oninput = draw; draw();
-  return h('div', { style: 'display:grid;gap:12px;max-width:900px;margin:0 auto' }, h('h2', null, 'Aide'), h('p', { class: 'muted' }, "Les sections de votre rôle sont ouvertes ; les autres sont en dessous. Le manuel complet avec captures d'écran est disponible auprès de votre administrateur."), q, host);
+  return h('div', { style: 'display:grid;gap:12px;max-width:900px;margin:0 auto' }, h('h2', null, 'Aide'), h('p', { class: 'muted' }, "Les sections de votre rôle sont ouvertes ; les autres sont en dessous. Les captures d'écran utilisent une entreprise fictive ; cliquez sur une image pour l'agrandir."), q, host);
 }
 function applyColors() { Object.keys(S.params.colors).forEach(function (k) { document.documentElement.style.setProperty('--c-' + k, S.params.colors[k]); }); }
 var ROUTES = {
