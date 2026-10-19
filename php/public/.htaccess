@@ -1,0 +1,6 @@
+# Sijil (PHP / MySQL) : Apache
+DirectoryIndex index.php
+Options -Indexes
+<FilesMatch "\.(sql|md|json)$">
+  Require all denied
+</FilesMatch>
