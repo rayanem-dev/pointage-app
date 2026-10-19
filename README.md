@@ -32,3 +32,7 @@ Installation, droits, base de données et tests : voir [`appscript/README.md`](a
 ## Version 3.7.0 — performances
 
 `Store.gs` ouvre chaque classeur une fois par appel et garde les tableaux lus dans `CacheService` (clé par client, validée par un numéro de version changé à chaque écriture ; durée de sécurité 2 min pour les modifications faites à la main dans Google Sheets). Toute modification directe du classeur par le code doit appeler `Store.reset()`.
+
+## Version PHP / MySQL
+
+Le dossier [`php/`](php/README.md) contient la même application pour un hébergement PHP + MySQL (cPanel, OVH, serveur…). Elle suit la version Apps Script : voir [`php/PORT.md`](php/PORT.md) pour la mettre à jour.
