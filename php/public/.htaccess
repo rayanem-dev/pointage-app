@@ -4,3 +4,7 @@ Options -Indexes
 <FilesMatch "\.(sql|md|json)$">
   Require all denied
 </FilesMatch>
+<Files "_boot.php">
+  Require all denied
+</Files>
+Require all granted

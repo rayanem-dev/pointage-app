@@ -34,6 +34,9 @@ a.forEach((o, i) => {
     else if (!o.ok && o.error !== p.error) d.push('message: JS=' + o.error + ' | PHP=' + p.error);
     if (o.rec && o.ok && p.ok) diff(o.data, p.data, '', d);
   }
+  // écarts voulus : pas de console éditeur en PHP, lecture automatique (OCR) selon le serveur, tâche planifiée = cron.php
+  const attendu = (l) => (o.name === 'me' && /^\/owner /.test(l)) || (/avertissement : .*Lecture automatique impossible/.test(l)) || (o.name === 'autoPointageSet' && /^\/(declencheur|avertissement) /.test(l));
+  for (let j = d.length - 1; j >= 0; j--) if (attendu(d[j])) d.splice(j, 1);
   if (d.length) { bad++; console.log('✗ #' + i + ' ' + o.name + ' (' + (o.as || '') + ')'); d.slice(0, 6).forEach((l) => console.log('    ' + l)); }
 });
 console.log(bad ? bad + ' pas différents sur ' + a.length : 'IDENTIQUE : ' + a.length + ' pas');

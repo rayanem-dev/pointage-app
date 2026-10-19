@@ -1,7 +1,7 @@
 <?php
 // Assistant d'installation : crée les tables et le compte administrateur. SUPPRIMEZ CE FICHIER APRÈS L'INSTALLATION.
 declare(strict_types=1);
-require __DIR__ . '/../src/bootstrap.php';
+require __DIR__ . '/_boot.php';
 header('Content-Type: text/html; charset=utf-8');
 $h = fn($s) => htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
 $msg = ''; $ok = false;

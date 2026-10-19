@@ -66,17 +66,3 @@ final class Store {
         finally { $pdo->query("DO RELEASE_LOCK('sijil_write')"); }
     }
 }
-/** « Propriétés du script » : petites valeurs durables (clé → texte). */
-final class Props {
-    public static function get(string $k): ?string { $s = Store::pdo()->prepare('SELECT v FROM props WHERE k=?'); $s->execute([$k]); $v = $s->fetchColumn(); return $v === false ? null : (string)$v; }
-    public static function set(string $k, string $v): void { Store::pdo()->prepare('INSERT INTO props (k,v) VALUES (?,?) ON DUPLICATE KEY UPDATE v=VALUES(v)')->execute([$k, $v]); }
-    public static function delete(string $k): void { Store::pdo()->prepare('DELETE FROM props WHERE k=?')->execute([$k]); }
-    public static function prefix(string $p): array { $s = Store::pdo()->prepare('SELECT k,v FROM props WHERE k LIKE ?'); $s->execute([addcslashes($p, '%_\\') . '%']); $o = []; foreach ($s->fetchAll() as $r) $o[$r['k']] = $r['v']; return $o; }
-}
-/** « Cache » avec expiration (sessions, tentatives de connexion, codes de réinitialisation). */
-final class Cache {
-    public static function get(string $k): ?string { $s = Store::pdo()->prepare('SELECT v FROM cache WHERE k=? AND expire>?'); $s->execute([$k, time()]); $v = $s->fetchColumn(); return $v === false ? null : (string)$v; }
-    public static function put(string $k, string $v, int $seconds): void { Store::pdo()->prepare('INSERT INTO cache (k,v,expire) VALUES (?,?,?) ON DUPLICATE KEY UPDATE v=VALUES(v), expire=VALUES(expire)')->execute([$k, $v, time() + $seconds]); }
-    public static function remove(string $k): void { Store::pdo()->prepare('DELETE FROM cache WHERE k=?')->execute([$k]); }
-    public static function purge(): void { Store::pdo()->prepare('DELETE FROM cache WHERE expire<=?')->execute([time()]); }
-}

@@ -122,7 +122,7 @@ final class Rpc {
             'logoUpload' => ['setup' => true, 'write' => true, 'fn' => fn($u, $a) => Params::logoUpload($a[0] ?? [])],
             'logoRemove' => ['setup' => true, 'write' => true, 'fn' => fn($u, $a) => Params::logoRemove($a[0] ?? '')],
             'logoView' => ['setup' => true, 'fn' => fn($u, $a) => Params::logoView($a[0] ?? '')],
-            'bordereauAnalyser' => ['setup' => true, 'fn' => self::nonDispo('Lecture automatique du bordereau')],
+            'bordereauAnalyser' => ['setup' => true, 'fn' => fn($u, $a) => Bordereau::analyser($a[0] ?? [])],
             'contratsGet' => ['setup' => true, 'fn' => function () {
                 $chefs = array_map(fn($c) => ['id' => $c['id'], 'nom' => $c['nom'], 'contrat' => $c['contrat']], array_values(array_filter(Agents::list(), fn($a) => $a['role'] === 'chef' && $a['actif'] === '1')));
                 return ['contrats' => Contrats::contrats(), 'fonctions' => Contrats::fonctions(), 'chefs' => $chefs];
@@ -162,9 +162,9 @@ final class Rpc {
             'cacheVider' => ['roles' => $A, 'fn' => function () { Store::reset(); return ['ok' => true, 'at' => nowIso()]; }],
             'repairStructure' => ['roles' => $A, 'write' => true, 'fn' => fn() => Setup::repairStructure()],
             'vider' => ['roles' => $A, 'write' => true, 'fn' => fn($u, $a) => Setup::vider($a[0] ?? '', $a[1] ?? '')],
-            'pointageExport' => ['roles' => $A, 'fn' => self::nonDispo("Export du pointage avec ses dépendances")],
-            'pointageImportAnalyser' => ['roles' => $A, 'fn' => self::nonDispo("Import d'un pointage")],
-            'pointageImportAppliquer' => ['roles' => $A, 'write' => true, 'fn' => self::nonDispo("Import d'un pointage")],
+            'pointageExport' => ['roles' => $A, 'fn' => fn($u, $a) => Archive::exportXlsx($u, $a[0] ?? [])],
+            'pointageImportAnalyser' => ['roles' => $A, 'fn' => fn($u, $a) => PointageImport::analyser($a[0] ?? [])],
+            'pointageImportAppliquer' => ['roles' => $A, 'write' => true, 'fn' => fn($u, $a) => PointageImport::appliquer($u, $a[0] ?? [])],
             'apropos' => ['roles' => $A, 'fn' => function () { $c = conf('editeur', []); return ['societe' => Params::get()['prestataire_nom'], 'code' => '', 'licence' => ['statut' => 'actif', 'fin' => '', 'jours' => null, 'illimitee' => true], 'editeur' => ['nom' => $c['nom'] ?? CFG()['EDITEUR'], 'email' => $c['email'] ?? '', 'tel' => $c['tel'] ?? ''], 'version' => CFG()['VERSION'], 'copyright' => CFG()['COPYRIGHT']]; }],
             'commentaire' => ['roles' => $A, 'write' => true, 'fn' => function ($u, $a) {
                 $o = $a[0] ?? []; $sujet = mb_substr(trim((string)($o['sujet'] ?? '')), 0, 120); $message = mb_substr(trim((string)($o['message'] ?? '')), 0, 4000);
