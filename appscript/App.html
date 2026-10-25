@@ -61,16 +61,18 @@ function logoutNow() {
   Promise.all([call('logout').catch(function () {}), rm ? call('forget', rm).catch(function () {}) : null]).then(sessionEnd);
 }
 function sessionEnd() { S.token = null; S.user = null; S.path = null; S.owner = false; setBack(null); try { sessionStorage.removeItem('tk'); sessionStorage.removeItem('cl'); } catch (e) { /* ignore */ } boot(); } // boot relit l'état (annuaire, code entreprise)
+// Seuls les PDF et images courantes gardent leur type : tout autre fichier (HTML, SVG…) est traité comme un simple téléchargement, jamais exécuté.
+function safeMime(r) { var m = String((r && r.mime) || '').toLowerCase(); return /^(application\/pdf|image\/(png|jpeg|gif|webp|bmp))$/.test(m) ? m : 'application/octet-stream'; }
 function saveFile(r) {
   var bin = atob(r.base64); var bytes = new Uint8Array(bin.length);
   for (var i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
-  var a = h('a', { href: URL.createObjectURL(new Blob([bytes], { type: r.mime })), download: r.nom });
+  var a = h('a', { href: URL.createObjectURL(new Blob([bytes], { type: safeMime(r) })), download: r.nom });
   document.body.append(a); a.click(); a.remove();
 }
 // Aperçu d'un fichier (PDF ou image) dans une fenêtre ; boutons pour l'ouvrir dans un onglet ou le télécharger.
 function previewFile(r) {
   var bin = atob(r.base64); var bytes = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
-  var mime = r.mime || ''; var isPdf = /pdf/i.test(mime) || /\.pdf$/i.test(r.nom); var isImg = /^image\//i.test(mime);
+  var mime = safeMime(r); var isPdf = mime === 'application/pdf' || (/\.pdf$/i.test(r.nom) && mime === 'application/octet-stream'); var isImg = /^image\//.test(mime);
   var url = URL.createObjectURL(new Blob([bytes], { type: isPdf ? 'application/pdf' : mime }));
   var close = function () { URL.revokeObjectURL(url); m.remove(); document.removeEventListener('keydown', esc); };
   var esc = function (e) { if (e.key === 'Escape') close(); };

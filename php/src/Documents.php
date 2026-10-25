@@ -201,6 +201,9 @@ final class Documents {
         usort($l, fn($a, $b) => strcmp($b['date'], $a['date']));
         return array_map([self::class, 'pub'], $l);
     }
+    const MIME_OK = ['pdf' => 'application/pdf', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'gif' => 'image/gif', 'webp' => 'image/webp', 'bmp' => 'image/bmp'];
+    /** Type déduit de l'extension : celui annoncé par le navigateur n'est jamais retenu. */
+    private static function mimeOf($ext): string { return self::MIME_OK[strtolower((string)$ext)] ?? 'application/octet-stream'; }
     private static function readBytes(array $data): string {
         if (empty($data['base64']) || empty($data['nom'])) throw httpErr('Fichier manquant');
         $b = base64_decode((string)$data['base64'], true);
@@ -212,9 +215,9 @@ final class Documents {
         $ext = self::extOf($data['nom']); $motif = '';
         if (!empty($data['pdf']) && in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'bmp'], true)) {
             try { $pdf = Pdf::fromImage($bytes); if ($pdf !== null) return ['bytes' => $pdf, 'mime' => 'application/pdf', 'ext' => 'pdf', 'converti' => true]; $motif = "format d'image non géré"; } catch (Throwable $e) { $motif = $e->getMessage(); }
-            return ['bytes' => $bytes, 'mime' => $data['mime'] ?? 'application/octet-stream', 'ext' => $ext, 'converti' => false, 'echec' => $motif ?: 'conversion indisponible'];
+            return ['bytes' => $bytes, 'mime' => self::mimeOf($ext), 'ext' => $ext, 'converti' => false, 'echec' => $motif ?: 'conversion indisponible'];
         }
-        return ['bytes' => $bytes, 'mime' => ($data['mime'] ?? '') ?: 'application/octet-stream', 'ext' => $ext, 'converti' => false];
+        return ['bytes' => $bytes, 'mime' => self::mimeOf($ext), 'ext' => $ext, 'converti' => false];
     }
     private static function hashOf(string $bytes): string { return hash('sha256', $bytes); }
     private static function docRow(array $user, array $agent, string $type, array $f, string $name, string $fileId, ?string $empreinte): array {
@@ -361,7 +364,7 @@ final class Documents {
         if (!$agent && count($info['candidats']) > 1) $info['avertissement'] = trim($info['avertissement'] . ' Plusieurs agents possibles : choisissez.');
         if (!$agent && !$info['candidats']) $info['avertissement'] = trim($info['avertissement'] . ' Agent non reconnu : choisissez-le.');
         $ext0 = self::extOf($data['nom']); $estImage = in_array($ext0, ['jpg', 'jpeg', 'png', 'gif', 'bmp'], true); $convertir = !empty($data['pdf']) && $estImage && Pdf::convertible($bytes);
-        $fileId = Files::put((string)$data['nom'], ($data['mime'] ?? '') ?: 'application/octet-stream', $bytes);
+        $fileId = Files::put((string)$data['nom'], self::mimeOf($ext0), $bytes);
         $note = $convertir ? " (sera converti en PDF à l'envoi)" : (!empty($data['pdf']) && $estImage ? " ⚠ Conversion PDF impossible (format d'image non géré) : fichier conservé tel quel." : '');
         $row = ['id' => newId('Q'), 'nom_original' => mb_substr((string)$data['nom'], 0, 120), 'file_id' => $fileId, 'ext' => $convertir ? 'pdf' : $ext0, 'agent_id' => $agent ? $agent['id'] : '', 'type' => $info['type'], 'champs' => json_encode($info['champs'], JSON_UNESCAPED_UNICODE), 'nom_force' => '',
             'source' => $info['source'], 'avert' => trim($info['avertissement'] . $note), 'depose_par' => $user['nom'], 'depose_id' => $user['id'], 'date_depot' => nowIso(), 'candidats' => json_encode(array_map(fn($a) => $a['id'], $info['candidats'])), 'empreinte' => self::hashOf($bytes), 'convertir' => $convertir ? '1' : '', 'ext_orig' => $ext0];

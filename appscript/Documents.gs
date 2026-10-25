@@ -232,6 +232,9 @@ var Documents = (function () {
     return Store.readTable('Documents').filter(function (d) { return d.agent_id === agentId; })
       .sort(function (a, b) { return a.date < b.date ? 1 : -1; }).map(pub);
   }
+  // Type du fichier déduit de son extension : celui annoncé par le navigateur n'est jamais retenu (un fichier HTML ou SVG ne doit pas pouvoir être rendu comme tel).
+  var MIME_OK = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', bmp: 'image/bmp' };
+  function mimeOf(ext) { return MIME_OK[String(ext || '').toLowerCase()] || 'application/octet-stream'; }
   function readBytes(data) {
     if (!data.base64 || !data.nom) throw httpErr_('Fichier manquant');
     var bytes = Utilities.base64Decode(data.base64);
@@ -316,9 +319,9 @@ var Documents = (function () {
     if (data.pdf && ['jpg', 'jpeg', 'png', 'gif', 'bmp'].indexOf(ext) >= 0) {
       try { var pdf = imageToPdf(bytes); if (pdf) return { bytes: pdf, mime: 'application/pdf', ext: 'pdf', converti: true }; motif = 'format d\'image non géré (PNG avec transparence, GIF, BMP ou JPEG CMJN)'; } catch (e) { motif = e.message; Logger.log('Conversion PDF (interne) impossible : ' + e.message); }
       try { var b = Utilities.newBlob(bytes, data.mime || 'image/' + (ext === 'jpg' ? 'jpeg' : ext), data.nom).getAs('application/pdf'); return { bytes: b.getBytes(), mime: 'application/pdf', ext: 'pdf', converti: true }; } catch (e) { Logger.log('Conversion PDF (Google) impossible : ' + e.message); }
-      return { bytes: bytes, mime: data.mime || 'application/octet-stream', ext: ext, converti: false, echec: motif || 'conversion indisponible' };
+      return { bytes: bytes, mime: mimeOf(ext), ext: ext, converti: false, echec: motif || 'conversion indisponible' };
     }
-    return { bytes: bytes, mime: data.mime || 'application/octet-stream', ext: ext, converti: false };
+    return { bytes: bytes, mime: mimeOf(ext), ext: ext, converti: false };
   }
   // Empreinte du fichier déposé (avant toute conversion) : sert à repérer un même fichier déposé deux fois.
   function hashOf(bytes) { return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, bytes).map(function (b) { return ('0' + ((b + 256) % 256).toString(16)).slice(-2); }).join(''); }
@@ -485,7 +488,7 @@ var Documents = (function () {
     if (!agent && !info.candidats.length) info.avertissement = (info.avertissement + ' Agent non reconnu : choisissez-le.').trim();
     // La conversion en PDF se fait à l'envoi : en attendant, l'image reste telle quelle et peut être consultée dans l'aperçu.
     var ext0 = extOf(data.nom); var estImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp'].indexOf(ext0) >= 0; var convertir = !!data.pdf && estImage && convertible(bytes);
-    var file = stagingFolder().createFile(Utilities.newBlob(bytes, data.mime || 'application/octet-stream', String(data.nom)));
+    var file = stagingFolder().createFile(Utilities.newBlob(bytes, mimeOf(ext0), String(data.nom)));
     var note = convertir ? ' (sera converti en PDF à l\'envoi)' : (data.pdf && estImage ? ' ⚠ Conversion PDF impossible (format d\'image non géré : PNG avec transparence, GIF, BMP ou JPEG CMJN) : fichier conservé tel quel.' : '');
     var row = { id: newId_('Q'), nom_original: String(data.nom).slice(0, 120), file_id: file.getId(), ext: convertir ? 'pdf' : ext0, agent_id: agent ? agent.id : '', type: info.type, champs: JSON.stringify(info.champs), nom_force: '',
       source: info.source, avert: (info.avertissement + note).trim(), depose_par: user.nom, depose_id: user.id, date_depot: new Date().toISOString(), candidats: JSON.stringify(info.candidats.map(function (a) { return a.id; })), empreinte: hashOf(bytes), convertir: convertir ? '1' : '', ext_orig: ext0 };

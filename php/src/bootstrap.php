@@ -7,6 +7,8 @@ $GLOBALS['SIJIL_CONFIG'] = (function () {
     if (!is_file($f)) throw new RuntimeException('config.php introuvable : copiez config.sample.php en config.php et renseignez la base de données.');
     return require $f;
 })();
+ini_set('display_errors', !empty($GLOBALS['SIJIL_CONFIG']['debug']) ? '1' : '0'); // jamais d'erreur PHP affichée aux visiteurs (chemins, requêtes…)
+ini_set('log_errors', '1');
 date_default_timezone_set($GLOBALS['SIJIL_CONFIG']['timezone'] ?? 'Africa/Algiers');
 $G = require __DIR__ . '/Generated.php';
 $GLOBALS['SIJIL_GEN'] = $G;
