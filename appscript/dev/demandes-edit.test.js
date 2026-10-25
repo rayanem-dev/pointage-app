@@ -211,3 +211,22 @@ test('demandes : le responsable d’équipe crée une demande pour un agent de s
   fail(call(am, 'demandeCreate', { type: 'contrat', agent_id: mien.id === chef.id ? autre.id : chef.id }), /Agent non accessible/);
   const pour = ok(call(tc, 'demandeCreate', { type: 'contrat', agent_id: chef.id })); assert.strictEqual(pour.agent_id, chef.id); // « Moi-même » = sans agent_id ou son propre id
 });
+
+test('types de demande réglables dans Setup : ajout (« Certificat de travail »), retrait, droits, document attendu', () => {
+  const admin = ok(call(null, 'login', 'admin@t.fr', 'adminpw12')).token;
+  const tc = ok(call(null, 'login', 'cp@t.fr', 'chefpw1234')).token; // responsable sans accès au Setup
+  fail(call(tc, 'typesDemandeGet'), /Setup/);
+  const cfg = ok(call(admin, 'typesDemandeSave', { builtin: { contrat: false }, custom: [{ label: 'Certificat de travail', doc: 'attestation_travail' }] }));
+  assert.strictEqual(cfg.custom[0].cle, 'x_certificat_de_travail'); assert.strictEqual(cfg.builtin.find((b) => b.cle === 'contrat').propose, false);
+  const am = ok(call(null, 'login', 'am@t.fr', 'agentpw123')).token;
+  const l = ok(call(am, 'demandesList')); assert.ok(l.proposes.includes('x_certificat_de_travail')); assert.ok(!l.proposes.includes('contrat'));
+  const d = ok(call(am, 'demandeCreate', { type: 'x_certificat_de_travail', message: 'pour la banque' })); assert.strictEqual(ok(call(am, 'demandesList')).mine.find((x) => x.id === d.id).type_label, 'Certificat de travail');
+  fail(call(am, 'demandeCreate', { type: 'contrat' }), /Type de demande invalide/);
+  const g = ok(call(tc, 'demandesList')); assert.ok(g.toHandle.some((x) => x.id === d.id));
+  fail(call(admin, 'typesDemandeSave', { custom: [{ label: 'Attestation CNAS' }] }), /existe déjà/);
+  fail(call(admin, 'typesDemandeSave', { custom: [{ label: 'ab' }] }), /3 caractères/);
+  // un type déjà utilisé ne disparaît pas : il est seulement retiré des nouvelles demandes
+  const r = ok(call(admin, 'typesDemandeSave', { custom: [] })); assert.ok(r.custom[0].utilise && r.custom[0].propose === false);
+  assert.ok(!ok(call(am, 'demandesList')).proposes.includes('x_certificat_de_travail'));
+  assert.strictEqual(ok(call(am, 'demandesList')).mine.find((x) => x.id === d.id).type_label, 'Certificat de travail');
+});

@@ -123,6 +123,8 @@ final class Rpc {
             'logoRemove' => ['setup' => true, 'write' => true, 'fn' => fn($u, $a) => Params::logoRemove($a[0] ?? '')],
             'logoView' => ['setup' => true, 'fn' => fn($u, $a) => Params::logoView($a[0] ?? '')],
             'bordereauAnalyser' => ['setup' => true, 'fn' => fn($u, $a) => Bordereau::analyser($a[0] ?? [])],
+            'typesDemandeGet' => ['setup' => true, 'fn' => fn() => Demandes::typesConfig()],
+            'typesDemandeSave' => ['setup' => true, 'write' => true, 'fn' => fn($u, $a) => Demandes::typesSave($u, $a[0] ?? [])],
             'contratsGet' => ['setup' => true, 'fn' => function () {
                 $chefs = array_map(fn($c) => ['id' => $c['id'], 'nom' => $c['nom'], 'contrat' => $c['contrat']], array_values(array_filter(Agents::list(), fn($a) => $a['role'] === 'chef' && $a['actif'] === '1')));
                 return ['contrats' => Contrats::contrats(), 'fonctions' => Contrats::fonctions(), 'chefs' => $chefs];

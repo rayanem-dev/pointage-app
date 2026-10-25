@@ -6303,5 +6303,85 @@
   "Agent non accessible",
   "Agent not accessible",
   "العون غير متاح"
+ ],
+ [
+  "Types de demande",
+  "Request types",
+  "أنواع الطلبات"
+ ],
+ [
+  "Choisissez les types proposés aux agents et aux responsables pour une nouvelle demande, et ajoutez les vôtres (par exemple « Certificat de travail »). Les demandes déjà faites restent visibles.",
+  "Choose the request types offered to agents and managers, and add your own (for example \"Work certificate\"). Existing requests stay visible.",
+  "اختر أنواع الطلبات المتاحة للأعوان والمسؤولين وأضف أنواعك (مثل «شهادة عمل»). تبقى الطلبات السابقة ظاهرة."
+ ],
+ [
+  "Types proposés",
+  "Offered types",
+  "الأنواع المتاحة"
+ ],
+ [
+  "Types ajoutés",
+  "Added types",
+  "الأنواع المضافة"
+ ],
+ [
+  "Le document remis à la clôture sert à proposer en premier le bon document de l’agent quand la demande est clôturée.",
+  "The document handed over at closing is used to suggest the right agent document first when the request is closed.",
+  "تُستعمل الوثيقة المسلَّمة عند الإغلاق لاقتراح وثيقة العون المناسبة أولاً."
+ ],
+ [
+  "Nom du type (ex. Certificat de travail)",
+  "Type name (e.g. Work certificate)",
+  "اسم النوع (مثل شهادة عمل)"
+ ],
+ [
+  "Nom du type de demande",
+  "Request type name",
+  "اسم نوع الطلب"
+ ],
+ [
+  "Document remis à la clôture",
+  "Document handed over at closing",
+  "الوثيقة المسلَّمة عند الإغلاق"
+ ],
+ [
+  "Document au choix",
+  "Any document",
+  "وثيقة حسب الاختيار"
+ ],
+ [
+  "Proposé",
+  "Offered",
+  "متاح"
+ ],
+ [
+  "Ajouter un type de demande",
+  "Add a request type",
+  "إضافة نوع طلب"
+ ],
+ [
+  "Types de demande enregistrés",
+  "Request types saved",
+  "تم حفظ أنواع الطلبات"
+ ],
+ [
+  "Ce type est déjà utilisé par des demandes : il est seulement retiré des nouvelles demandes.",
+  "This type is already used by requests: it is only removed from new requests.",
+  "هذا النوع مستعمل في طلبات: يُسحب من الطلبات الجديدة فقط."
+ ],
+ [
+  "Nom du type de demande : 3 caractères minimum",
+  "Request type name: 3 characters minimum",
+  "اسم نوع الطلب: 3 أحرف على الأقل"
+ ],
+ [
+  "Ce type de demande existe déjà : ",
+  "This request type already exists: ",
+  "نوع الطلب هذا موجود: "
+ ],
+ [
+  "20 types ajoutés au maximum",
+  "20 added types at most",
+  "20 نوعًا مضافًا على الأكثر"
  ]
 ]

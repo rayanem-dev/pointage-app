@@ -824,7 +824,8 @@ function DemandesPage() {
     } }, h('h2', null, 'Nouvelle demande'), h('p', { class: 'muted' }, chefMode ? 'Pour vous ou pour un agent de votre équipe ; elle arrive dans « Demandes en cours ».' : 'Elle sera transmise ' + dest + '.'),
       h('div', { class: 'row' }, chefMode ? field('Pour', pour, 'grow2') : null, field('Type de demande', type, 'grow2'), field('Du (facultatif)', d1), field('Au (facultatif)', d2)), field('Message', msg), box, btn);
   }
-  function CFG_TYPES() { return { titre_conge: 'Titre de congé', attestation_travail: 'Attestation de travail', fiche_emolument: "Fiche d'émoluments", contrat: 'Copie du contrat', attestation_cnas: 'Attestation CNAS', maj_cnas: 'Mise à jour CNAS', prolongation_conge: 'Prolongation de congé', prolongation_sejour: 'Prolongation de séjour' }; }
+  var OFFERED = null; // types proposés pour une nouvelle demande (réglés dans Setup → Demandes), fournis par le serveur
+  function CFG_TYPES() { if (OFFERED) { var c = {}; Object.keys(OFFERED).forEach(function (k) { c[k] = OFFERED[k]; }); return c; } return { titre_conge: 'Titre de congé', attestation_travail: 'Attestation de travail', fiche_emolument: "Fiche d'émoluments", contrat: 'Copie du contrat', attestation_cnas: 'Attestation CNAS', maj_cnas: 'Mise à jour CNAS', prolongation_conge: 'Prolongation de congé', prolongation_sejour: 'Prolongation de séjour' }; }
 
   // Boîte du chef : demandes en attente regroupées par thème, une seule demande envoyée à la direction.
   function inbox(L) {
@@ -905,6 +906,7 @@ function DemandesPage() {
   }
   function view(L) {
     var out = [];
+    if (L.proposes) { OFFERED = {}; L.proposes.forEach(function (k) { if (L.types[k]) OFFERED[k] = L.types[k]; }); }
     if (!isAdmin) out.push(newForm());
     if (staff) {
       out.push(inbox(L));
@@ -1417,7 +1419,7 @@ function NouveautesPage() {
 }
 
 // ---------- Setup : un onglet par sujet ----------
-var SETUP_TABS = [['prestataire', 'Prestataire (mon entreprise)'], ['client', 'Client'], ['contrat', 'Contrat'], ['rotation', 'Rotation'], ['maintenance', 'Maintenance']];
+var SETUP_TABS = [['prestataire', 'Prestataire (mon entreprise)'], ['client', 'Client'], ['contrat', 'Contrat'], ['rotation', 'Rotation'], ['demandes', 'Demandes'], ['maintenance', 'Maintenance']];
 var SETUP_INTRO = {
   prestataire: "Le prestataire est la société qui utilise l'application : son nom apparaît dans l'en-tête, les documents et les e-mails. Les champs vides sont remplis automatiquement à la lecture du bordereau.",
   client: "L'autre partie du contrat : son nom, son en-tête et son adresse de facturation apparaissent sur la fiche de pointage, l'attachement et la facture. Le nom est pré-rempli à la lecture du bordereau.",
@@ -1501,6 +1503,7 @@ function SetupPage() {
     function show() {
       var nodes;
       if (tab === 'contrat') nodes = [ContratsPage({ embedded: true, onSaved: show }), contratsCard(), paramsForm('contrat')];
+      else if (tab === 'demandes') nodes = [typesDemandeCard()];
       else if (tab === 'maintenance') nodes = [exportCard(), importCard(), maintenanceCard(data.status), backupCard()];
       else nodes = [paramsForm(tab)];
       body.replaceChildren.apply(body, nodes);
@@ -1510,6 +1513,38 @@ function SetupPage() {
   }).catch(function (e) { wrap.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
   return wrap;
 }
+// Setup → Demandes : types proposés pour les nouvelles demandes, et types ajoutés (par exemple « Certificat de travail »).
+function typesDemandeCard() {
+  var card = h('section', { class: 'card' }); card.append(loading());
+  call('typesDemandeGet').then(function (cfg) {
+    var box = msgBox(); var btn = h('button', { class: 'primary' }, 'Enregistrer');
+    var builtinRows = cfg.builtin.map(function (b) { var cb = h('input', { type: 'checkbox', checked: b.propose, 'aria-label': b.label }); return { cle: b.cle, cb: cb, node: h('label', { class: 'inline', style: 'display:flex;gap:8px;align-items:center;margin:4px 0' }, cb, b.label) }; });
+    var customHost = h('div', { style: 'display:grid;gap:8px' }); var rows = [];
+    function docSelect(v) { var sel = h('select', { 'aria-label': 'Document remis à la clôture' }, h('option', { value: '' }, 'Document au choix')); Object.keys(cfg.docs).forEach(function (k) { sel.append(h('option', { value: k }, cfg.docs[k])); }); sel.value = v || ''; return sel; }
+    function addRow(c) {
+      var label = h('input', { value: c.label || '', maxlength: 60, placeholder: 'Nom du type (ex. Certificat de travail)', 'aria-label': 'Nom du type de demande' });
+      var doc = docSelect(c.doc); var cb = h('input', { type: 'checkbox', checked: c.propose !== false, 'aria-label': 'Proposé' });
+      var del = h('button', { type: 'button', class: 'danger' }, 'Supprimer');
+      var node = h('div', { class: 'row', style: 'align-items:end' }, field('Nom', label, 'grow2'), field('Document remis à la clôture', doc), h('label', { class: 'inline', style: 'display:flex;gap:6px;align-items:center' }, cb, 'Proposé'), del);
+      var r = { cle: c.cle, label: label, doc: doc, cb: cb, node: node, utilise: c.utilise };
+      del.onclick = function () { rows = rows.filter(function (x) { return x !== r; }); node.remove(); if (c.utilise) box.show('Ce type est déjà utilisé par des demandes : il est seulement retiré des nouvelles demandes.', true); };
+      rows.push(r); customHost.append(node);
+    }
+    cfg.custom.forEach(addRow);
+    var add = h('button', { type: 'button' }, 'Ajouter un type de demande'); add.onclick = function () { addRow({}); };
+    btn.onclick = function () {
+      var builtin = {}; builtinRows.forEach(function (b) { builtin[b.cle] = b.cb.checked; });
+      var custom = rows.map(function (r) { return { cle: r.cle, label: r.label.value, doc: r.doc.value, propose: r.cb.checked }; }).filter(function (c) { return String(c.label).trim() || c.cle; });
+      act(btn, box, function () { return call('typesDemandeSave', { builtin: builtin, custom: custom }); }, 'Types de demande enregistrés').then(function (r) { if (r) { OFFEREDRESET(); card.replaceWith(typesDemandeCard()); } });
+    };
+    card.replaceChildren(h('h2', null, 'Types de demande'), h('p', { class: 'muted' }, 'Choisissez les types proposés aux agents et aux responsables pour une nouvelle demande, et ajoutez les vôtres (par exemple « Certificat de travail »). Les demandes déjà faites restent visibles.'),
+      h('fieldset', null, h('legend', null, 'Types proposés'), builtinRows.map(function (b) { return b.node; })),
+      h('fieldset', null, h('legend', null, 'Types ajoutés'), customHost, add,
+        h('p', { class: 'muted' }, 'Le document remis à la clôture sert à proposer en premier le bon document de l’agent quand la demande est clôturée.')), box, btn);
+  }).catch(function (e) { card.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  return card;
+}
+function OFFEREDRESET() { /* la liste des types proposés est relue à l’ouverture de la page Demandes */ }
 // Dépôt du bordereau des prix en un seul geste : choisir (ou glisser) le fichier → lecture automatique → relecture → « Enregistrer dans le contrat ».
 function BordereauUpload(onSaved) {
   var card = h('section', { class: 'card upload' });

@@ -120,5 +120,15 @@ S('admin', 'vider', ['donnees', 'nope'], { rec: true, expectError: true });
 S('karim', 'demandeCreate', [{ type: 'attestation_travail', message: 'créée par le chef', agent_id: { $: 'a2' } }], { save: { d6: 'id' }, rec: true });
 S('karim', 'demandesList', [], { rec: true }); S('amine', 'demandeCreate', [{ type: 'contrat', agent_id: { $: 'a2' } }], { rec: true, expectError: true });
 S('karim', 'demandeCreate', [{ type: 'contrat', agent_id: { $: 'chef' } }], { rec: true });
+// ----- types de demande réglables -----
+S('karim', 'typesDemandeGet', [], { rec: true, expectError: true });
+S('admin', 'typesDemandeSave', [{ builtin: { contrat: false }, custom: [{ label: 'Certificat de travail', doc: 'attestation_travail' }] }], { rec: true });
+S('samir', 'demandesList', [], { rec: true });
+S('samir', 'demandeCreate', [{ type: 'x_certificat_de_travail', message: 'banque' }], { save: { d7: 'id' }, rec: true });
+S('samir', 'demandeCreate', [{ type: 'contrat' }], { rec: true, expectError: true });
+S('karim', 'demandesList', [], { rec: true });
+S('admin', 'typesDemandeSave', [{ custom: [{ label: 'Attestation CNAS' }] }], { rec: true, expectError: true });
+S('admin', 'typesDemandeSave', [{ custom: [] }], { rec: true });
+S('samir', 'demandesList', [], { rec: true });
 module.exports = steps;
 if (require.main === module) require('fs').writeFileSync(__dirname + '/scenario.json', JSON.stringify(steps));

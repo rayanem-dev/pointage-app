@@ -25,6 +25,7 @@ final class Params {
             $t('client_adresse_facture', 'Adresse de facturation (« DOIT »)', 'Client', 'area'), $t('logo_client_id', 'Logo du client', 'Client', 'logo'),
             $t('signature_client', 'Signature client (fiche de pointage)', 'Client', 'text'),
             $t('client_emails', 'E-mails du contact client (4 au maximum ; un compte de consultation est créé par adresse)', 'Client', 'emails'),
+            $t('types_demande', 'Types de demande (réglés dans Setup → Demandes)', 'Demandes', 'hidden'),
             $t('signature_prestataire', 'Signature prestataire (fiche de pointage)', 'Prestataire', 'text'),
         ];
     }

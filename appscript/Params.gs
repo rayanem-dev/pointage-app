@@ -33,6 +33,7 @@ var Params = (function () {
     { key: 'logo_client_id', label: 'Logo du client', group: 'Client', type: 'logo', def: '' },
     { key: 'signature_client', label: 'Signature client (fiche de pointage)', group: 'Client', type: 'text', def: '' },
     { key: 'client_emails', label: 'E-mails du contact client (4 au maximum ; un compte de consultation est créé par adresse)', group: 'Client', type: 'emails', def: '' },
+    { key: 'types_demande', label: 'Types de demande (réglés dans Setup → Demandes)', group: 'Demandes', type: 'hidden', def: '' },
     { key: 'signature_prestataire', label: 'Signature prestataire (fiche de pointage)', group: 'Prestataire', type: 'text', def: '' }
   ];
   var DEFAULTS = {};

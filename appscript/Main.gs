@@ -187,6 +187,8 @@ var HANDLERS = {
   logoRemove: { setup: true, write: true, fn: function (u, a) { return Params.logoRemove(a[0]); } },
   logoView: { setup: true, fn: function (u, a) { return Params.logoView(a[0]); } },
   bordereauAnalyser: { setup: true, fn: function (u, a) { return Bordereau.analyser(a[0] || {}); } },
+  typesDemandeGet: { setup: true, fn: function () { return Demandes.typesConfig(); } },
+  typesDemandeSave: { setup: true, write: true, fn: function (u, a) { return Demandes.typesSave(u, a[0] || {}); } },
   contratsGet: {
     setup: true,
     fn: function () {

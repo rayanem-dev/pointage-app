@@ -7,8 +7,14 @@ final class Demandes {
         'attestation_cnas' => "l'(les) Attestation(s) CNAS", 'maj_cnas' => 'la (les) Mise(s) à jour CNAS', 'attestation_emoluments' => "l'(les) Attestation(s) d'émoluments", 'prolongation_conge' => 'la (les) Prolongation(s) de congé', 'prolongation_sejour' => 'la (les) Prolongation(s) de séjour'];
     const DOC_DE = ['titre_conge' => 'titre_conge', 'attestation_travail' => 'attestation_travail', 'fiche_emolument' => 'fiche_emolument', 'contrat' => 'contrat', 'attestation_cnas' => 'attestation_cnas', 'maj_cnas' => 'maj_cnas', 'attestation_emoluments' => 'attestation_emoluments'];
 
-    private static function T(): array { return CFG()['TYPES_DEMANDE']; }
-    private static function masque($t): bool { return in_array($t, CFG()['TYPES_DEMANDE_MASQUES'], true); }
+    /** Types intégrés + types ajoutés dans Setup → Demandes (Params « types_demande » : custom [cle, label, doc], off [clés non proposées]). */
+    private static function cfgTypes(): array {
+        $o = json_decode(Params::get()['types_demande'] ?: '{}', true); if (!is_array($o)) $o = [];
+        return ['custom' => is_array($o['custom'] ?? null) ? $o['custom'] : [], 'off' => is_array($o['off'] ?? null) ? $o['off'] : []];
+    }
+    private static function T(): array { $o = CFG()['TYPES_DEMANDE']; foreach (self::cfgTypes()['custom'] as $c) $o[$c['cle']] = $c['label']; return $o; }
+    private static function masque($t): bool { return in_array($t, CFG()['TYPES_DEMANDE_MASQUES'], true) || in_array($t, self::cfgTypes()['off'], true); }
+    private static function docDe($type): string { if (isset(self::DOC_DE[$type])) return self::DOC_DE[$type]; foreach (self::cfgTypes()['custom'] as $c) if ($c['cle'] === $type) return $c['doc'] ?? ''; return ''; }
     private static function byId(array $list): array { $m = []; foreach ($list as $x) $m[$x['id']] = $x; return $m; }
     private static function handlerId(?array $agent, array $by): string { $chef = $agent && $agent['chef_id'] !== '' ? ($by[$agent['chef_id']] ?? null) : null; return $chef && $chef['actif'] === '1' ? $chef['id'] : 'admin'; }
     private static function canHandle(array $user, array $d, array $by): bool {
@@ -176,7 +182,8 @@ final class Demandes {
         }
         $utilises = []; foreach ($all as $d) $utilises[$d['type']] = 1;
         $types = []; foreach ($T as $k => $v) if (!self::masque($k) || isset($utilises[$k])) $types[$k] = $v;
-        return ['mine' => $mine, 'toHandle' => $toHandle, 'envois' => $envois, 'types' => $types, 'statuts' => CFG()['STATUTS_DEMANDE']];
+        $proposes = array_values(array_filter(array_keys($T), fn($k) => !self::masque($k)));
+        return ['mine' => $mine, 'toHandle' => $toHandle, 'envois' => $envois, 'types' => $types, 'proposes' => $proposes, 'statuts' => CFG()['STATUTS_DEMANDE']];
     }
     public static function repondre(array $user, $id, $statut, $reponse): array {
         if (!in_array($statut, self::REPONSES, true)) throw httpErr('Statut invalide');
@@ -256,7 +263,7 @@ final class Demandes {
     public static function documentsPour(array $user, $id): array {
         $by = self::byId(Agents::list()); $all = Store::readTable('Demandes'); $i = self::find($all, $id);
         if ($i === null || !self::canHandle($user, $all[$i], $by)) throw httpErr('Demande non accessible', 'FORBIDDEN');
-        $d = $all[$i]; $voulu = self::DOC_DE[$d['type']] ?? '';
+        $d = $all[$i]; $voulu = self::docDe($d['type']);
         $docs = array_values(array_filter(Store::readTable('Documents'), fn($x) => $x['agent_id'] === $d['agent_id']));
         usort($docs, fn($a, $b) => strcmp($b['date'], $a['date']));
         $out = array_map(fn($x) => ['id' => $x['id'], 'nom' => $x['nom_original'] ?: $x['titre'], 'type' => $x['type'], 'type_label' => CFG()['TYPES_DOC'][$x['type']] ?? $x['type'], 'periode' => $x['periode'] ?: '', 'date' => $x['date'], 'correspond' => $voulu !== '' && $x['type'] === $voulu], $docs);
@@ -296,5 +303,35 @@ final class Demandes {
         $mine = array_values(array_filter($all, fn($d) => $d['agent_id'] === $user['id']));
         return ['total' => count($mine), 'en_attente' => count(array_filter($mine, fn($d) => $d['statut'] === 'en_attente' || $d['statut'] === 'envoyee')),
             'a_traiter' => $user['role'] === 'agent' ? 0 : count(array_filter($all, fn($d) => ($d['statut'] === 'en_attente' || (in_array($d['statut'], self::REPONSES, true) && $d['date_cloture'] === '' && $d['envoi_id'] !== '')) && self::canHandle($user, $d, $by)))];
+    }
+
+    // ----- Types de demande réglables (Setup → Demandes) -----
+    public static function typesConfig(): array {
+        $c = self::cfgTypes(); $used = []; foreach (Store::readTable('Demandes') as $d) $used[$d['type']] = 1; $masq = CFG()['TYPES_DEMANDE_MASQUES'];
+        $builtin = []; foreach (CFG()['TYPES_DEMANDE'] as $k => $label) if (!in_array($k, $masq, true) || isset($used[$k])) $builtin[] = ['cle' => $k, 'label' => $label, 'propose' => !in_array($k, $c['off'], true) && !in_array($k, $masq, true)];
+        $custom = array_map(fn($x) => ['cle' => $x['cle'], 'label' => $x['label'], 'doc' => $x['doc'] ?? '', 'propose' => !in_array($x['cle'], $c['off'], true), 'utilise' => isset($used[$x['cle']])], $c['custom']);
+        return ['builtin' => $builtin, 'custom' => $custom, 'docs' => CFG()['TYPES_DOC']];
+    }
+    private static function slugType($label): string { return 'x_' . substr(trim(preg_replace('/[^a-z0-9]+/', '_', Format::norm($label)), '_'), 0, 30); }
+    public static function typesSave(array $user, ?array $o): array {
+        $o = $o ?? []; $old = self::cfgTypes(); $used = []; foreach (Store::readTable('Demandes') as $d) $used[$d['type']] = 1;
+        $masq = CFG()['TYPES_DEMANDE_MASQUES']; $labels = []; foreach (CFG()['TYPES_DEMANDE'] as $k => $l) $labels[Format::norm($l)] = $k;
+        $custom = []; $off = []; $keys = []; $oldKeys = array_column($old['custom'], 'cle');
+        foreach (($o['builtin'] ?? []) as $k => $v) if (isset(CFG()['TYPES_DEMANDE'][$k]) && !in_array($k, $masq, true) && $v === false) $off[] = $k;
+        foreach (($o['custom'] ?? []) as $c) {
+            $label = mb_substr(trim(preg_replace('/[\x00-\x1f]+/', ' ', (string)($c['label'] ?? ''))), 0, 60);
+            if (mb_strlen($label) < 3) throw httpErr('Nom du type de demande : 3 caractères minimum');
+            $n = Format::norm($label); $cle = in_array($c['cle'] ?? null, $oldKeys, true) ? $c['cle'] : self::slugType($label);
+            if (isset($labels[$n]) && $labels[$n] !== $cle) throw httpErr('Ce type de demande existe déjà : ' . $label);
+            $labels[$n] = $cle;
+            $base = $cle; $k = 1; while (isset($keys[$cle]) || (isset(CFG()['TYPES_DEMANDE'][$cle]) && !in_array($cle, $oldKeys, true))) { $k++; $cle = $base . '_' . $k; }
+            $keys[$cle] = true;
+            $custom[] = ['cle' => $cle, 'label' => $label, 'doc' => isset(CFG()['TYPES_DOC'][$c['doc'] ?? '']) ? $c['doc'] : ''];
+            if (($c['propose'] ?? null) === false) $off[] = $cle;
+        }
+        if (count($custom) > 20) throw httpErr('20 types ajoutés au maximum');
+        foreach ($old['custom'] as $x) if (!isset($keys[$x['cle']]) && isset($used[$x['cle']])) { $custom[] = ['cle' => $x['cle'], 'label' => $x['label'], 'doc' => $x['doc'] ?? '']; $off[] = $x['cle']; $keys[$x['cle']] = true; }
+        Params::set(['types_demande' => json_encode(['custom' => $custom, 'off' => $off], JSON_UNESCAPED_UNICODE)]);
+        return self::typesConfig();
     }
 }

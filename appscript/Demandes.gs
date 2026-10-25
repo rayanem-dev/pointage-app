@@ -4,10 +4,20 @@
  */
 var Demandes = (function () {
   // CFG est lu à l'appel (Apps Script charge les fichiers dans un ordre quelconque)
-  var T = new Proxy({}, { get: function (t, k) { return CFG.TYPES_DEMANDE[k]; }, ownKeys: function () { return Object.keys(CFG.TYPES_DEMANDE); }, getOwnPropertyDescriptor: function (t, k) { return k in CFG.TYPES_DEMANDE ? { enumerable: true, configurable: true, value: CFG.TYPES_DEMANDE[k] } : undefined; } });
+  // Types de demande = types intégrés (CFG) + types ajoutés par l'administrateur dans Setup → Demandes (Params : types_demande = { custom: [{ cle, label, doc }], off: [clés non proposées] }).
+  var memoRaw = null; var memoCfg = null;
+  function cfgTypes() {
+    var raw = Params.get().types_demande || '';
+    if (raw === memoRaw && memoCfg) return memoCfg;
+    var o = {}; try { o = JSON.parse(raw || '{}') || {}; } catch (e) { o = {}; }
+    memoRaw = raw; memoCfg = { custom: Array.isArray(o.custom) ? o.custom : [], off: Array.isArray(o.off) ? o.off : [] };
+    return memoCfg;
+  }
+  function allTypes() { var o = {}; Object.keys(CFG.TYPES_DEMANDE).forEach(function (k) { o[k] = CFG.TYPES_DEMANDE[k]; }); cfgTypes().custom.forEach(function (c) { o[c.cle] = c.label; }); return o; }
+  var T = new Proxy({}, { get: function (t, k) { return allTypes()[k]; }, ownKeys: function () { return Object.keys(allTypes()); }, getOwnPropertyDescriptor: function (t, k) { var a = allTypes(); return k in a ? { enumerable: true, configurable: true, value: a[k] } : undefined; } });
 
   var DECIDEES = ['acceptee', 'refusee', 'traitee'];
-  function masque(t) { return CFG.TYPES_DEMANDE_MASQUES.indexOf(t) >= 0; }
+  function masque(t) { return CFG.TYPES_DEMANDE_MASQUES.indexOf(t) >= 0 || cfgTypes().off.indexOf(t) >= 0; } // non proposé pour une nouvelle demande (les anciennes restent lisibles et traitables)
   function byId(list) { var m = {}; list.forEach(function (x) { m[x.id] = x; }); return m; }
   // Qui traite la demande d'un agent : son responsable d’équipe actif, sinon l'admin.
   function handlerId(agent, agentsById) {
@@ -196,7 +206,8 @@ var Demandes = (function () {
     }
     var utilises = {}; all.forEach(function (d) { utilises[d.type] = 1; });
     var types = {}; Object.keys(T).forEach(function (k) { if (!masque(k) || utilises[k]) types[k] = T[k]; }); // les types retirés ne restent que s'ils servent encore
-    return { mine: mine, toHandle: toHandle, envois: envois, types: types, statuts: CFG.STATUTS_DEMANDE };
+    var proposes = Object.keys(T).filter(function (k) { return !masque(k); });
+    return { mine: mine, toHandle: toHandle, envois: envois, types: types, proposes: proposes, statuts: CFG.STATUTS_DEMANDE };
   }
 
   // Décision directe (sans passer par la direction) ou réponse individuelle.
@@ -306,11 +317,12 @@ var Demandes = (function () {
   }
   // Type de document attendu pour chaque type de demande (les autres demandes acceptent n'importe quel document).
   var DOC_DE = { titre_conge: 'titre_conge', attestation_travail: 'attestation_travail', fiche_emolument: 'fiche_emolument', contrat: 'contrat', attestation_cnas: 'attestation_cnas', maj_cnas: 'maj_cnas', attestation_emoluments: 'attestation_emoluments' };
+  function docDe(type) { if (DOC_DE[type]) return DOC_DE[type]; var c = cfgTypes().custom.filter(function (x) { return x.cle === type; })[0]; return c && c.doc ? c.doc : ''; }
   // Documents déjà classés chez l'agent de la demande (ceux du bon type d'abord) : le responsable ou l'administrateur choisit celui à remettre.
   function documentsPour(user, id) {
     var agentsById = byId(Agents.list()); var d = Store.readTable('Demandes').filter(function (x) { return x.id === id; })[0];
     if (!d || !canHandle(user, d, agentsById)) throw httpErr_('Demande non accessible', 'FORBIDDEN');
-    var voulu = DOC_DE[d.type] || '';
+    var voulu = docDe(d.type);
     return Store.readTable('Documents').filter(function (x) { return x.agent_id === d.agent_id; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; }).map(function (x) {
       return { id: x.id, nom: x.nom_original || x.titre, type: x.type, type_label: CFG.TYPES_DOC[x.type] || x.type, periode: x.periode || '', date: x.date, correspond: !!voulu && x.type === voulu };
     }).sort(function (a, b) { return (b.correspond ? 1 : 0) - (a.correspond ? 1 : 0); });
@@ -353,5 +365,39 @@ var Demandes = (function () {
       a_traiter: user.role === 'agent' ? 0 : all.filter(function (d) { return (d.statut === 'en_attente' || (REPONSES.indexOf(d.statut) >= 0 && !d.date_cloture && d.envoi_id)) && canHandle(user, d, agentsById); }).length
     };
   }
-  return { modifier: modifier, reouvrir: reouvrir, supprimer: supprimer, annulerEnvoi: annulerEnvoi, repondreDirection: repondreDirection, cloturer: cloturer, annulerCloture: annulerCloture, documentsPour: documentsPour, create: create, list: list, repondre: repondre, envoyerDirection: envoyerDirection, traiterEnvoi: traiterEnvoi, counts: counts };
+
+  // ----- Types de demande réglables (Setup → Demandes : administrateur, ou responsable ayant accès au Setup) -----
+  function typesConfig() {
+    var c = cfgTypes(); var used = {}; Store.readTable('Demandes').forEach(function (d) { used[d.type] = 1; });
+    return {
+      builtin: Object.keys(CFG.TYPES_DEMANDE).filter(function (k) { return CFG.TYPES_DEMANDE_MASQUES.indexOf(k) < 0 || used[k]; }).map(function (k) { return { cle: k, label: CFG.TYPES_DEMANDE[k], propose: c.off.indexOf(k) < 0 && CFG.TYPES_DEMANDE_MASQUES.indexOf(k) < 0 }; }),
+      custom: c.custom.map(function (x) { return { cle: x.cle, label: x.label, doc: x.doc || '', propose: c.off.indexOf(x.cle) < 0, utilise: !!used[x.cle] }; }),
+      docs: CFG.TYPES_DOC
+    };
+  }
+  function slugType(label) { return 'x_' + Format.norm(label).replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 30); }
+  // o : { builtin: { cle: proposé (booléen) }, custom: [{ cle?, label, doc, propose }] }. Un type ajouté déjà utilisé ne peut pas disparaître : il est seulement retiré des nouvelles demandes.
+  function typesSave(user, o) {
+    o = o || {}; var old = cfgTypes(); var used = {}; Store.readTable('Demandes').forEach(function (d) { used[d.type] = 1; });
+    var labels = {}; Object.keys(CFG.TYPES_DEMANDE).forEach(function (k) { labels[Format.norm(CFG.TYPES_DEMANDE[k])] = k; });
+    var custom = []; var off = []; var keys = {};
+    Object.keys(o.builtin || {}).forEach(function (k) { if (CFG.TYPES_DEMANDE[k] && CFG.TYPES_DEMANDE_MASQUES.indexOf(k) < 0 && o.builtin[k] === false) off.push(k); });
+    (o.custom || []).forEach(function (c) {
+      var label = String(c.label == null ? '' : c.label).replace(/[\u0000-\u001f]+/g, ' ').trim().slice(0, 60);
+      if (label.length < 3) throw httpErr_('Nom du type de demande : 3 caractères minimum');
+      var n = Format.norm(label); var cle = old.custom.some(function (x) { return x.cle === c.cle; }) ? c.cle : slugType(label);
+      if (labels[n] && labels[n] !== cle) throw httpErr_('Ce type de demande existe déjà : ' + label);
+      labels[n] = cle;
+      var base = cle; var k = 1; while (keys[cle] || (CFG.TYPES_DEMANDE[cle] && !old.custom.some(function (x) { return x.cle === cle; }))) { k += 1; cle = base + '_' + k; }
+      keys[cle] = true;
+      custom.push({ cle: cle, label: label, doc: CFG.TYPES_DOC[c.doc] ? c.doc : '' });
+      if (c.propose === false) off.push(cle);
+    });
+    if (custom.length > 20) throw httpErr_('20 types ajoutés au maximum');
+    old.custom.forEach(function (x) { if (!keys[x.cle] && used[x.cle]) { custom.push({ cle: x.cle, label: x.label, doc: x.doc || '' }); off.push(x.cle); keys[x.cle] = true; } });
+    Params.set({ types_demande: JSON.stringify({ custom: custom, off: off }) });
+    memoRaw = null;
+    return typesConfig();
+  }
+  return { typesConfig: typesConfig, typesSave: typesSave, modifier: modifier, reouvrir: reouvrir, supprimer: supprimer, annulerEnvoi: annulerEnvoi, repondreDirection: repondreDirection, cloturer: cloturer, annulerCloture: annulerCloture, documentsPour: documentsPour, create: create, list: list, repondre: repondre, envoyerDirection: envoyerDirection, traiterEnvoi: traiterEnvoi, counts: counts };
 })();
