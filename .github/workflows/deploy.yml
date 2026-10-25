@@ -1,14 +1,15 @@
-# Déploiement automatique vers Google Apps Script à chaque mise à jour du dossier appscript/ sur main.
+# Déploiement vers Google Apps Script (lancement manuel : onglet Actions → Run workflow).
 # Secrets du dépôt requis : CLASPRC_JSON (contenu de ~/.clasprc.json), SCRIPT_ID, DEPLOYMENT_ID.
 name: Déployer Sijil (Apps Script)
 
-# Automatique : à chaque push sur main qui touche appscript/ (et à la demande : onglet Actions → Run workflow).
-# Pour revenir au déploiement à la main (deploy.ps1) : retirer le bloc « push ».
+# SUSPENDU : deux exécutions réussies ont coupé l'accès à l'application (« Une autorisation est nécessaire », Google Drive).
+# Cause probable : le jeton CLASPRC_JSON n'est pas celui du compte propriétaire du script et du classeur ; « Exécuter en tant que : moi » devient alors un compte sans accès au classeur.
+# Pour réactiver : refaire « clasp login » avec le compte PROPRIÉTAIRE, recoller CLASPRC_JSON, puis ajouter sous « on: » :
+#   push:
+#     branches: [main]
+#     paths: ['appscript/**']
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths: ['appscript/**']
 
 concurrency:
   group: deploy-appscript
