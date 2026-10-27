@@ -7,7 +7,7 @@
  * Dépôt en vrac : les fichiers sont d'abord classés dans « À classer » avec une proposition ; rien n'est envoyé aux agents avant validation.
  */
 var Documents = (function () {
-  var CODES = { titre_conge: 'TC', fiche_emolument: 'FDP', contrat: 'CONTRAT', attestation_cnas: 'ACNAS', maj_cnas: 'MAJCNAS', attestation_travail: 'AT', attestation_emoluments: 'AE', ats: 'ATS', autre: 'DOC' };
+  var CODES = { titre_conge: 'TC', fiche_emolument: 'FDP', contrat: 'CONTRAT', attestation_cnas: 'ACNAS', maj_cnas: 'MAJCNAS', attestation_travail: 'AT', certificat_travail: 'CT', attestation_emoluments: 'AE', ats: 'ATS', autre: 'DOC' };
   var MOIS = ['janvier', 'fevrier', 'mars', 'avril', 'mai', 'juin', 'juillet', 'aout', 'septembre', 'octobre', 'novembre', 'decembre'];
   var MOIS_AFF = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
   // Noms de mois acceptés : complets ou abrégés (janv, fevr, avr, juil, sept, dec…), année sur 4 ou 2 chiffres (« FEVR 26 » = février 2026).
@@ -16,7 +16,7 @@ var Documents = (function () {
   var ALIAS = { jan: 1, janv: 1, janvier: 1, fev: 2, fevr: 2, fevrier: 2, mar: 3, mars: 3, avr: 4, avril: 4, mai: 5, juin: 6, juil: 7, juillet: 7, aou: 8, aout: 8, sep: 9, sept: 9, septembre: 9, oct: 10, octobre: 10, nov: 11, novembre: 11, dec: 12, decembre: 12 };
   function an4(y) { return String(y).length === 2 ? '20' + y : String(y); }
   // Champs obligatoires pour nommer chaque type ; « autre » n'en demande aucun.
-  var REQUIS = { titre_conge: ['date'], fiche_emolument: ['mois'], contrat: ['date'], attestation_cnas: ['date'], maj_cnas: ['mois', 'mois2'], attestation_travail: ['date'], attestation_emoluments: ['mois', 'mois2'], ats: ['date'], autre: [] };
+  var REQUIS = { titre_conge: ['date'], fiche_emolument: ['mois'], contrat: ['date'], attestation_cnas: ['date'], maj_cnas: ['mois', 'mois2'], attestation_travail: ['date'], certificat_travail: ['date'], attestation_emoluments: ['mois', 'mois2'], ats: ['date'], autre: [] };
   function n(s) { return Format.norm(s); }
 
   // ----- rangement : Documents/ à côté du classeur, puis un dossier par agent -----
@@ -97,7 +97,8 @@ var Documents = (function () {
     if (/attestation d.?affiliation|attestation.{0,10}cnas|\bcnas\b|caisse nationale des assurances sociales/.test(t)) return 'attestation_cnas';
     if (/attestations? (?:d|des|de)[^a-z]{0,3}emoluments?|attestations? de salaire/.test(t)) return 'attestation_emoluments';
     if (/fiche de paie|bulletin de paie|bulletin de salaire|fiche de salaire|fiche d.?emoluments?|\bfdp\b/.test(t)) return 'fiche_emolument';
-    if (/attestation de travail|certificat de travail/.test(t)) return 'attestation_travail';
+    if (/certificat de travail/.test(t)) return 'certificat_travail';
+    if (/attestation de travail/.test(t)) return 'attestation_travail';
     if (/contrat de travail|contrat a duree|\bcontrat\b/.test(t)) return 'contrat';
     return '';
   }
@@ -144,6 +145,7 @@ var Documents = (function () {
       case 'attestation_cnas': return who + '_AttestationCNAS_' + (f.nss ? f.nss + '_' : '') + date;
       case 'maj_cnas': return who + '_MAJCNAS_' + m1 + '_' + m2;
       case 'attestation_travail': return who + '_AttestationTravail_' + date;
+      case 'certificat_travail': return who + '_CertificatTravail_' + date;
       case 'attestation_emoluments': return who + '_AttestationEmoluments_' + m1 + '_' + m2;
       case 'ats': return who + '_ATS_' + date;
       default: return who + '_' + (stem || 'Document');

@@ -5,13 +5,13 @@
  * Dépôt en vrac : les fichiers sont d'abord « en attente » avec une proposition ; rien n'est envoyé aux agents avant validation.
  */
 final class Documents {
-    const CODES = ['titre_conge' => 'TC', 'fiche_emolument' => 'FDP', 'contrat' => 'CONTRAT', 'attestation_cnas' => 'ACNAS', 'maj_cnas' => 'MAJCNAS', 'attestation_travail' => 'AT', 'attestation_emoluments' => 'AE', 'ats' => 'ATS', 'autre' => 'DOC'];
+    const CODES = ['titre_conge' => 'TC', 'fiche_emolument' => 'FDP', 'contrat' => 'CONTRAT', 'attestation_cnas' => 'ACNAS', 'maj_cnas' => 'MAJCNAS', 'attestation_travail' => 'AT', 'certificat_travail' => 'CT', 'attestation_emoluments' => 'AE', 'ats' => 'ATS', 'autre' => 'DOC'];
     const MOIS = ['janvier', 'fevrier', 'mars', 'avril', 'mai', 'juin', 'juillet', 'aout', 'septembre', 'octobre', 'novembre', 'decembre'];
     const MOIS_AFF = ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'];
     const MOIS_RE = '\b(janvier|janv|jan|fevrier|fevr|fev|mars|mar|avril|avr|mai|juin|juillet|juil|aout|aou|septembre|sept|sep|octobre|oct|novembre|nov|decembre|dec)\b\.?';
     const ANNEE_RE = '(20\d{2}|\d{2})(?!\d)';
     const ALIAS = ['jan' => 1, 'janv' => 1, 'janvier' => 1, 'fev' => 2, 'fevr' => 2, 'fevrier' => 2, 'mar' => 3, 'mars' => 3, 'avr' => 4, 'avril' => 4, 'mai' => 5, 'juin' => 6, 'juil' => 7, 'juillet' => 7, 'aou' => 8, 'aout' => 8, 'sep' => 9, 'sept' => 9, 'septembre' => 9, 'oct' => 10, 'octobre' => 10, 'nov' => 11, 'novembre' => 11, 'dec' => 12, 'decembre' => 12];
-    const REQUIS = ['titre_conge' => ['date'], 'fiche_emolument' => ['mois'], 'contrat' => ['date'], 'attestation_cnas' => ['date'], 'maj_cnas' => ['mois', 'mois2'], 'attestation_travail' => ['date'], 'attestation_emoluments' => ['mois', 'mois2'], 'ats' => ['date'], 'autre' => []];
+    const REQUIS = ['titre_conge' => ['date'], 'fiche_emolument' => ['mois'], 'contrat' => ['date'], 'attestation_cnas' => ['date'], 'maj_cnas' => ['mois', 'mois2'], 'attestation_travail' => ['date'], 'certificat_travail' => ['date'], 'attestation_emoluments' => ['mois', 'mois2'], 'ats' => ['date'], 'autre' => []];
     const DEPOT_JOURS = 3;
 
     private static function an4($y): string { return strlen((string)$y) === 2 ? '20' . $y : (string)$y; }
@@ -78,7 +78,8 @@ final class Documents {
         if (preg_match('~attestation d.?affiliation|attestation.{0,10}cnas|\bcnas\b|caisse nationale des assurances sociales~', $t)) return 'attestation_cnas';
         if (preg_match('~attestations? (?:d|des|de)[^a-z]{0,3}emoluments?|attestations? de salaire~', $t)) return 'attestation_emoluments';
         if (preg_match('~fiche de paie|bulletin de paie|bulletin de salaire|fiche de salaire|fiche d.?emoluments?|\bfdp\b~', $t)) return 'fiche_emolument';
-        if (preg_match('~attestation de travail|certificat de travail~', $t)) return 'attestation_travail';
+        if (preg_match('~certificat de travail~', $t)) return 'certificat_travail';
+        if (preg_match('~attestation de travail~', $t)) return 'attestation_travail';
         if (preg_match('~contrat de travail|contrat a duree|\bcontrat\b~', $t)) return 'contrat';
         return '';
     }
@@ -122,6 +123,7 @@ final class Documents {
             case 'attestation_cnas': return $who . '_AttestationCNAS_' . (!empty($f['nss']) ? $f['nss'] . '_' : '') . $date;
             case 'maj_cnas': return $who . '_MAJCNAS_' . $m1 . '_' . $m2;
             case 'attestation_travail': return $who . '_AttestationTravail_' . $date;
+            case 'certificat_travail': return $who . '_CertificatTravail_' . $date;
             case 'attestation_emoluments': return $who . '_AttestationEmoluments_' . $m1 . '_' . $m2;
             case 'ats': return $who . '_ATS_' . $date;
             default: return $who . '_' . ($stem ?: 'Document');
