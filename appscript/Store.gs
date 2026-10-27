@@ -137,7 +137,7 @@ var Store = (function () {
   // Verrou global pour toute opération d'écriture.
   function withLock(fn) {
     var lock = LockService.getScriptLock();
-    lock.waitLock(25000);
+    try { lock.waitLock(25000); } catch (e) { throw httpErr_('Le serveur est occupé par une autre opération. Réessayez dans quelques secondes.', 'BUSY'); }
     try { return fn(); } finally { lock.releaseLock(); }
   }
   return { flushLocal: flushLocal, ss: ss, masterSs: masterSs, setTenant: setTenant, tenantCode: tenantCode, tenantId: tenantId, propKey: propKey, folderSuffix: folderSuffix, withMaster: withMaster, reset: reset, listTabs: listTabs, getRows: getRows, setRows: setRows, deleteTab: deleteTab, readTable: readTable, writeTable: writeTable, withLock: withLock };

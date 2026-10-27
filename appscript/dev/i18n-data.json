@@ -6383,5 +6383,25 @@
   "20 types ajoutés au maximum",
   "20 added types at most",
   "20 نوعًا مضافًا على الأكثر"
+ ],
+ [
+  "Le serveur est occupé par une autre opération. Réessayez dans quelques secondes.",
+  "The server is busy with another operation. Try again in a few seconds.",
+  "الخادم مشغول بعملية أخرى. أعد المحاولة بعد بضع ثوانٍ."
+ ],
+ [
+  "Cochez au moins une personne.",
+  "Select at least one person.",
+  "اختر شخصًا واحدًا على الأقل."
+ ],
+ [
+  "Tous les agents de mon équipe",
+  "All the agents in my team",
+  "جميع أعوان فريقي"
+ ],
+ [
+  "Pour vous, pour un agent ou pour plusieurs agents à la fois (une demande par personne) ; elles arrivent dans « Demandes en cours ».",
+  "For yourself, one agent or several agents at once (one request per person); they arrive in \"Requests in progress\".",
+  "لك أو لعون واحد أو لعدة أعوان دفعة واحدة (طلب لكل شخص)؛ تصل إلى «الطلبات الجارية»."
  ]
 ]
