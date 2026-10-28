@@ -7,4 +7,5 @@
 - `build/` : scripts de génération (`content.py` = texte du manuel, `build_manual.py`, `build_deck.py`).
 
 Pour régénérer les captures : `node appscript/dev/server.js` puis le script Playwright de captures ; pour reconstruire les documents : `python3 docs/build/build_manual.py` et `python3 docs/build/build_deck.py`.
+- La vitrine JawlaDev (dépôt `rayanem-dev/jawladev`) fait partie du kit : voir `../CLAUDE.md`.
 - `Securite.md` : revue de sécurité. `../Kit-Sijil/` : copie du kit à déposer dans Drive à côté du classeur.
