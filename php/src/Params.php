@@ -16,6 +16,7 @@ final class Params {
             $t('feries_perso', "Jours fériés : ajouts et corrections (une ligne par jour : « 2027-03-10 Aïd el-Fitr » ajoute, « - 2027-03-10 » retire). Les fêtes nationales sont fixes ; les fêtes religieuses sont estimées (écart possible d'un jour selon la lune).", 'Rotation', 'area'),
             $t('contrat_strict', 'Limiter les effectifs aux postes prévus au contrat (postes × (travail + repos) ÷ travail)', 'Rotation', 'bool', '1'),
             $t('attachement_pointage', "Quantité du mois de l'attachement = jours T réellement pointés (sinon : base du contrat, nombre × jours du mois)", 'Attachement', 'bool', '1'),
+            $t('chef_exports', "Responsables d'équipe : accès à l'attachement et à la facture", 'Attachement', 'select', 'individuel', ['options' => [['individuel', 'Selon chaque responsable (case dans la fiche Agent)'], ['tous', "Tous les responsables d'équipe"], ['aucun', "Aucun responsable d'équipe"]], 'hint' => "« Selon chaque responsable » : l'accès se donne un par un dans la fiche Agent. Les comptes de consultation et de personnel administratif ne sont pas concernés."]),
             $t('facturation', "Module Facturation : n° et date de facture, facture PDF / Excel générée à partir de l'attachement validé (décoché : Sijil s'arrête à l'attachement)", 'Attachement', 'bool', '1'),
             $t('couleur_T', 'Couleur T (travail)', 'Couleurs', 'color', '#4EA72E'), $t('couleur_R', 'Couleur R (repos / congé)', 'Couleurs', 'color', '#E97132'), $t('couleur_ABS', 'Couleur ABS (absence)', 'Couleurs', 'color', '#E53935'),
             $t('couleur_T_prevu', 'Couleur T prévu', 'Couleurs', 'color', '#D6F0CC'), $t('couleur_R_prevu', 'Couleur R prévu', 'Couleurs', 'color', '#FBDCC8'),
@@ -55,6 +56,7 @@ final class Params {
             if ($def['type'] === 'number' && !((float)$s >= 1 && fmod((float)$s, 1) == 0.0)) throw httpErr($def['label'] . ' : entier ≥ 1 attendu');
             if ($def['type'] === 'emails') $s = implode(', ', Format::emails($s, $k === 'client_emails' ? 'E-mails du contact client' : 'E-mails du responsable pointage', 4));
             if ($def['type'] === 'staff') $s = implode(', ', array_map(fn($x) => $x['email'] . '|' . ($x['droits'] ? '1' : '0'), self::parseStaff($s)));
+            if ($def['type'] === 'select') { $ok = false; foreach ($def['options'] as $o) if ($o[0] === $s) $ok = true; if (!$ok) throw httpErr($def['label'] . ' : choix invalide'); }
             if ($def['type'] === 'bool') $s = ($v === true || $s === '1' || $s === 'true') ? '1' : '0';
             if ($def['type'] === 'color' && !preg_match('/^#[0-9a-fA-F]{6}$/', $s)) throw httpErr($def['label'] . ' : couleur #RRGGBB attendue');
             $cur[$k] = $s;
@@ -87,7 +89,7 @@ final class Params {
         return $m && $b !== null ? ['apercu' => 'data:' . $m['mime'] . ';base64,' . base64_encode($b)] : ['apercu' => ''];
     }
     public static function pub(array $p): array {
-        return ['prestataire' => $p['prestataire_nom'], 'facturation' => ($p['facturation'] ?? '1') !== '0', 'jours_travail' => (int)$p['jours_travail'], 'jours_repos' => (int)$p['jours_repos'],
+        return ['prestataire' => $p['prestataire_nom'], 'facturation' => ($p['facturation'] ?? '1') !== '0', 'chef_exports' => $p['chef_exports'] ?? 'individuel', 'jours_travail' => (int)$p['jours_travail'], 'jours_repos' => (int)$p['jours_repos'],
             'colors' => ['T' => $p['couleur_T'], 'R' => $p['couleur_R'], 'ABS' => $p['couleur_ABS'], 'T_prevu' => $p['couleur_T_prevu'], 'R_prevu' => $p['couleur_R_prevu']]];
     }
     const TABS = ['Prestataire' => 'prestataire', 'Responsable pointage (prestataire)' => 'prestataire', 'Personnel administratif (prestataire)' => 'prestataire', 'Client' => 'client', 'Rotation' => 'rotation', 'Couleurs' => 'rotation', 'Attachement' => 'contrat'];
@@ -96,7 +98,7 @@ final class Params {
         foreach (self::defs() as $d) {
             if ($d['type'] === 'hidden') continue;
             $o = ['key' => $d['key'], 'label' => $d['label'], 'group' => $d['group'], 'type' => $d['type']];
-            if (isset($d['n'])) $o['n'] = $d['n']; if (isset($d['hint'])) $o['hint'] = $d['hint'];
+            if (isset($d['n'])) $o['n'] = $d['n']; if (isset($d['hint'])) $o['hint'] = $d['hint']; if (isset($d['options'])) $o['options'] = $d['options'];
             $o['tab'] = self::TABS[$d['group']] ?? 'prestataire'; $out[] = $o;
         }
         return $out;

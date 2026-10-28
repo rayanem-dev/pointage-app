@@ -30,3 +30,19 @@ test('module Facturation : un responsable avec accès au Setup ne peut pas le mo
   if (r.ok) assert.strictEqual(ok(call(admin, 'me')).params.facturation, true, 'ignoré pour un non-administrateur');
   else assert.match(r.error, /Setup/);
 });
+
+test('accès du responsable d\'équipe à l\'attachement : réglage global du Setup (individuel / tous / aucun)', () => {
+  const app = loadApp(); const call = app.call;
+  app.run("Setup.install('admin@t.fr', 'adminpw12', 'Admin')");
+  const admin = ok(call(null, 'login', 'admin@t.fr', 'adminpw12')).token;
+  ok(call(admin, 'agentCreate', { nom: 'CHEF X', email: 'cx@t.fr', role: 'chef', password: 'chefpw1234' }));
+  const chef = ok(call(null, 'login', 'cx@t.fr', 'chefpw1234')).token;
+  const refuse = () => { const r = call(chef, 'attachementPreview', '2026-10', 'X'); assert.strictEqual(r.ok, false); assert.match(r.error, /exports non accordé/); };
+  const passe = () => { const r = call(chef, 'attachementPreview', '2026-10', 'X'); if (!r.ok) assert.doesNotMatch(r.error, /exports non accordé/); };
+  assert.strictEqual(ok(call(admin, 'me')).params.chef_exports, 'individuel');
+  refuse();                                           // individuel : la case de sa fiche n'est pas cochée
+  ok(call(admin, 'setupSave', { chef_exports: 'tous' })); passe();
+  ok(call(admin, 'setupSave', { chef_exports: 'aucun' })); refuse();
+  assert.strictEqual(call(admin, 'setupSave', { chef_exports: 'n_importe_quoi' }).ok, false);
+  ok(call(admin, 'setupSave', { chef_exports: 'individuel' })); refuse();
+});

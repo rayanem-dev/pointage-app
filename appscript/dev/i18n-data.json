@@ -6403,5 +6403,35 @@
   "Pour vous, pour un agent ou pour plusieurs agents à la fois (une demande par personne) ; elles arrivent dans « Demandes en cours ».",
   "For yourself, one agent or several agents at once (one request per person); they arrive in \"Requests in progress\".",
   "لك أو لعون واحد أو لعدة أعوان دفعة واحدة (طلب لكل شخص)؛ تصل إلى «الطلبات الجارية»."
+ ],
+ [
+  "Responsables d'équipe : accès à l'attachement et à la facture",
+  "Team leaders: access to the statement and invoice",
+  "مسؤولو الفرق: الوصول إلى الكشف والفاتورة"
+ ],
+ [
+  "Selon chaque responsable (case dans la fiche Agent)",
+  "Per team leader (box in the Agent record)",
+  "حسب كل مسؤول (خانة في بطاقة العون)"
+ ],
+ [
+  "Tous les responsables d'équipe",
+  "All team leaders",
+  "جميع مسؤولي الفرق"
+ ],
+ [
+  "Aucun responsable d'équipe",
+  "No team leader",
+  "لا أحد من مسؤولي الفرق"
+ ],
+ [
+  "« Selon chaque responsable » : l'accès se donne un par un dans la fiche Agent. Les comptes de consultation et de personnel administratif ne sont pas concernés.",
+  "“Per team leader”: access is given one by one in the Agent record. Read-only and administrative staff accounts are not affected.",
+  "«حسب كل مسؤول»: يُمنح الوصول واحداً واحداً في بطاقة العون. حسابات الاطلاع وموظفي الإدارة غير معنيّة."
+ ],
+ [
+  "Module Facturation : n° et date de facture, facture PDF / Excel générée à partir de l'attachement validé (décoché : Sijil s'arrête à l'attachement)",
+  "Invoicing module: invoice number and date, PDF / Excel invoice generated from the validated statement (off: Sijil stops at the statement)",
+  "وحدة الفوترة: رقم الفاتورة وتاريخها، وفاتورة PDF / Excel مولّدة من الكشف المعتمد (معطّلة: يتوقف «سجل» عند الكشف)"
  ]
 ]

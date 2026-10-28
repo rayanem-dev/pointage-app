@@ -35,7 +35,9 @@ function clientScope_(user, numero) { if (user.role === 'client' && user.contrat
 function inScope_(user, agentId) { return Agents.visibleTo(user).some(function (a) { return a.id === agentId; }); }
 // Le responsable d’équipe n'extrait l'attachement et la facture que si l'administrateur lui a accordé ce privilège.
 function facturationOk_() { if (Params.get().facturation === '0') throw httpErr_("Le module Facturation est désactivé (Setup → Contrat, par l'administrateur).", 'FORBIDDEN'); }
-function exportsOk_(user) { if (user.role === 'chef' && user.acces_exports !== '1') throw httpErr_("Accès aux exports non accordé (demandez-le à l'administrateur)", 'FORBIDDEN'); }
+// Accès du responsable d'équipe à l'attachement et à la facture : réglage global du Setup (« individuel » = case de sa fiche Agent). Les comptes liés à un contrat (personnel administratif) gardent leur droit propre.
+function chefExportsOk_(user) { var m = Params.get().chef_exports || 'individuel'; if (user.origine || m === 'individuel') return user.acces_exports === '1'; return m === 'tous'; }
+function exportsOk_(user) { if (user.role === 'chef' && !chefExportsOk_(user)) throw httpErr_("Accès aux exports non accordé (demandez-le à l'administrateur)", 'FORBIDDEN'); }
 function monthOrNow_(m) { return Dates.isMonthKey(m) ? m : Dates.today().slice(0, 7); }
 
 var HANDLERS = {

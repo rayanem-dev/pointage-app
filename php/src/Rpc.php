@@ -6,7 +6,9 @@ final class Rpc {
     private static function clientScope(array $u, $numero): void { if ($u['role'] === 'client' && $u['contrat'] !== '' && $u['contrat'] !== $numero) throw httpErr('Contrat non autorisé', 'FORBIDDEN'); }
     private static function inScope(array $u, $agentId): bool { foreach (Agents::visibleTo($u) as $a) if ($a['id'] === $agentId) return true; return false; }
     private static function facturationOk(): void { if ((Params::get()['facturation'] ?? '1') === '0') throw httpErr("Le module Facturation est désactivé (Setup → Contrat, par l'administrateur).", 'FORBIDDEN'); }
-    private static function exportsOk(array $u): void { if ($u['role'] === 'chef' && $u['acces_exports'] !== '1') throw httpErr("Accès aux exports non accordé (demandez-le à l'administrateur)", 'FORBIDDEN'); }
+    // Accès du responsable d'équipe à l'attachement et à la facture : réglage global du Setup (« individuel » = case de sa fiche Agent).
+    private static function chefExportsOk(array $u): bool { $m = Params::get()['chef_exports'] ?? 'individuel'; if (!empty($u['origine']) || $m === 'individuel') return ($u['acces_exports'] ?? '') === '1'; return $m === 'tous'; }
+    private static function exportsOk(array $u): void { if ($u['role'] === 'chef' && !self::chefExportsOk($u)) throw httpErr("Accès aux exports non accordé (demandez-le à l'administrateur)", 'FORBIDDEN'); }
     private static function nonDispo(string $quoi): Closure { return function () use ($quoi) { throw httpErr($quoi . " : pas encore disponible dans la version PHP / MySQL"); }; }
     private static function filtrerType(array $list, bool $personnesSeules): array { return array_values(array_filter($list, fn($x) => !$personnesSeules || $x['type'] !== 'vehicule')); }
 

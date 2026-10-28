@@ -19,6 +19,7 @@ var Params = (function () {
     { key: 'feries_perso', label: 'Jours fériés : ajouts et corrections (une ligne par jour : « 2027-03-10 Aïd el-Fitr » ajoute, « - 2027-03-10 » retire). Les fêtes nationales sont fixes ; les fêtes religieuses sont estimées (écart possible d\'un jour selon la lune).', group: 'Rotation', type: 'area', def: '' },
     { key: 'contrat_strict', label: 'Limiter les effectifs aux postes prévus au contrat (postes × (travail + repos) ÷ travail)', group: 'Rotation', type: 'bool', def: '1' },
     { key: 'attachement_pointage', label: 'Quantité du mois de l\'attachement = jours T réellement pointés (sinon : base du contrat, nombre × jours du mois)', group: 'Attachement', type: 'bool', def: '1' },
+    { key: 'chef_exports', label: "Responsables d'équipe : accès à l'attachement et à la facture", group: 'Attachement', type: 'select', options: [['individuel', 'Selon chaque responsable (case dans la fiche Agent)'], ['tous', 'Tous les responsables d\'équipe'], ['aucun', 'Aucun responsable d\'équipe']], def: 'individuel', hint: "« Selon chaque responsable » : l'accès se donne un par un dans la fiche Agent. Les comptes de consultation et de personnel administratif ne sont pas concernés." },
     { key: 'facturation', label: 'Module Facturation : n° et date de facture, facture PDF / Excel générée à partir de l\'attachement validé (décoché : Sijil s\'arrête à l\'attachement)', group: 'Attachement', type: 'bool', def: '1' },
     { key: 'couleur_T', label: 'Couleur T (travail)', group: 'Couleurs', type: 'color', def: '#4EA72E' },
     { key: 'couleur_R', label: 'Couleur R (repos / congé)', group: 'Couleurs', type: 'color', def: '#E97132' },
@@ -65,6 +66,7 @@ var Params = (function () {
       if (def.type === 'number' && !(Number(s) >= 1 && Number(s) % 1 === 0)) throw httpErr_(def.label + ' : entier ≥ 1 attendu');
       if (def.type === 'emails') s = Format.emails(s, k === 'client_emails' ? 'E-mails du contact client' : 'E-mails du responsable pointage', 4).join(', ');
       if (def.type === 'staff') s = parseStaff(s).map(function (x) { return x.email + '|' + (x.droits ? '1' : '0'); }).join(', ');
+      if (def.type === 'select' && !def.options.some(function (o) { return o[0] === s; })) throw httpErr_(def.label + ' : choix invalide');
       if (def.type === 'bool') { s = (values[k] === true || s === '1' || s === 'true') ? '1' : '0'; }
       if (def.type === 'color' && !/^#[0-9a-fA-F]{6}$/.test(s)) throw httpErr_(def.label + ' : couleur #RRGGBB attendue');
       cur[k] = s;
@@ -107,13 +109,13 @@ var Params = (function () {
   }
   function pub(p) {
     return {
-      prestataire: p.prestataire_nom, facturation: p.facturation !== '0',
+      prestataire: p.prestataire_nom, facturation: p.facturation !== '0', chef_exports: p.chef_exports || 'individuel',
       jours_travail: Number(p.jours_travail), jours_repos: Number(p.jours_repos),
       colors: { T: p.couleur_T, R: p.couleur_R, ABS: p.couleur_ABS, T_prevu: p.couleur_T_prevu, R_prevu: p.couleur_R_prevu }
     };
   }
   // Onglet du Setup où s'affiche chaque groupe de champs.
   var TABS = { 'Prestataire': 'prestataire', 'Responsable pointage (prestataire)': 'prestataire', 'Personnel administratif (prestataire)': 'prestataire', 'Client': 'client', 'Rotation': 'rotation', 'Couleurs': 'rotation', 'Attachement': 'contrat' };
-  function defsForClient() { return DEFS.filter(function (d) { return d.type !== 'hidden'; }).map(function (d) { return { key: d.key, label: d.label, group: d.group, type: d.type, n: d.n, hint: d.hint, tab: TABS[d.group] || 'prestataire' }; }); }
+  function defsForClient() { return DEFS.filter(function (d) { return d.type !== 'hidden'; }).map(function (d) { return { key: d.key, label: d.label, group: d.group, type: d.type, n: d.n, hint: d.hint, options: d.options, tab: TABS[d.group] || 'prestataire' }; }); }
   return { parseStaff: parseStaff, DEFS: DEFS, DEFAULTS: DEFAULTS, get: get, set: set, pub: pub, defsForClient: defsForClient, logoUpload: logoUpload, logoRemove: logoRemove, logoView: logoView };
 })();

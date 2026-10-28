@@ -1481,7 +1481,7 @@ function SetupPage() {
           if (d.type === 'logo') return logoControl(d);
           if (d.type === 'staff') { var sb = staffBox(data.values[d.key]); inputs[d.key] = sb; return emailsField(d.label, sb, 'grow2', d.hint); }
           if (d.type === 'emails') { var eb = emailsBox(data.values[d.key], null, d.n); inputs[d.key] = eb; return emailsField(d.label, eb, 'grow2', d.hint); }
-          var el = d.type === 'bool' ? h('select', null, h('option', { value: '1' }, 'Oui'), h('option', { value: '0' }, 'Non')) : d.type === 'area' ? h('textarea', { rows: 3 }) : h('input', { type: d.type === 'number' ? 'number' : d.type === 'color' ? 'color' : 'text', min: 1 });
+          var el = d.type === 'select' ? h('select', null, d.options.map(function (o) { return h('option', { value: o[0] }, o[1]); })) : d.type === 'bool' ? h('select', null, h('option', { value: '1' }, 'Oui'), h('option', { value: '0' }, 'Non')) : d.type === 'area' ? h('textarea', { rows: 3 }) : h('input', { type: d.type === 'number' ? 'number' : d.type === 'color' ? 'color' : 'text', min: 1 });
           el.value = data.values[d.key] || (d.type === 'color' ? '#000000' : ''); inputs[d.key] = el;
           return field(d.label, el, d.type === 'text' || d.type === 'area' ? 'grow2' : '', d.hint);
         });
@@ -1507,6 +1507,7 @@ function SetupPage() {
             b.onclick = function () { act(b, m, function () { return call('agentEnvoyerAcces', c.id, c.password); }).then(function (x) { if (x) m.show('✓ Accès envoyés à ' + x.to + '.', true); }); };
             return h('div', { class: 'card', style: 'margin:8px 0' }, h('b', null, tr('Compte créé') + ' : ' + c.nom + ' — ' + c.email + ' — ' + tr('mot de passe') + ' : ' + c.password), h('div', { class: 'sendbar' }, b), m);
           }));
+          if ('chef_exports' in out) { S.params.chef_exports = out.chef_exports; }
           if ('facturation' in out) { S.params.facturation = out.facturation === '1' || out.facturation === true; }
           if ('prestataire_nom' in out) { S.params.prestataire = out.prestataire_nom; document.querySelector('.brand').textContent = out.prestataire_nom || 'Pointage'; }
           if ('jours_travail' in out) { S.params.jours_travail = +out.jours_travail; S.params.jours_repos = +out.jours_repos; ['T', 'R', 'ABS', 'T_prevu', 'R_prevu'].forEach(function (k) { S.params.colors[k] = out['couleur_' + k]; }); applyColors(); }
@@ -1848,6 +1849,8 @@ function backupCard() {
 }
 
 // ---------- contrats : synthèse (fonctions, effectifs affectés, facturé, attachements) ----------
+// Accès du responsable d'équipe à l'attachement et à la facture (réglage global du Setup, sinon case de sa fiche Agent)
+function chefExports() { var m = (S.params && S.params.chef_exports) || 'individuel'; if (S.user.origine || m === 'individuel') return S.user.acces_exports === '1'; return m === 'tous'; }
 function FACT() { return !S.params || S.params.facturation !== false; } // module Facturation actif (réglé dans Setup → Contrat)
 var STATUT_ATT = { brouillon: ['Brouillon', 'en_attente'], valide: ['Validé', 'acceptee'], facture: ['Facturé', 'envoyee'] };
 var dzd = function (n) { return Number(n).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
@@ -2003,7 +2006,7 @@ function ExportsPage() {
       host.replaceChildren(
         h('section', { class: 'card' }, h('h2', null, '1. Fiche de pointage ', h('small', null, 'à valider avec le client')), h('label', { class: 'inline' }, chk, ' Inclure les jours prévus'), h('label', { class: 'inline' }, tousChk, ' Inclure tous les agents (ignorer le contrat)'), info, buttons('Fiche', function () { return { prevu: prevu, tous: tousChk.checked }; })),
         h('section', { class: 'card' }, h('h2', null, '2. Attachement'), prev), fsec);
-      if (ro && S.user.acces_exports !== '1') { prev.replaceChildren(h('p', { class: 'muted' }, "L'attachement et la facture ne sont pas autorisés pour votre compte : demandez ce privilège à l'administrateur.")); fsec.replaceChildren(h('h2', null, '3. Facture')); return; }
+      if (ro && !chefExports()) { prev.replaceChildren(h('p', { class: 'muted' }, "L'attachement et la facture ne sont pas autorisés pour votre compte : demandez ce privilège à l'administrateur.")); fsec.replaceChildren(h('h2', null, '3. Facture')); return; }
       if (!contrat) { prev.replaceChildren(h('p', { class: 'muted' }, 'Choisissez un contrat.')); fsec.replaceChildren(h('h2', null, '3. Facture')); return; }
       call('attachementPreview', month, contrat).then(function (p) {
         var st = STATUT_ATT[p.statut] || ['', ''];

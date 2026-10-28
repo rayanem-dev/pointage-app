@@ -72,7 +72,7 @@ text(s, 5.6, 1.6, 7.2, 1.6, 'Gestion du temps de travail', size=40, color=NAVY, 
 text(s, 5.6, 3.0, 7.2, 0.5, 'avec prise en charge des rotations', size=20, color=TEAL, bold=True)
 text(s, 5.6, 3.7, 7.0, 1.4, "La mise à disposition du personnel et du matériel de prestation de services, de A à Z : du bordereau des prix jusqu'à l'attachement et à la facture (module facturation activable par l'administrateur).", size=18, color=INK)
 text(s, 5.6, 5.4, 7, 0.5, 'En français, en arabe et en anglais · sur ordinateur et sur téléphone', size=16, color=BLUE, bold=True)
-text(s, 5.6, 6.6, 7, 0.4, "Version 3.41.0 · Octobre 2026 · Captures : entreprise fictive", size=11, color=GREY)
+text(s, 5.6, 6.6, 7, 0.4, "Version 3.42.0 · Octobre 2026 · Captures : entreprise fictive", size=11, color=GREY)
 
 # 2 problème
 s = new(); title(s, "Un personnel en rotation, c'est vite le désordre", "Fichiers Excel, messages, papiers : chacun a sa version")
