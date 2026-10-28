@@ -12,7 +12,7 @@ from docx.oxml import OxmlElement
 from PIL import Image
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-VERSION = '3.40.1'; DATE = 'Octobre 2026'
+VERSION = '3.41.0'; DATE = 'Octobre 2026'
 NAVY = RGBColor(0x0E, 0x43, 0x77); BLUE = RGBColor(0x16, 0x59, 0x8D); TEAL = RGBColor(0x2F, 0xB5, 0xB4); GREY = RGBColor(0x6B, 0x77, 0x85)
 LOGO = os.path.join(ROOT, 'brand', 'logo-sijil-complet.png')
 COPY = '© 2026 JawlaDev — Tous droits réservés'
@@ -44,7 +44,7 @@ def build_docx(path):
     for _ in range(3): d.add_paragraph()
     p = d.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER; p.add_run().add_picture(LOGO, width=Cm(7.5))
     p = d.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER; r = p.add_run("Manuel d'utilisation"); r.font.size = Pt(30); r.bold = True; r.font.color.rgb = NAVY
-    p = d.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER; r = p.add_run('Gestion du temps de travail'); r.font.size = Pt(16); r.font.color.rgb = TEAL; r.bold = True
+    p = d.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER; r = p.add_run('Gestion du temps de travail et des rotations'); r.font.size = Pt(16); r.font.color.rgb = TEAL; r.bold = True
     p = d.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER; r = p.add_run(f'Version {VERSION} · {DATE}'); r.font.color.rgb = GREY
     for _ in range(4): d.add_paragraph()
     p = d.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER; r = p.add_run("Toutes les captures d'écran utilisent une entreprise fictive (SARL Horizon Services)."); r.italic = True; r.font.size = Pt(9); r.font.color.rgb = GREY
@@ -114,7 +114,7 @@ def build_html(path):
       '.cover .sub{font-size:17pt;color:#2FB5B4;font-weight:700;margin-bottom:5mm}.cover .ver{color:#6B7785}.cover .fict{margin-top:30mm;font-size:9pt;color:#6B7785;font-style:italic}',
       '.toc{page-break-before:always}.toc h1{page-break-before:avoid}.toc .l1{font-weight:700;color:#0E4377;margin-top:3.2mm;font-size:11.5pt}.toc .l2{margin-left:8mm;font-size:10pt}',
       '</style></head><body>']
-    out.append(f'<div class="cover"><img src="file://{LOGO}"><h1>Manuel d\'utilisation</h1><div class="sub">Gestion du temps de travail</div><div class="ver">Version {VERSION} · {DATE}</div><div class="fict">Toutes les captures d\'écran utilisent une entreprise fictive (SARL Horizon Services).</div></div>')
+    out.append(f'<div class="cover"><img src="file://{LOGO}"><h1>Manuel d\'utilisation</h1><div class="sub">Gestion du temps de travail et des rotations</div><div class="ver">Version {VERSION} · {DATE}</div><div class="fict">Toutes les captures d\'écran utilisent une entreprise fictive (SARL Horizon Services).</div></div>')
     out.append('<div class="toc"><h1>Sommaire</h1>')
     for kind, *rest in M:
         if kind == 'h1': out.append(f'<div class="l1">{esc(rest[0])}</div>')

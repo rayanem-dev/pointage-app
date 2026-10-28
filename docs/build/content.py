@@ -33,7 +33,7 @@ FEATURES = [
 ]
 M = [
  ('h1', "1. Présentation de Sijil"),
- ('p', "Sijil gère la mise à disposition de personnel et la prestation de services de A à Z : du bordereau des prix du contrat jusqu'à l'édition de l'attachement et de la facture, en passant par les agents, les véhicules, le pointage, les congés et les documents. Elle remplace les fichiers Excel et les messages dispersés par un outil unique, pour le personnel en rotation sur site : 28 jours de travail puis 28 jours de repos, 14/14, 6/2…"),
+ ('p', "Sijil est une gestion du temps de travail qui prend en charge les rotations, et qui gère la mise à disposition du personnel et du matériel de prestation de services de A à Z : du bordereau des prix du contrat jusqu'à l'édition de l'attachement et de la facture (la facturation est un module que l'administrateur active ou désactive), en passant par les agents, les véhicules, le pointage, les congés et les documents. Elle remplace les fichiers Excel et les messages dispersés par un outil unique, pour le personnel en rotation sur site : 28 jours de travail puis 28 jours de repos, 14/14, 6/2…"),
  ('p', "Elle fonctionne dans un navigateur et s'installe sur le téléphone. Les données de votre entreprise sont enregistrées dans votre propre classeur Google, que vous pouvez ouvrir à tout moment."),
  ('h2', "De A à Z : du bordereau des prix à la facture"),
  ('table', ["Étape", "Ce que fait Sijil"], [
@@ -42,7 +42,7 @@ M = [
   ["3. Agents et véhicules", "Vous créez les agents et les véhicules mis à disposition. Leurs accès partent par e-mail."],
   ["4. Pointage", "Le personnel est pointé jour après jour (T, R, ABS) avec ses prévisions, ses soldes, ses demandes et ses documents. Le client suit et laisse ses remarques."],
   ["5. Attachement", "L'attachement du mois est édité à partir des jours réellement pointés, corrigé si besoin, puis validé : le mois est figé."],
-  ["6. Facture", "La facture est établie à partir de l'attachement validé, avec ses PDF et Excel, son historique et le reste à facturer."]]),
+  ["6. Facture (module optionnel)", "Si l'administrateur a activé la facturation (Setup → Contrat), la facture est établie à partir de l'attachement validé, avec ses PDF et Excel, son historique et le reste à facturer."]]),
  ('note', "Toutes les captures de ce manuel utilisent une entreprise imaginaire, la SARL Horizon Services, avec des noms et des chiffres inventés."),
  ('h2', "Les quatre profils"),
  ('table', ["Profil", "Ce qu'il fait"], [
@@ -123,6 +123,7 @@ M = [
  ('p', "Le compte éditeur a, dans l'en-tête, un sélecteur d'entreprise. Choisir un client ouvre son espace avec tous les droits de son administrateur (onglets, pointages, mots de passe, réglages). Un bandeau rappelle le mode support et « Retour à l'administration » ramène à la console. Chaque accès est noté dans le journal des connexions. Une deuxième liste permet de choisir un utilisateur de l'entreprise et de se connecter à sa place pour intervenir. La carte « Version » de l'onglet Clients indique si le site et le serveur sont à jour."),
  ('h2', "L'attachement et la facture"),
  ('p', "Dans « Exports », choisissez le mois et le contrat. La fiche de pointage s'exporte en Excel et en PDF. L'attachement reprend les jours réellement pointés de chaque fonction ; vous pouvez corriger une quantité. « Valider l'attachement » le fige : mêmes quantités, mêmes prix. La facture est alors établie à partir de l'attachement validé, avec son numéro et sa date. Un attachement non facturé peut être rouvert."),
+ ('p', "Module Facturation : l'administrateur peut l'activer ou le désactiver dans Setup → Contrat (« Module Facturation »). Désactivé, Sijil s'arrête à l'attachement : la partie « 3. Facture » disparaît des exports et de l'historique des contrats, et l'édition de factures est refusée par le serveur. Les factures déjà établies sont conservées et réapparaissent si le module est réactivé."),
  ('img', 'docs/captures/crops/50-exports.png', "La fiche de pointage, l'attachement et la facture.", 15.5),
  ('p', "L'historique de chaque contrat liste les attachements et factures validés avec leurs PDF, et un tableau par fonction : quantité précédente, du mois, cumulée, reste à facturer et montant."),
  ('h1', "6. Le compte client"),

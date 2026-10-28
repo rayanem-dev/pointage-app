@@ -16,6 +16,7 @@ final class Params {
             $t('feries_perso', "Jours fériés : ajouts et corrections (une ligne par jour : « 2027-03-10 Aïd el-Fitr » ajoute, « - 2027-03-10 » retire). Les fêtes nationales sont fixes ; les fêtes religieuses sont estimées (écart possible d'un jour selon la lune).", 'Rotation', 'area'),
             $t('contrat_strict', 'Limiter les effectifs aux postes prévus au contrat (postes × (travail + repos) ÷ travail)', 'Rotation', 'bool', '1'),
             $t('attachement_pointage', "Quantité du mois de l'attachement = jours T réellement pointés (sinon : base du contrat, nombre × jours du mois)", 'Attachement', 'bool', '1'),
+            $t('facturation', "Module Facturation : n° et date de facture, facture PDF / Excel générée à partir de l'attachement validé (décoché : Sijil s'arrête à l'attachement)", 'Attachement', 'bool', '1'),
             $t('couleur_T', 'Couleur T (travail)', 'Couleurs', 'color', '#4EA72E'), $t('couleur_R', 'Couleur R (repos / congé)', 'Couleurs', 'color', '#E97132'), $t('couleur_ABS', 'Couleur ABS (absence)', 'Couleurs', 'color', '#E53935'),
             $t('couleur_T_prevu', 'Couleur T prévu', 'Couleurs', 'color', '#D6F0CC'), $t('couleur_R_prevu', 'Couleur R prévu', 'Couleurs', 'color', '#FBDCC8'),
             $t('direction_nom', 'Ancien nom (non utilisé)', 'Responsable pointage (prestataire)', 'hidden'),
@@ -86,7 +87,7 @@ final class Params {
         return $m && $b !== null ? ['apercu' => 'data:' . $m['mime'] . ';base64,' . base64_encode($b)] : ['apercu' => ''];
     }
     public static function pub(array $p): array {
-        return ['prestataire' => $p['prestataire_nom'], 'jours_travail' => (int)$p['jours_travail'], 'jours_repos' => (int)$p['jours_repos'],
+        return ['prestataire' => $p['prestataire_nom'], 'facturation' => ($p['facturation'] ?? '1') !== '0', 'jours_travail' => (int)$p['jours_travail'], 'jours_repos' => (int)$p['jours_repos'],
             'colors' => ['T' => $p['couleur_T'], 'R' => $p['couleur_R'], 'ABS' => $p['couleur_ABS'], 'T_prevu' => $p['couleur_T_prevu'], 'R_prevu' => $p['couleur_R_prevu']]];
     }
     const TABS = ['Prestataire' => 'prestataire', 'Responsable pointage (prestataire)' => 'prestataire', 'Personnel administratif (prestataire)' => 'prestataire', 'Client' => 'client', 'Rotation' => 'rotation', 'Couleurs' => 'rotation', 'Attachement' => 'contrat'];

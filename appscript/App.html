@@ -1507,6 +1507,7 @@ function SetupPage() {
             b.onclick = function () { act(b, m, function () { return call('agentEnvoyerAcces', c.id, c.password); }).then(function (x) { if (x) m.show('✓ Accès envoyés à ' + x.to + '.', true); }); };
             return h('div', { class: 'card', style: 'margin:8px 0' }, h('b', null, tr('Compte créé') + ' : ' + c.nom + ' — ' + c.email + ' — ' + tr('mot de passe') + ' : ' + c.password), h('div', { class: 'sendbar' }, b), m);
           }));
+          if ('facturation' in out) { S.params.facturation = out.facturation === '1' || out.facturation === true; }
           if ('prestataire_nom' in out) { S.params.prestataire = out.prestataire_nom; document.querySelector('.brand').textContent = out.prestataire_nom || 'Pointage'; }
           if ('jours_travail' in out) { S.params.jours_travail = +out.jours_travail; S.params.jours_repos = +out.jours_repos; ['T', 'R', 'ABS', 'T_prevu', 'R_prevu'].forEach(function (k) { S.params.colors[k] = out['couleur_' + k]; }); applyColors(); }
         });
@@ -1847,6 +1848,7 @@ function backupCard() {
 }
 
 // ---------- contrats : synthèse (fonctions, effectifs affectés, facturé, attachements) ----------
+function FACT() { return !S.params || S.params.facturation !== false; } // module Facturation actif (réglé dans Setup → Contrat)
 var STATUT_ATT = { brouillon: ['Brouillon', 'en_attente'], valide: ['Validé', 'acceptee'], facture: ['Facturé', 'envoyee'] };
 var dzd = function (n) { return Number(n).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
 function ContratsPage(opts) {
@@ -1866,10 +1868,10 @@ function ContratsPage(opts) {
         h('td', null, l.quantite_facturee + ' / ' + l.quantite_contrat + ' j', money ? h('small', null, dzd(l.montant_facture) + ' DA') : null));
     });
     function pdfBtn(a, doc, label) { var b = h('button', { type: 'button' }, label + ' PDF'); b.onclick = function () { dl(a, doc, 'pdf', b); }; return b; }
-    var att = c.attachements.length ? h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Mois', 'Attachement N°', 'Statut', money ? 'Total HT' : '', 'Facture', money ? 'Documents (PDF)' : ''].filter(function (t, i) { return money || (i !== 3 && i !== 5); }).map(function (t) { return h('th', null, t); }))),
+    var att = c.attachements.length ? h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Mois', 'Attachement N°', 'Statut', money ? 'Total HT' : '', 'Facture', money ? 'Documents (PDF)' : ''].filter(function (t, i) { return (money || (i !== 3 && i !== 5)) && (FACT() || i !== 4); }).map(function (t) { return h('th', null, t); }))),
       h('tbody', null, c.attachements.map(function (a) {
         var st = STATUT_ATT[a.statut] || [a.statut, ''];
-        return h('tr', null, h('td', null, monthLabel(a.mois)), h('td', null, a.numero), h('td', null, h('span', { class: 'badge ' + st[1] }, st[0]), h('small', null, a.valide_par ? 'par ' + a.valide_par : '')), money ? h('td', null, dzd(a.total_ht) + ' DA') : null, h('td', null, a.facture_numero ? a.facture_numero + (a.facture_date ? ' · ' + frDate(a.facture_date) : '') : '—'), money ? h('td', { class: 'actions' }, pdfBtn(a, 'Attachement', 'Attachement'), a.facture_numero ? pdfBtn(a, 'Facture', 'Facture') : null) : null);
+        return h('tr', null, h('td', null, monthLabel(a.mois)), h('td', null, a.numero), h('td', null, h('span', { class: 'badge ' + st[1] }, st[0]), h('small', null, a.valide_par ? 'par ' + a.valide_par : '')), money ? h('td', null, dzd(a.total_ht) + ' DA') : null, FACT() ? h('td', null, a.facture_numero ? a.facture_numero + (a.facture_date ? ' · ' + frDate(a.facture_date) : '') : '—') : null, money ? h('td', { class: 'actions' }, pdfBtn(a, 'Attachement', 'Attachement'), FACT() && a.facture_numero ? pdfBtn(a, 'Facture', 'Facture') : null) : null);
       })))) : h('p', { class: 'muted' }, 'Aucun attachement validé pour le moment.');
     function dl(a, doc, format, btn) { act(btn, box, function () { return call(doc === 'Facture' ? 'factureCopie' : 'exportAttachement', { month: a.mois, contrat: c.numero, format: format }).then(saveFile); }, 'Document généré'); }
     var box = msgBox();
@@ -1997,7 +1999,7 @@ function ExportsPage() {
       if (contrat) call('ficheApercu', { month: month, contrat: contrat }).then(function (a) {
         info.textContent = tr(a.dans + ' agent(s) du contrat dans la fiche' + (a.hors ? ', ' + a.hors + ' hors contrat' : '') + '.' + (a.avertissements.length ? ' ⚠ ' + a.avertissements.join(' ') : ''));
       }).catch(function () {});
-      var prev = h('div', null, loading()); var fsec = h('section', { class: 'card' }, h('h2', null, '3. Facture'), loading());
+      var prev = h('div', null, loading()); var fsec = h('section', { class: 'card', style: S.params.facturation === false ? 'display:none' : '' }, h('h2', null, '3. Facture'), loading());
       host.replaceChildren(
         h('section', { class: 'card' }, h('h2', null, '1. Fiche de pointage ', h('small', null, 'à valider avec le client')), h('label', { class: 'inline' }, chk, ' Inclure les jours prévus'), h('label', { class: 'inline' }, tousChk, ' Inclure tous les agents (ignorer le contrat)'), info, buttons('Fiche', function () { return { prevu: prevu, tous: tousChk.checked }; })),
         h('section', { class: 'card' }, h('h2', null, '2. Attachement'), prev), fsec);

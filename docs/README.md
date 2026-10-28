@@ -1,6 +1,6 @@
 # Documentation de Sijil
 
-- `Sijil-Manuel.pdf` : manuel d'utilisation avec captures d'écran (27 pages).
+- `Sijil-Manuel.pdf` : manuel d'utilisation avec captures d'écran (29 pages).
 - `Sijil-Manuel.docx` : le même manuel, modifiable dans Word.
 - `Sijil-Presentation.pptx` : présentation commerciale (19 diapositives).
 - `captures/` : captures d'écran d'une **entreprise fictive** (SARL Horizon Services). Aucune donnée réelle.

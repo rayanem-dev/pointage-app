@@ -1,5 +1,7 @@
 KIT SIJIL
 =========
+Sijil : gestion du temps de travail avec prise en charge des rotations. Elle gère la mise à disposition du personnel et du matériel de prestation de services, de A à Z : du bordereau des prix jusqu'à l'attachement et à la facture (module facturation activable ou désactivable par l'administrateur).
+
 Contenu : manuel d'utilisation (PDF et Word), présentation PowerPoint, revue de sécurité.
 Les captures viennent d'une entreprise fictive (aucune donnée réelle).
 

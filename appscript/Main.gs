@@ -34,6 +34,7 @@ var VIEWERS = ['chef', 'admin', 'client']; // consultation du pointage et des co
 function clientScope_(user, numero) { if (user.role === 'client' && user.contrat && user.contrat !== numero) throw httpErr_('Contrat non autorisé', 'FORBIDDEN'); }
 function inScope_(user, agentId) { return Agents.visibleTo(user).some(function (a) { return a.id === agentId; }); }
 // Le responsable d’équipe n'extrait l'attachement et la facture que si l'administrateur lui a accordé ce privilège.
+function facturationOk_() { if (Params.get().facturation === '0') throw httpErr_("Le module Facturation est désactivé (Setup → Contrat, par l'administrateur).", 'FORBIDDEN'); }
 function exportsOk_(user) { if (user.role === 'chef' && user.acces_exports !== '1') throw httpErr_("Accès aux exports non accordé (demandez-le à l'administrateur)", 'FORBIDDEN'); }
 function monthOrNow_(m) { return Dates.isMonthKey(m) ? m : Dates.today().slice(0, 7); }
 
@@ -179,7 +180,7 @@ var HANDLERS = {
       vals.staff_emails = anciens.filter(function (x) { return resp.indexOf(x) < 0; }).slice(0, 4).map(function (x) { return x + '|0'; }).join(', ');
     }
     return { defs: Params.defsForClient(), values: vals, isAdmin: u.role === 'admin', status: Setup.status() }; } },
-  setupSave: { setup: true, write: true, fn: function (u, a) { var o = a[0] || {}; var res = Params.set(o); var comptes = [];
+  setupSave: { setup: true, write: true, fn: function (u, a) { var o = a[0] || {}; if ('facturation' in o) { if (u.role !== 'admin') delete o.facturation; } var res = Params.set(o); var comptes = [];
     if ('client_emails' in o && u.role === 'admin') comptes = comptes.concat(Contrats.ensureClientAccounts(u));
     if (('direction_email' in o || 'staff_emails' in o) && u.role === 'admin') { Params.set({ direction_nom: '' }); comptes = comptes.concat(Contrats.ensurePrestataireAccounts(u)); }
     return ('client_emails' in o || 'direction_email' in o || 'staff_emails' in o) && u.role === 'admin' ? Object.assign({}, res, { comptes: comptes }) : res; } },
@@ -216,7 +217,7 @@ var HANDLERS = {
   },
   attachementValider: { roles: ['admin'], write: true, fn: function (u, a) { var o = a[0] || {}; return DocData.valider(u, o.month, o.contrat); } },
   attachementRouvrir: { roles: ['admin'], write: true, fn: function (u, a) { var o = a[0] || {}; return DocData.rouvrir(u, o.month, o.contrat); } },
-  attachementFacturer: { roles: ['admin'], write: true, fn: function (u, a) { var o = a[0] || {}; return DocData.facturer(u, o.month, o.contrat, o); } },
+  attachementFacturer: { roles: ['admin'], write: true, fn: function (u, a) { facturationOk_(); var o = a[0] || {}; return DocData.facturer(u, o.month, o.contrat, o); } },
   contratsSynthese: { roles: VIEWERS, fn: function (u) { return Contrats.synthese(u.role === 'admin', u.role !== 'chef', u.role === 'client' ? u.contrat : ''); } },
   attachementPreview: { roles: ['admin', 'chef'], fn: function (u, a) { exportsOk_(u); return DocData.attachementData(a[0], a[1]); } },
   exportAttachement: {
@@ -231,7 +232,7 @@ var HANDLERS = {
   factureCopie: {
     roles: ['admin', 'chef', 'client'],
     fn: function (u, a) {
-      var o = a[0] || {}; clientScope_(u, o.contrat); exportsOk_(u);
+      facturationOk_(); var o = a[0] || {}; clientScope_(u, o.contrat); exportsOk_(u);
       if (!DocData.attachementData(o.month, o.contrat).facture_numero) throw httpErr_("Cette facture n'est pas encore établie", 'FORBIDDEN');
       var d = DocData.factureData(o.month, o.contrat);
       return Export.render('facture', d, o.format, 'Facture_' + String(d.facture_numero || o.month).replace(/[^\w-]+/g, '_'));
@@ -240,7 +241,7 @@ var HANDLERS = {
   exportFacture: {
     roles: ['admin'], write: true,
     fn: function (u, a) {
-      var o = a[0] || {};
+      facturationOk_(); var o = a[0] || {};
       if (o.facture_numero) DocData.facturer(u, o.month, o.contrat, o); // enregistre n° et date sur l'attachement validé
       else if (!DocData.attachementData(o.month, o.contrat).facture_numero) throw httpErr_('N° de facture obligatoire');
       var d = DocData.factureData(o.month, o.contrat);

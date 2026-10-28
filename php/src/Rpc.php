@@ -5,6 +5,7 @@ final class Rpc {
     private static function monthOrNow($m): string { return Dates::isMonthKey($m) ? $m : substr(Dates::today(), 0, 7); }
     private static function clientScope(array $u, $numero): void { if ($u['role'] === 'client' && $u['contrat'] !== '' && $u['contrat'] !== $numero) throw httpErr('Contrat non autorisé', 'FORBIDDEN'); }
     private static function inScope(array $u, $agentId): bool { foreach (Agents::visibleTo($u) as $a) if ($a['id'] === $agentId) return true; return false; }
+    private static function facturationOk(): void { if ((Params::get()['facturation'] ?? '1') === '0') throw httpErr("Le module Facturation est désactivé (Setup → Contrat, par l'administrateur).", 'FORBIDDEN'); }
     private static function exportsOk(array $u): void { if ($u['role'] === 'chef' && $u['acces_exports'] !== '1') throw httpErr("Accès aux exports non accordé (demandez-le à l'administrateur)", 'FORBIDDEN'); }
     private static function nonDispo(string $quoi): Closure { return function () use ($quoi) { throw httpErr($quoi . " : pas encore disponible dans la version PHP / MySQL"); }; }
     private static function filtrerType(array $list, bool $personnesSeules): array { return array_values(array_filter($list, fn($x) => !$personnesSeules || $x['type'] !== 'vehicule')); }
@@ -114,7 +115,7 @@ final class Rpc {
                 return ['defs' => Params::defsForClient(), 'values' => $vals, 'isAdmin' => $u['role'] === 'admin', 'status' => Setup::status()];
             }],
             'setupSave' => ['setup' => true, 'write' => true, 'fn' => function ($u, $a) {
-                $o = $a[0] ?? []; $res = Params::set($o); $comptes = [];
+                $o = $a[0] ?? []; if (array_key_exists('facturation', $o) && $u['role'] !== 'admin') unset($o['facturation']); $res = Params::set($o); $comptes = [];
                 if (array_key_exists('client_emails', $o) && $u['role'] === 'admin') $comptes = array_merge($comptes, Contrats::ensureClientAccounts($u));
                 if ((array_key_exists('direction_email', $o) || array_key_exists('staff_emails', $o)) && $u['role'] === 'admin') { Params::set(['direction_nom' => '']); $comptes = array_merge($comptes, Contrats::ensurePrestataireAccounts($u)); }
                 return (array_key_exists('client_emails', $o) || array_key_exists('direction_email', $o) || array_key_exists('staff_emails', $o)) && $u['role'] === 'admin' ? array_merge($res, ['comptes' => $comptes]) : $res;
@@ -138,7 +139,7 @@ final class Rpc {
             'attachementQte' => ['roles' => $A, 'write' => true, 'fn' => function ($u, $a) { $o = $a[0] ?? []; if (DocData::validation($o['contrat'] ?? '', $o['mois'] ?? '')) throw httpErr('Attachement validé : rouvrez-le pour modifier une quantité.'); Contrats::saveOverride($o); return true; }],
             'attachementValider' => ['roles' => $A, 'write' => true, 'fn' => function ($u, $a) { $o = $a[0] ?? []; return DocData::valider($u, $o['month'] ?? '', $o['contrat'] ?? ''); }],
             'attachementRouvrir' => ['roles' => $A, 'write' => true, 'fn' => function ($u, $a) { $o = $a[0] ?? []; return DocData::rouvrir($u, $o['month'] ?? '', $o['contrat'] ?? ''); }],
-            'attachementFacturer' => ['roles' => $A, 'write' => true, 'fn' => function ($u, $a) { $o = $a[0] ?? []; return DocData::facturer($u, $o['month'] ?? '', $o['contrat'] ?? '', $o); }],
+            'attachementFacturer' => ['roles' => $A, 'write' => true, 'fn' => function ($u, $a) { self::facturationOk(); $o = $a[0] ?? []; return DocData::facturer($u, $o['month'] ?? '', $o['contrat'] ?? '', $o); }],
             'contratsSynthese' => ['roles' => $V, 'fn' => fn($u) => Contrats::synthese($u['role'] === 'admin', $u['role'] !== 'chef', $u['role'] === 'client' ? $u['contrat'] : '')],
             'attachementPreview' => ['roles' => ['admin', 'chef'], 'fn' => function ($u, $a) { self::exportsOk($u); return DocData::attachementData($a[0] ?? '', $a[1] ?? ''); }],
             'exportAttachement' => ['roles' => ['admin', 'chef', 'client'], 'fn' => function ($u, $a) {
@@ -148,13 +149,13 @@ final class Rpc {
                 return Export::render('attachement', $d, $o['format'] ?? 'xlsx', 'Attachement_N' . $d['numero'] . '_' . ($o['month'] ?? ''));
             }],
             'factureCopie' => ['roles' => ['admin', 'chef', 'client'], 'fn' => function ($u, $a) {
-                $o = $a[0] ?? []; self::clientScope($u, $o['contrat'] ?? ''); self::exportsOk($u);
+                self::facturationOk(); $o = $a[0] ?? []; self::clientScope($u, $o['contrat'] ?? ''); self::exportsOk($u);
                 if (empty(DocData::attachementData($o['month'] ?? '', $o['contrat'] ?? '')['facture_numero'])) throw httpErr("Cette facture n'est pas encore établie", 'FORBIDDEN');
                 $d = DocData::factureData($o['month'] ?? '', $o['contrat'] ?? '');
                 return Export::render('facture', $d, $o['format'] ?? 'xlsx', 'Facture_' . preg_replace('/[^\w-]+/', '_', (string)($d['facture_numero'] ?: ($o['month'] ?? ''))));
             }],
             'exportFacture' => ['roles' => $A, 'write' => true, 'fn' => function ($u, $a) {
-                $o = $a[0] ?? [];
+                self::facturationOk(); $o = $a[0] ?? [];
                 if (!empty($o['facture_numero'])) DocData::facturer($u, $o['month'] ?? '', $o['contrat'] ?? '', $o);
                 elseif (empty(DocData::attachementData($o['month'] ?? '', $o['contrat'] ?? '')['facture_numero'])) throw httpErr('N° de facture obligatoire');
                 $d = DocData::factureData($o['month'] ?? '', $o['contrat'] ?? '');

@@ -68,10 +68,11 @@ def card(slide, x, y, w, h, head, body, fill=WHITE, hc=NAVY, size=15):
 s = new(PAPER)
 band = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, Inches(0.5), prs.slide_height); band.fill.solid(); band.fill.fore_color.rgb = NAVY; band.line.fill.background()
 pic(s, os.path.join(ROOT, 'brand', 'logo-sijil-complet.png'), 0.9, 1.15, h=5.1, border=False)
-text(s, 5.6, 1.9, 7.2, 1.4, 'Gestion du temps de travail', size=40, color=NAVY, bold=True)
-text(s, 5.6, 3.55, 7.0, 1.2, "La mise à disposition et le personnel de prestation de services, de A à Z : du bordereau des prix jusqu'à l'attachement et à la facture.", size=20, color=INK)
+text(s, 5.6, 1.6, 7.2, 1.6, 'Gestion du temps de travail', size=40, color=NAVY, bold=True)
+text(s, 5.6, 3.0, 7.2, 0.5, 'avec prise en charge des rotations', size=20, color=TEAL, bold=True)
+text(s, 5.6, 3.7, 7.0, 1.4, "La mise à disposition du personnel et du matériel de prestation de services, de A à Z : du bordereau des prix jusqu'à l'attachement et à la facture (module facturation activable par l'administrateur).", size=18, color=INK)
 text(s, 5.6, 5.4, 7, 0.5, 'En français, en arabe et en anglais · sur ordinateur et sur téléphone', size=16, color=BLUE, bold=True)
-text(s, 5.6, 6.6, 7, 0.4, "Version 3.40.1 · Octobre 2026 · Captures : entreprise fictive", size=11, color=GREY)
+text(s, 5.6, 6.6, 7, 0.4, "Version 3.41.0 · Octobre 2026 · Captures : entreprise fictive", size=11, color=GREY)
 
 # 2 problème
 s = new(); title(s, "Un personnel en rotation, c'est vite le désordre", "Fichiers Excel, messages, papiers : chacun a sa version")
@@ -89,7 +90,7 @@ bullets(s, 9.2, 1.9, 3.7, ["Un pointage lisible — vert, orange, rouge", "Des p
 
 
 # 3b de A à Z
-s = new(PAPER); title(s, "De A à Z : du bordereau des prix à la facture", "Sijil gère la mise à disposition et le personnel de prestation de services de bout en bout")
+s = new(PAPER); title(s, "De A à Z : du bordereau des prix à la facture", "Sijil gère la mise à disposition du personnel et du matériel de prestation de services, avec les rotations, de bout en bout")
 steps = [("1", "Bordereau des prix", "Déposé et lu automatiquement : fonctions, nombres, délais, prix"), ("2", "Contrat et effectifs", "Début, durée, fin ; effectifs bornés par le contrat"), ("3", "Agents et véhicules", "Affectés au contrat, accès envoyés par e-mail"), ("4", "Pointage", "Jour après jour, avec prévisions, congés, soldes et documents"), ("5", "Attachement", "Édité sur les jours pointés, puis validé et figé"), ("6", "Facture", "Établie à partir de l'attachement validé, avec l'historique")]
 for i, (n, h_, b) in enumerate(steps):
     x = 0.6 + i * 2.07
@@ -186,7 +187,7 @@ text(s, 0.6, 6.05, 12.1, 0.6, "Besoin de reprendre un historique ? Importez vos 
 s = new(NAVY)
 pic(s, os.path.join(ROOT, 'brand', 'logo-sijil-symbole.png'), 5.67, 0.9, h=2.0, border=False)
 text(s, 0.5, 3.2, 12.3, 1.0, 'Sijil', size=54, color=WHITE, bold=True, align=PP_ALIGN.CENTER)
-text(s, 0.5, 4.3, 12.3, 0.7, 'Gestion du temps de travail', size=26, color=TEAL, bold=True, align=PP_ALIGN.CENTER)
+text(s, 0.5, 4.3, 12.3, 0.7, 'Gestion du temps de travail et des rotations', size=26, color=TEAL, bold=True, align=PP_ALIGN.CENTER)
 text(s, 0.5, 5.4, 12.3, 0.6, "Demandez votre essai gratuit depuis la page d'accueil.", size=20, color=WHITE, align=PP_ALIGN.CENTER)
 text(s, 0.5, 6.7, 12.3, 0.4, '© 2026 JawlaDev — Tous droits réservés', size=11, color=RGBColor(0xB8, 0xC8, 0xD8), align=PP_ALIGN.CENTER)
 

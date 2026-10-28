@@ -19,6 +19,7 @@ var Params = (function () {
     { key: 'feries_perso', label: 'Jours fériés : ajouts et corrections (une ligne par jour : « 2027-03-10 Aïd el-Fitr » ajoute, « - 2027-03-10 » retire). Les fêtes nationales sont fixes ; les fêtes religieuses sont estimées (écart possible d\'un jour selon la lune).', group: 'Rotation', type: 'area', def: '' },
     { key: 'contrat_strict', label: 'Limiter les effectifs aux postes prévus au contrat (postes × (travail + repos) ÷ travail)', group: 'Rotation', type: 'bool', def: '1' },
     { key: 'attachement_pointage', label: 'Quantité du mois de l\'attachement = jours T réellement pointés (sinon : base du contrat, nombre × jours du mois)', group: 'Attachement', type: 'bool', def: '1' },
+    { key: 'facturation', label: 'Module Facturation : n° et date de facture, facture PDF / Excel générée à partir de l\'attachement validé (décoché : Sijil s\'arrête à l\'attachement)', group: 'Attachement', type: 'bool', def: '1' },
     { key: 'couleur_T', label: 'Couleur T (travail)', group: 'Couleurs', type: 'color', def: '#4EA72E' },
     { key: 'couleur_R', label: 'Couleur R (repos / congé)', group: 'Couleurs', type: 'color', def: '#E97132' },
     { key: 'couleur_ABS', label: 'Couleur ABS (absence)', group: 'Couleurs', type: 'color', def: '#E53935' },
@@ -106,7 +107,7 @@ var Params = (function () {
   }
   function pub(p) {
     return {
-      prestataire: p.prestataire_nom,
+      prestataire: p.prestataire_nom, facturation: p.facturation !== '0',
       jours_travail: Number(p.jours_travail), jours_repos: Number(p.jours_repos),
       colors: { T: p.couleur_T, R: p.couleur_R, ABS: p.couleur_ABS, T_prevu: p.couleur_T_prevu, R_prevu: p.couleur_R_prevu }
     };
