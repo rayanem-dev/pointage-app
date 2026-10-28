@@ -107,7 +107,17 @@ for i, (h_, b) in enumerate([("L'agent", ["Sa situation du jour", "Son solde au 
 # 5 pointage
 s = new(); title(s, 'Pointer en un clic', "T, R, ABS : sur un jour, sur une période, ou directement dans la grille")
 pic(s, '10-pointer.png', 0.6, 1.75, w=8.3)
-bullets(s, 9.2, 1.9, 3.7, ["Prévisions — dès le premier pointage, selon la rotation", "Rotation par agent — 28/28, 14/14, 21/21, 6/2, 3/3…", "Un pointage réel — n'est jamais écrasé", "Véhicules — pointés comme des agents"], size=16, gap=12)
+bullets(s, 9.2, 1.9, 3.7, ["Prévisions — dès le premier pointage, selon la rotation", "Rotation par agent — 28/28, 14/14, 21/21, 6/2, 3/3…", "Un pointage réel — n'est jamais écrasé", "Matériel (camions, engins, 4x4) — pointé comme des agents"], size=16, gap=12)
+
+# 5b matériel pointé
+s = new(PAPER); title(s, "Le matériel aussi : camions, engins, 4x4", "Chaque engin mis à disposition est pointé comme une personne")
+pic(s, '15-materiel-pointage.png', 0.6, 1.7, w=7.3)
+bullets(s, 8.2, 1.9, 4.7, ["Camion 2,5 tonnes, rétrochargeur, véhicule 4x4 — créés avec leur immatriculation", "En service (T), à l'arrêt (R), en panne (ABS) — même grille que le personnel", "Repérés par le badge VH, sans compte de connexion", "Le nombre d'engins suit le contrat : voyant complet / manque / dépassé"], size=16, gap=14)
+
+# 5c matériel attachement
+s = new(); title(s, "Personnel et matériel, un seul attachement", "Les jours pointés de chaque engin deviennent des quantités et des montants")
+pic(s, '51-materiel-attachement.png', 0.6, 1.7, w=7.9)
+bullets(s, 8.8, 1.9, 4.1, ["Une ligne par fonction du bordereau : personnel et matériel", "Quantité du mois = jours réellement pointés (modifiable)", "Prix unitaire du contrat, total HT calculé", "Excel et PDF, puis la facture si le module est activé"], size=16, gap=14)
 
 # 6 compléter
 s = new(PAPER); title(s, "Vous avez oublié de pointer ? Un bouton suffit", "« Copier le dernier pointage » rattrape les jours manquants")
@@ -166,7 +176,7 @@ pic(s, os.path.join(ROOT, 'docs/captures/crops/43-setup-maintenance.png'), 7.6, 
 
 # 16 toutes les fonctions
 s = new(PAPER); title(s, 'Et ce n\'est pas tout', 'Toutes les fonctions utiles au quotidien')
-cols = [["Rattraper les jours oubliés", "Vues 1 mois, 3, 6, 12 mois", "Jours fériés algériens", "Solde T − CR et solde au départ", "Rotation par agent", "Modification de plusieurs agents", "Véhicules mis à disposition", "Aide intégrée en 3 langues"],
+cols = [["Rattraper les jours oubliés", "Vues 1 mois, 3, 6, 12 mois", "Jours fériés algériens", "Solde T − CR et solde au départ", "Rotation par agent", "Modification de plusieurs agents", "Matériel mis à disposition (camions, 4x4…)", "Aide intégrée en 3 langues"],
         ["Demandes regroupées", "Date de reprise calculée", "Documents rangés et renommés", "Accès par e-mail", "Pastilles et notifications", "Lecture du bordereau des prix (OCR)", "Effectifs bornés par le contrat", "Compte client et remarques"],
         ["Attachement figé puis facture", "Historique et reste à facturer", "Fiche de pointage Excel / PDF", "Export et import Excel", "Sauvegarde et restauration", "Mode sombre", "Installable sur téléphone", "Charte de confidentialité"]]
 for i, c in enumerate(cols):

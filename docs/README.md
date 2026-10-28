@@ -1,8 +1,8 @@
 # Documentation de Sijil
 
-- `Sijil-Manuel.pdf` : manuel d'utilisation avec captures d'écran (29 pages).
+- `Sijil-Manuel.pdf` : manuel d'utilisation avec captures d'écran (31 pages).
 - `Sijil-Manuel.docx` : le même manuel, modifiable dans Word.
-- `Sijil-Presentation.pptx` : présentation commerciale (19 diapositives).
+- `Sijil-Presentation.pptx` : présentation commerciale (21 diapositives).
 - `captures/` : captures d'écran d'une **entreprise fictive** (SARL Horizon Services). Aucune donnée réelle.
 - `build/` : scripts de génération (`content.py` = texte du manuel, `build_manual.py`, `build_deck.py`).
 

@@ -41,7 +41,9 @@ function seed() {
       { contrat: C, designation: 'Soudeur qualifié', libelle: 'Soudeur', positions: 2, delai: 540, prix_unitaire: 12500, qte_precedente_ref: 600 },
       { contrat: C, designation: 'Chauffeur poids lourd', libelle: 'Chauffeur poids lourd', positions: 1, delai: 540, prix_unitaire: 12500, qte_precedente_ref: 300 },
       { contrat: C, designation: 'Magasinier', libelle: 'Magasinier', positions: 1, delai: 540, prix_unitaire: 9500, qte_precedente_ref: 300 },
-      { contrat: C, designation: 'Véhicule utilitaire 4x4', libelle: 'Utilitaire 4x4', positions: 2, delai: 540, prix_unitaire: 7500, qte_precedente_ref: 0, nature: 'vehicule' }],
+      { contrat: C, designation: 'Camion 2,5 tonnes', libelle: 'Camion 2,5 T', positions: 2, delai: 540, prix_unitaire: 9500, qte_precedente_ref: 0, nature: 'vehicule' },
+      { contrat: C, designation: 'Rétrochargeur', libelle: 'Rétrochargeur', positions: 1, delai: 540, prix_unitaire: 16000, qte_precedente_ref: 0, nature: 'vehicule' },
+      { contrat: C, designation: 'Véhicule 4x4', libelle: 'Véhicule 4x4', positions: 2, delai: 540, prix_unitaire: 7500, qte_precedente_ref: 0, nature: 'vehicule' }],
   }));
   const rows = [
     ['KARIM BENSALEM', 'Magasinier', 'R8T23', 'chef'], ['SAMIR HAMLAOUI', 'Technicien électricien', 'T8R21T2'], ['NADIR CHERIF', 'Technicien électricien', 'T22R9'],
@@ -57,6 +59,13 @@ function seed() {
   for (const [nom, fonction] of rows.slice(1)) {
     const a = ok(call(chefTok, 'agentCreate', { nom, fonction, email: `${nom.split(' ').slice(-1)[0].toLowerCase()}@demo.local`, contrat: C, affectation: 'Hassi Demo', password: 'demo1234' })).agent;
     ids[nom] = a.id;
+  }
+  // matériel : camions, rétrochargeur, véhicules 4x4 (immatriculations fictives), pointés comme le personnel (T = en service, R = à l'arrêt, ABS = en panne)
+  const mat = [['2514 118 16 Isuzu', 'Camion 2,5 T', 'T31'], ['2514 227 16 Hyundai', 'Camion 2,5 T', 'T14R3T10R4'], ['0871 342 16 JCB', 'Rétrochargeur', 'T20R11'],
+    ['1203 455 16 Hilux', 'Véhicule 4x4', 'T31'], ['1203 566 16 Cruiser', 'Véhicule 4x4', 'T9R2T20']];
+  for (const [nom, fonction, plan] of mat) {
+    const v = ok(call(chefTok, 'agentCreate', { type: 'vehicule', nom, fonction, contrat: C, affectation: 'Hassi Demo' })).agent;
+    ids[nom] = v.id; rows.push([nom, fonction, plan]);
   }
   for (const [nom, , plan] of rows) {
     let day = 1;
