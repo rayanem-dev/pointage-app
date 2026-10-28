@@ -67,13 +67,24 @@ function seed() {
     const v = ok(call(chefTok, 'agentCreate', { type: 'vehicule', nom, fonction, contrat: C, affectation: 'Hassi Demo' })).agent;
     ids[nom] = v.id; rows.push([nom, fonction, plan]);
   }
+  // pointage réel : août, septembre, et le mois en cours jusqu'à la veille (le reste s'affiche en « prévu »)
+  const now = new Date(); const pad = (x) => String(x).padStart(2, '0');
+  const mois = [['2026-08', 31], ['2026-09', 30], [`${now.getFullYear()}-${pad(now.getMonth() + 1)}`, now.getDate() - 1]].filter((m, i, t) => t.findIndex((x) => x[0] === m[0]) === i);
   for (const [nom, , plan] of rows) {
-    let day = 1;
-    for (const m of plan.matchAll(/([TR])(\d+)/g)) {
-      const n = Number(m[2]); const pad = (x) => String(x).padStart(2, '0');
-      ok(call(chefTok, 'pointer', { agent_id: ids[nom], date: `2026-08-${pad(day)}`, date_fin: `2026-08-${pad(day + n - 1)}`, statut: m[1] })); day += n;
+    for (const [ym, last] of mois) {
+      let day = 1;
+      for (const m of plan.matchAll(/([TR])(\d+)/g)) {
+        const n = Number(m[2]); if (day > last) break; const fin = Math.min(day + n - 1, last);
+        ok(call(chefTok, 'pointer', { agent_id: ids[nom], date: `${ym}-${pad(day)}`, date_fin: `${ym}-${pad(fin)}`, statut: m[1] })); day += n;
+      }
     }
   }
+  // un document déposé pour l'agent (fiche de paie), pour les captures « Mes documents » et la pastille « nouveau »
+  { const pdf = Buffer.from('%PDF-1.4 fiche de paie demo').toString('base64');
+    const d = ok(call(admin, 'depotAdd', { nom: 'FDP_Hamlaoui_septembre2026.pdf', mime: 'application/pdf', base64: pdf }));
+    const id = d.id || (d.items && d.items[0] && d.items[0].id) || (Array.isArray(d) && d[0] && d[0].id);
+    ok(call(admin, 'depotUpdate', id, { agent_id: ids['SAMIR HAMLAOUI'], type: 'fiche_emolument', champs: { mois: 'septembre 2026' } }));
+    ok(call(admin, 'depotValider', [id])); }
   // quelques demandes pour la démo
   const agentTok = ok(call(null, 'login', 'hamlaoui@demo.local', 'demo1234')).token;
   ok(call(agentTok, 'demandeCreate', { type: 'titre_conge', date_debut: '2026-10-25', date_fin: '2026-11-22', message: 'Retour famille' }));

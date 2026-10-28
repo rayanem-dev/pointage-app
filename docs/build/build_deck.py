@@ -39,13 +39,17 @@ def bullets(slide, x, y, w, items, size=18, gap=10, color=INK):
             r = p.add_run(); r.text = ' — ' + tail; r.font.size = Pt(size - 1); r.font.color.rgb = color; r.font.name = FONT
     return tb
 
-def pic(slide, name, x, y, w=None, h=None, border=True):
+import tempfile
+def pic(slide, name, x, y, w=None, h=None, border=True, maxh=5.2):
     path = CAP(name) if not os.path.isabs(name) else name
     im = Image.open(path); ar = im.size[1] / im.size[0]
     if w and not h: h = w * ar
     if h and not w: w = h / ar
     if w and h and h / w > ar: h = w * ar
     elif w and h: w = h / ar
+    if maxh and h > maxh + 0.01:   # capture plus haute que la place disponible : on garde le haut de l'écran
+        im = im.convert('RGB').crop((0, 0, im.size[0], round(im.size[0] * maxh / w)))
+        path = os.path.join(tempfile.gettempdir(), 'deck_%d.png' % abs(hash((name, maxh)))); im.save(path); h = maxh
     p = slide.shapes.add_picture(path, Inches(x), Inches(y), Inches(w), Inches(h))
     if border: p.line.color.rgb = RGBColor(0xD0, 0xD7, 0xDE); p.line.width = Pt(0.75)
     return p
@@ -72,7 +76,7 @@ text(s, 5.6, 1.6, 7.2, 1.6, 'Gestion du temps de travail', size=40, color=NAVY, 
 text(s, 5.6, 3.0, 7.2, 0.5, 'avec prise en charge des rotations', size=20, color=TEAL, bold=True)
 text(s, 5.6, 3.7, 7.0, 1.4, "La mise à disposition du personnel et du matériel de prestation de services, de A à Z : du bordereau des prix jusqu'à l'attachement et à la facture (module facturation activable par l'administrateur).", size=18, color=INK)
 text(s, 5.6, 5.4, 7, 0.5, 'En français, en arabe et en anglais · sur ordinateur et sur téléphone', size=16, color=BLUE, bold=True)
-text(s, 5.6, 6.6, 7, 0.4, "Version 3.42.0 · Octobre 2026 · Captures : entreprise fictive", size=11, color=GREY)
+text(s, 5.6, 6.6, 7, 0.4, "Version 3.43.0 · Octobre 2026 · Captures : entreprise fictive", size=11, color=GREY)
 
 # 2 problème
 s = new(); title(s, "Un personnel en rotation, c'est vite le désordre", "Fichiers Excel, messages, papiers : chacun a sa version")
@@ -90,6 +94,17 @@ bullets(s, 9.2, 1.9, 3.7, ["Un pointage lisible — vert, orange, rouge", "Des p
 
 
 # 3b de A à Z
+# vue d'ensemble : tout ce que Sijil sait faire
+s = new(PAPER); title(s, "Tout ce que Sijil sait faire", "Le temps de travail, les rotations, le personnel et le matériel, jusqu'à la facture")
+tiles = [("Temps de travail et rotations", ["Pointage T / R / ABS en un clic", "Rotations 28/28, 14/14, 6/2… par agent", "Prévisions, rattrapage, pointage automatique", "Vues 1, 3, 6, 12 mois et jours fériés"]),
+         ("Personnel et matériel", ["Agents, responsables, administrateurs", "Camions, rétrochargeurs, 4x4 pointés aussi", "Effectifs bornés par le contrat", "Accès envoyés par e-mail"]),
+         ("Du contrat à la facture", ["Bordereau des prix lu automatiquement", "Attachement calculé, validé, figé", "Facture en option (module activable)", "Excel et PDF avec votre logo"]),
+         ("Demandes", ["Titre de congé, attestations, certificat de travail…", "Types réglables par l'administrateur", "Demandes groupées pour toute l'équipe", "Un seul envoi à la direction, suivi et clôture"]),
+         ("Documents", ["Dépôt en vrac, reconnus et renommés", "Photos converties en PDF, aperçu, doublons", "Rangés dans Google Drive", "Pastilles et e-mails au bon moment"]),
+         ("Client, droits et confort", ["Compte client en lecture et remarques", "Droits réglables par profil", "Français, arabe, anglais, mode sombre", "Installable, données chez vous"])]
+for i, (h_, b) in enumerate(tiles):
+    card(s, 0.6 + (i % 3) * 4.15, 1.75 + (i // 3) * 2.65, 3.95, 2.5, h_, ['● ' + x for x in b], size=13, hc=[BLUE, TEAL, NAVY, BLUE, TEAL, NAVY][i])
+
 s = new(PAPER); title(s, "De A à Z : du bordereau des prix à la facture", "Sijil gère la mise à disposition du personnel et du matériel de prestation de services, avec les rotations, de bout en bout")
 steps = [("1", "Bordereau des prix", "Déposé et lu automatiquement : fonctions, nombres, délais, prix"), ("2", "Contrat et effectifs", "Début, durée, fin ; effectifs bornés par le contrat"), ("3", "Agents et véhicules", "Affectés au contrat, accès envoyés par e-mail"), ("4", "Pointage", "Jour après jour, avec prévisions, congés, soldes et documents"), ("5", "Attachement", "Édité sur les jours pointés, puis validé et figé"), ("6", "Facture", "Établie à partir de l'attachement validé, avec l'historique")]
 for i, (n, h_, b) in enumerate(steps):
@@ -136,11 +151,15 @@ text(s, 11.0, 2.3, 2.2, 3.2, ["« Le jour de votre départ, votre solde sera de 
 
 # 9 demandes & documents
 s = new(); title(s, 'Demandes et documents, sans courir après', 'Du titre de congé à la fiche de paie')
-pic(s, '70-demandes-chef.png', 0.6, 1.75, w=5.9); pic(s, '64-documents-agent.png', 6.9, 1.75, w=5.9)
+pic(s, '70-demandes-chef.png', 0.6, 1.75, w=5.9, maxh=3.65); pic(s, '64-documents-agent.png', 6.9, 1.75, w=5.9, maxh=3.65)
 bullets(s, 0.6, 5.5, 6.1, ["Demandes regroupées par thème — une seule demande part à la direction", "Date de reprise calculée — départ + durée du repos"], size=15, gap=8)
 bullets(s, 6.9, 5.5, 6.1, ["Documents rangés tout seuls — type, période, nom, dossier Drive", "Pastille et e-mail — l'agent est prévenu"], size=15, gap=8)
 
 # 10 contrat
+s = new(); title(s, "Une demande pour toute l'équipe, en une fois", "Le responsable coche les agents : un seul envoi part à la direction, avec la liste")
+pic(s, '71-demandes-groupees.png', 0.6, 1.7, w=7.6)
+bullets(s, 8.5, 1.9, 4.4, ["Un, plusieurs ou tous les agents — une demande par personne, avec son suivi", "Types réglables — « Certificat de travail » en deux clics dans Setup → Demandes", "Un seul message à la direction — modèle prêt, liste des agents concernés", "Réponse, clôture, document remis — l'agent est prévenu par e-mail"], size=16, gap=14)
+
 s = new(PAPER); title(s, 'Du contrat à la facture, sans ressaisie', 'Le bordereau des prix se lit tout seul, le reste en découle')
 pic(s, os.path.join(ROOT, 'docs/captures/crops/40a-contrat.png'), 0.6, 1.7, w=6.6)
 bullets(s, 8.1, 1.9, 4.9, ["Bordereau des prix lu automatiquement — PDF scanné, photo, Excel, CSV", "Contrat complet — début, durée, fin visibles de tous", "Effectifs bornés — voyant complet / manque / dépassé", "Historique — par fonction, avec le reste à facturer"], size=16, gap=14)
@@ -151,8 +170,12 @@ pic(s, os.path.join(ROOT, 'docs/captures/crops/50-exports.png'), 0.6, 1.7, w=6.5
 bullets(s, 8.3, 1.9, 4.7, ["Fiche de pointage — Excel et PDF du mois", "Attachement — quantités sur les jours T pointés", "Validation — mêmes quantités, mêmes prix", "Facture — numéro, date, PDF et Excel", "Brouillon du mois suivant — à titre indicatif"], size=16, gap=12)
 
 # 12 client
+s = new(PAPER); title(s, "La facturation, c'est vous qui décidez", "Un module que l'administrateur active ou désactive")
+pic(s, os.path.join(ROOT, 'docs/captures/crops/52-exports-facture.png'), 0.6, 1.7, w=7.4)
+bullets(s, 8.4, 1.9, 4.5, ["Module Facturation — actif ou non, dans Setup → Contrat", "Désactivé — Sijil s'arrête à l'attachement, rien n'est perdu", "Accès des responsables — selon chacun, tous, ou aucun", "Attachement validé — copie figée, la facture en découle"], size=16, gap=14)
+
 s = new(PAPER); title(s, 'Votre client suit, et vous répond', 'Un compte de consultation créé tout seul, limité à son contrat')
-pic(s, '81-client-remarque.png', 0.6, 1.75, w=5.9); pic(s, '83-remarque-prestataire.png', 6.9, 1.75, w=5.9)
+pic(s, '81-client-remarque.png', 0.6, 1.75, w=5.9, maxh=3.65); pic(s, '83-remarque-prestataire.png', 6.9, 1.75, w=5.9, maxh=3.65)
 bullets(s, 0.6, 5.5, 6.1, ["Un clic sur un jour — le client laisse sa remarque", "Il ne modifie rien — lecture seule"], size=15, gap=8)
 bullets(s, 6.9, 5.5, 6.1, ["Repère rouge dans la grille — et e-mail au responsable d’équipe", "« Vu » et réponse — le client voit la réponse"], size=15, gap=8)
 
@@ -166,7 +189,7 @@ card(s, 6.8, 4.65, 5.9, 2.1, 'Demandes groupées', "Une seule demande par e-mail
 
 # 14 langues
 s = new(PAPER); title(s, 'Français, arabe, anglais — et mode sombre', 'Chacun travaille dans sa langue, de droite à gauche en arabe')
-pic(s, '92-arabe.png', 0.6, 1.75, w=5.9); pic(s, '91-mode-sombre.png', 6.9, 1.75, w=5.9)
+pic(s, '92-arabe.png', 0.6, 1.75, w=5.9, maxh=3.65); pic(s, '91-mode-sombre.png', 6.9, 1.75, w=5.9, maxh=3.65)
 text(s, 0.6, 5.75, 12.1, 1.5, ["Application installable sur téléphone, en plein écran.", "Langue et mode sombre : un petit sélecteur discret en bas à droite."], size=18, color=NAVY)
 
 # 15 sécurité
@@ -176,16 +199,16 @@ pic(s, os.path.join(ROOT, 'docs/captures/crops/43-setup-maintenance.png'), 7.6, 
 
 # 16 toutes les fonctions
 s = new(PAPER); title(s, 'Et ce n\'est pas tout', 'Toutes les fonctions utiles au quotidien')
-cols = [["Rattraper les jours oubliés", "Vues 1 mois, 3, 6, 12 mois", "Jours fériés algériens", "Solde T − CR et solde au départ", "Rotation par agent", "Modification de plusieurs agents", "Matériel mis à disposition (camions, 4x4…)", "Aide intégrée en 3 langues"],
-        ["Demandes regroupées", "Date de reprise calculée", "Documents rangés et renommés", "Accès par e-mail", "Pastilles et notifications", "Lecture du bordereau des prix (OCR)", "Effectifs bornés par le contrat", "Compte client et remarques"],
-        ["Attachement figé puis facture", "Historique et reste à facturer", "Fiche de pointage Excel / PDF", "Export et import Excel", "Sauvegarde et restauration", "Mode sombre", "Installable sur téléphone", "Charte de confidentialité"]]
+cols = [["Pointage automatique chaque jour", "Rattraper les jours oubliés", "Vues 1 mois, 3, 6, 12 mois", "Jours fériés algériens", "Solde T − CR et solde au départ", "Rotation propre à chaque agent", "Modification de plusieurs agents", "Matériel : camions, engins, 4x4", "Effectifs bornés par le contrat", "Import et export Excel"],
+        ["Demandes groupées pour l'équipe", "Types de demande personnalisés", "Suivi et clôture des demandes", "Date de reprise calculée", "Dépôt de documents en vrac", "Photos converties en PDF, doublons", "Documents rangés et renommés", "Pastilles et notifications", "Accès par e-mail", "Mot de passe oublié, rester connecté"],
+        ["Bordereau des prix lu (OCR)", "Attachement figé, puis facture", "Module Facturation activable", "Historique et reste à facturer", "Fiche de pointage Excel / PDF", "Compte client et remarques", "Droits réglables par profil", "Qui est en ligne ?", "Sauvegarde et restauration", "Arabe, anglais, mode sombre, mobile"]]
 for i, c in enumerate(cols):
     tb = s.shapes.add_textbox(Inches(0.6 + i * 4.2), Inches(1.8), Inches(4.0), Inches(5))
     tf = tb.text_frame; tf.word_wrap = True
     for j, it in enumerate(c):
-        p = tf.paragraphs[0] if j == 0 else tf.add_paragraph(); p.space_after = Pt(11)
+        p = tf.paragraphs[0] if j == 0 else tf.add_paragraph(); p.space_after = Pt(8)
         r = p.add_run(); r.text = '✔  '; r.font.color.rgb = TEAL; r.font.size = Pt(17); r.font.bold = True; r.font.name = FONT
-        r = p.add_run(); r.text = it; r.font.size = Pt(17); r.font.color.rgb = NAVY; r.font.name = FONT
+        r = p.add_run(); r.text = it; r.font.size = Pt(16); r.font.color.rgb = NAVY; r.font.name = FONT
 
 # 17 mise en route
 s = new(); title(s, 'Prêt en trois étapes', 'Du premier essai au premier pointage')

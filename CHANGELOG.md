@@ -2,6 +2,14 @@
 
 © 2026 JawlaDev — Tous droits réservés
 
+## 3.43.0 — 2026-10-28 — Aide enrichie
+
+- L'aide explique maintenant le matériel mis à disposition (camions, engins, 4x4) et son pointage, les demandes groupées pour l'équipe, et les captures d'écran sont toutes renouvelées.
+
+## 3.42.1 — 2026-10-28 — Un mot en trop corrigé
+
+- Sur certaines pages (par exemple « Mes documents » de l'agent), le mot « null » s'affichait sous le titre : il a disparu.
+
 ## 3.37.0 — 2026-10-19 — Aide illustrée
 
 - La page « Aide » est illustrée par des captures d'écran (données fictives) : connexion, accueil de l'agent, pointage, demandes, documents, exports, réglages et vue du client. Cliquez sur une image pour l'agrandir.

@@ -6,6 +6,8 @@ try { S.token = sessionStorage.getItem('tk'); S.back = JSON.parse(sessionStorage
 function setBack(b) { S.back = b; S.badges = null; S.announced = {}; try { if (b) sessionStorage.setItem('bk', JSON.stringify(b)); else sessionStorage.removeItem('bk'); } catch (e) { /* ignore */ } }
 
 // ---------- utilitaires ----------
+// replaceChildren / append écrivent « null » quand on leur passe null (cas courant : « condition ? élément : null ») : on ignore ces valeurs.
+['replaceChildren', 'append'].forEach(function (m) { var o = Element.prototype[m]; Element.prototype[m] = function () { return o.apply(this, Array.prototype.filter.call(arguments, function (x) { return x != null && x !== false; })); }; });
 function h(tag, props) {
   var e = document.createElement(tag);
   var kids = Array.prototype.slice.call(arguments, 2);

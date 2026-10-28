@@ -242,6 +242,26 @@
    },
    {
     "t": [
+     "Pointer le matériel",
+     "Recording equipment",
+     "تسجيل حضور العتاد"
+    ],
+    "x": [
+     "Chaque engin a sa ligne dans le pointage global, sous le personnel, et se pointe de la même façon : T (en service), R (à l'arrêt), ABS (en panne). Les prévisions, les couleurs et les totaux sont les mêmes que pour le personnel.",
+     "Each machine has its own row in the global attendance, below the staff, and is recorded the same way: T (in service), R (idle), ABS (broken down). Forecasts, colours and totals are the same as for staff.",
+     "لكل آلية سطرها في الحضور العام تحت المستخدمين، وتُسجَّل بالطريقة نفسها: T (في الخدمة)، R (متوقفة)، ABS (معطّلة). التوقعات والألوان والمجاميع هي نفسها."
+    ],
+    "img": {
+     "f": "pointage-materiel",
+     "c": [
+      "Le pointage du mois : personnel et matériel dans la même grille.",
+      "The month's attendance: staff and equipment in the same grid.",
+      "حضور الشهر: المستخدمون والعتاد في الجدول نفسه."
+     ]
+    }
+   },
+   {
+    "t": [
      "Les prévisions (ombres)",
      "Forecasts (shadows)",
      "التوقعات (الظلال)"
@@ -400,15 +420,23 @@
    },
    {
     "t": [
-     "Véhicules mis à disposition",
-     "Vehicles provided",
-     "المركبات الموضوعة تحت التصرف"
+     "Matériel mis à disposition (camions, engins, 4x4)",
+     "Equipment provided (trucks, machines, 4x4)",
+     "العتاد الموضوع تحت التصرف (شاحنات، آليات، 4x4)"
     ],
     "x": [
-     "Choisissez le type « Véhicule » : il est pointé comme un agent mais sans compte de connexion, et son nombre suit le contrat.",
-     "Choose the type \"Vehicle\": it is recorded like an agent but without a login, and its number follows the contract.",
-     "اختر النوع «مركبة»: تُسجَّل مثل العون لكن دون حساب دخول، ويتبع عددها العقد."
-    ]
+     "Dans « Agents », choisissez le type « Véhicule », saisissez l'immatriculation et le modèle (par exemple « 2514 118 16 Isuzu »), puis le contrat et la fonction du bordereau des prix (Camion 2,5 tonnes, Rétrochargeur, Véhicule 4x4…). Un engin est pointé comme un agent, sans compte de connexion, avec le badge VH ; son nombre suit le contrat (voyant complet / manque / dépassé). T = en service, R = à l'arrêt, ABS = en panne. Ses jours pointés alimentent l'attachement, au prix unitaire du contrat.",
+     "In \"Agents\", choose the type \"Vehicle\", enter the plate number and model (for example \"2514 118 16 Isuzu\"), then the contract and the price-schedule function (2.5-tonne truck, backhoe loader, 4x4 vehicle…). A machine is recorded like an agent, without a login, with the VH badge; its number follows the contract (full / missing / exceeded light). T = in service, R = idle, ABS = broken down. Its recorded days feed the statement, at the contract's unit price.",
+     "في «الأعوان» اختر النوع «مركبة»، وأدخل رقم التسجيل والطراز (مثل «2514 118 16 Isuzu»)، ثم العقد ووظيفة جدول الأسعار (شاحنة 2.5 طن، جرافة حفّارة، سيارة 4x4…). تُسجَّل الآلية مثل العون دون حساب دخول وبشارة VH؛ ويتبع عددها العقد (مكتمل / ناقص / متجاوز). T = في الخدمة، R = متوقفة، ABS = معطّلة. وتُدرج أيامها في الكشف بسعر الوحدة في العقد."
+    ],
+    "img": {
+     "f": "materiel",
+     "c": [
+      "Personnel et matériel dans la même liste : le badge VH repère les véhicules.",
+      "Staff and equipment in the same list: the VH badge marks vehicles.",
+      "المستخدمون والعتاد في القائمة نفسها: تشير شارة VH إلى المركبات."
+     ]
+    }
    }
   ]
  },
@@ -441,6 +469,26 @@
       "Demandes en cours, regroupées par thème.",
       "Pending requests, grouped by theme.",
       "الطلبات الجارية مجمّعة حسب الموضوع."
+     ]
+    }
+   },
+   {
+    "t": [
+     "Demande pour toute l'équipe",
+     "A request for the whole team",
+     "طلب لكل الفريق"
+    ],
+    "x": [
+     "Dans « Nouvelle demande », cochez un ou plusieurs agents, ou « Tous les agents de mon équipe », choisissez le type (par exemple « Certificat de travail ») puis envoyez : une demande est créée pour chaque agent, avec son suivi. Elles arrivent dans « Demandes en cours », regroupées sous le même thème : un seul envoi part à la direction, avec la liste des agents concernés.",
+     "In \"New request\", tick one or more employees, or \"All the employees of my team\", choose the type (for example \"Work certificate\") and send: one request is created per employee, each with its follow-up. They arrive in \"Pending requests\", grouped under the same topic: a single message goes to management, listing the employees concerned.",
+     "في «طلب جديد» اختر عوناً أو أكثر، أو «جميع أعوان فريقي»، ثم اختر النوع (مثل «شهادة عمل») وأرسل: يُنشأ طلب لكل عون مع متابعته. تصل إلى «الطلبات الجارية» مجمّعة تحت الموضوع نفسه: وتُرسل رسالة واحدة إلى الإدارة مع قائمة الأعوان المعنيين."
+    ],
+    "img": {
+     "f": "demandes-groupees",
+     "c": [
+      "Une demande créée pour plusieurs agents à la fois.",
+      "One request created for several employees at once.",
+      "طلب واحد لعدة أعوان دفعة واحدة."
      ]
     }
    },
@@ -585,6 +633,26 @@
    },
    {
     "t": [
+     "Types de demande",
+     "Request types",
+     "أنواع الطلبات"
+    ],
+    "x": [
+     "Setup → Demandes : l'administrateur choisit les types proposés aux agents et aux responsables (titre de congé, attestation de travail, fiche d'émoluments, CNAS, prolongations…) et ajoute les siens, par exemple « Certificat de travail », avec le document remis à la clôture. Les demandes déjà faites restent visibles quand un type est retiré.",
+     "Setup → Requests: the administrator chooses the types offered to employees and leaders (leave pass, work certificate, pay statement, social security, extensions…) and adds their own, for example \"Employment certificate\", with the document handed over at closing. Requests already made stay visible when a type is removed.",
+     "الإعدادات ← الطلبات: يختار المدير الأنواع المعروضة على الأعوان والمسؤولين (رخصة عطلة، شهادة عمل، كشف الأجر، الضمان الاجتماعي، التمديدات…) ويضيف أنواعه، مثل «شهادة عمل»، مع الوثيقة التي تُسلَّم عند الإغلاق. تبقى الطلبات السابقة ظاهرة عند حذف نوع."
+    ],
+    "img": {
+     "f": "setup-demandes",
+     "c": [
+      "Setup → Demandes : types proposés et types ajoutés.",
+      "Setup → Requests: offered and added types.",
+      "الإعدادات ← الطلبات: الأنواع المعروضة والمضافة."
+     ]
+    }
+   },
+   {
+    "t": [
      "Prestataire et client",
      "Provider and client",
      "المؤدّي والزبون"
@@ -656,6 +724,18 @@
    "كشف الإنجاز والفاتورة"
   ],
   "items": [
+   {
+    "t": [
+     "Facturation : activer ou désactiver",
+     "Invoicing: switch on or off",
+     "الفوترة: التفعيل أو التعطيل"
+    ],
+    "x": [
+     "Dans Setup → Contrat, « Module Facturation » : s'il est désactivé, Sijil s'arrête à l'attachement ; la partie « Facture » disparaît des exports et de l'historique des contrats, et le serveur refuse toute facture. Les factures déjà établies sont conservées et réapparaissent à la réactivation. Un second réglage dit si les responsables d'équipe peuvent extraire l'attachement et la facture : selon chaque responsable (case de sa fiche Agent), tous, ou aucun. Seul l'administrateur peut modifier ces réglages.",
+     "In Setup → Contract, \"Invoicing module\": when off, Sijil stops at the statement; the \"Invoice\" part disappears from exports and from the contract history, and the server refuses any invoice. Invoices already issued are kept and come back when it is switched on again. A second setting tells whether team leaders can extract the statement and invoice: per leader (box in their Agent record), all, or none. Only the administrator can change these settings.",
+     "في الإعدادات ← العقد، «وحدة الفوترة»: إذا عُطّلت يتوقف Sijil عند الكشف؛ ويختفي جزء «الفاتورة» من التصدير ومن سجل العقود، ويرفض الخادم أي فاتورة. تبقى الفواتير الصادرة محفوظة وتعود عند إعادة التفعيل. إعداد ثانٍ يحدّد هل يمكن لمسؤولي الفرق استخراج الكشف والفاتورة: حسب كل مسؤول (خانة في بطاقته)، أو الكل، أو لا أحد. وحده المدير يعدّل هذه الإعدادات."
+    ]
+   },
    {
     "t": [
      "Préparer l'attachement",
