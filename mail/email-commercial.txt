@@ -4,6 +4,8 @@ Bonjour,
 
 Vous mettez du personnel à disposition de vos clients ? Entre les fichiers Excel, les jours oubliés et les calculs à la main, chaque fin de mois coûte du temps et expose à l'erreur.
 
+ESSAYEZ TOUT DE SUITE, SANS COMPTE : https://rayanem-dev.github.io/pointage-app/?c=DEMO — identifiant demo, mot de passe demo (entreprise fictive complète, tout peut être testé).
+
 Sijil relie tout, du bordereau des prix jusqu'à l'attachement et à la facture :
 - le bordereau des prix se lit tout seul (PDF scanné, photo, Excel) ;
 - le pointage des agents et du matériel (camion 2,5 tonnes, rétrochargeur, véhicule 4x4…), avec prévisions, soldes et jours fériés algériens ;

@@ -27,6 +27,26 @@
    },
    {
     "t": [
+     "Essayer sans compte",
+     "Try without an account",
+     "جرّب دون حساب"
+    ],
+    "x": [
+     "Sur la page de connexion, saisissez l'identifiant « demo » et le mot de passe « demo » (ou cliquez sur « Entrer dans la démo ») : une entreprise fictive complète s'ouvre. Le bandeau du haut permet de passer de l'administrateur au responsable d'équipe, à l'agent ou au client. Rien n'est envoyé par e-mail, le mot de passe ne se change pas, et la démonstration est remise à zéro chaque nuit.",
+     "On the sign-in page, enter the username \"demo\" and the password \"demo\" (or click \"Enter the demo\"): a complete fictional company opens. The banner at the top lets you switch from administrator to team leader, employee or client. Nothing is sent by e-mail, the password cannot be changed, and the demonstration is reset every night.",
+     "في صفحة الدخول اكتب المعرّف «demo» وكلمة المرور «demo» (أو انقر «ادخل إلى التجربة»): تُفتح شركة وهمية كاملة. يتيح الشريط العلوي الانتقال من المدير إلى مسؤول الفريق أو العون أو الزبون. لا يُرسل أي بريد، ولا تتغير كلمة المرور، وتُعاد تهيئة النسخة التجريبية كل ليلة."
+    ],
+    "img": {
+     "f": "demo",
+     "c": [
+      "La page de connexion avec l'essai immédiat.",
+      "The sign-in page with the instant trial.",
+      "صفحة الدخول مع التجربة الفورية."
+     ]
+    }
+   },
+   {
+    "t": [
      "Se connecter",
      "Sign in",
      "تسجيل الدخول"
@@ -161,9 +181,9 @@
      "طلباتي"
     ],
     "x": [
-     "Choisissez le type (titre de congé, attestation de travail, ATS, fiche d'émoluments, prolongation de congé ou de séjour), les dates si besoin, un message, puis « Envoyer ma demande ». Elle part chez votre responsable d’équipe, qui est prévenu par e-mail. Pour un titre de congé, la date de reprise est calculée pour vous.",
-     "Choose the type (leave certificate, work certificate, ATS, pay sheet, leave or stay extension), the dates if needed, a message, then \"Send my request\". It goes to your team manager, who is notified by e-mail. For a leave certificate, the return date is calculated for you.",
-     "اختر النوع (وثيقة إجازة، شهادة عمل، ATS، كشف أجر، تمديد إجازة أو إقامة) والتواريخ عند الحاجة ورسالة ثم «إرسال طلبي». يصل الطلب إلى رئيس فريقك ويُبلَّغ بالبريد. وبالنسبة لوثيقة الإجازة تُحسب لك تاريخ العودة."
+     "Choisissez le type (titre de congé, attestation de travail, ATS, fiche d'émoluments, prolongation de congé ou de séjour), les dates si besoin, un message, puis « Envoyer ma demande ». Elle part chez votre responsable d’équipe, qui est prévenu par e-mail. Pour un titre de congé, la date de reprise est calculée pour vous. Une jauge montre où en est la demande : Reçue, Direction, Réponse, Clôturée.",
+     "Choose the type (leave certificate, work certificate, ATS, pay sheet, leave or stay extension), the dates if needed, a message, then \"Send my request\". It goes to your team manager, who is notified by e-mail. For a leave certificate, the return date is calculated for you. A progress gauge shows where the request stands: Received, Management, Reply, Closed.",
+     "اختر النوع (وثيقة إجازة، شهادة عمل، ATS، كشف أجر، تمديد إجازة أو إقامة) والتواريخ عند الحاجة ورسالة ثم «إرسال طلبي». يصل الطلب إلى رئيس فريقك ويُبلَّغ بالبريد. وبالنسبة لوثيقة الإجازة تُحسب لك تاريخ العودة. يبيّن مؤشر التقدّم مرحلة الطلب: مستلم، الإدارة، الرد، مغلق."
     ],
     "img": {
      "f": "agent-demandes",
@@ -459,9 +479,9 @@
      "الاستلام والتجميع"
     ],
     "x": [
-     "Les demandes de votre groupe arrivent dans « Demandes », regroupées par thème, avec une pastille et un e-mail. Pour un titre de congé, vous voyez les dates et la date de reprise prévue.",
-     "Your group's requests arrive in \"Requests\", grouped by theme, with a bubble and an e-mail. For a leave certificate, you see the dates and the expected return date.",
-     "تصلك طلبات فريقك في «الطلبات» مجمَّعة حسب الموضوع مع إشارة وبريد إلكتروني. وبالنسبة لوثيقة الإجازة ترى التواريخ وتاريخ العودة المتوقّع."
+     "Les demandes de votre groupe arrivent dans « Demandes », regroupées par thème, avec une pastille et un e-mail. Pour un titre de congé, vous voyez les dates et la date de reprise prévue. En haut, un tableau de bord compte les demandes : en cours, chez la direction, à clôturer, clôturées (un clic mène à la liste).",
+     "Your group's requests arrive in \"Requests\", grouped by theme, with a bubble and an e-mail. For a leave certificate, you see the dates and the expected return date. At the top, a dashboard counts requests: in progress, with management, to close, closed (one click opens the list).",
+     "تصلك طلبات فريقك في «الطلبات» مجمَّعة حسب الموضوع مع إشارة وبريد إلكتروني. وبالنسبة لوثيقة الإجازة ترى التواريخ وتاريخ العودة المتوقّع. في الأعلى لوحة تعدّ الطلبات: جارية، لدى الإدارة، للإغلاق، مغلقة (نقرة واحدة تفتح القائمة)."
     ],
     "img": {
      "f": "demandes",

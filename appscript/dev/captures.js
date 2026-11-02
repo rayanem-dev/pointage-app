@@ -14,6 +14,15 @@ fs.mkdirSync(OUT, { recursive: true });
   const server = await start(0); const URL = 'http://localhost:' + server.address().port;
   const browser = await chromium.launch();
   const out = (name) => path.join(OUT, name);
+  if (process.env.SIJIL_DEMO) { // mode démonstration (entreprise DEMO) : écran de connexion avec l'essai immédiat et bandeau de la démonstration
+    const ctx = await browser.newContext({ viewport: { width: 1360, height: 820 }, locale: 'fr-FR' }); await ctx.clock.setFixedTime(new Date(DATE)); const p = await ctx.newPage();
+    await p.goto(URL); await p.waitForTimeout(900); await p.screenshot({ path: out('98-demo-connexion.png') });
+    await p.fill('input[autocomplete="username"]', 'demo'); await p.fill('input[type=password]', 'demo'); await p.keyboard.press('Enter'); await p.waitForTimeout(2400);
+    await p.screenshot({ path: out('99-demo-bandeau.png'), clip: { x: 0, y: 0, width: 1360, height: 560 } });
+    await p.setViewportSize({ width: 1000, height: 880 }); await p.goto(URL); await p.waitForTimeout(800); fs.mkdirSync(path.join(OUT, 'help'), { recursive: true });
+    await p.locator('.demohint').first().scrollIntoViewIfNeeded().catch(() => {}); await p.screenshot({ path: path.join(OUT, 'help', 'demo.png') });
+    await browser.close(); server.close(); console.log('captures de la démonstration dans', OUT); return;
+  }
 
   async function session(email, pw, opts) {
     opts = opts || {};
@@ -22,7 +31,7 @@ fs.mkdirSync(OUT, { recursive: true });
     const p = await ctx.newPage();
     await p.goto(URL); await p.waitForTimeout(500);
     if (email) {
-      await p.fill('input[type=email],input[name=email]', email); await p.fill('input[type=password]', pw); await p.keyboard.press('Enter'); await p.waitForTimeout(1600);
+      await p.fill('input[autocomplete="username"]', email); await p.fill('input[type=password]', pw); await p.keyboard.press('Enter'); await p.waitForTimeout(1600);
     }
     const go = async (name) => { await p.locator('nav button, nav a').filter({ hasText: new RegExp('^\\s*' + name + '(\\s*\\d+)?\\s*$') }).first().click(); await p.waitForTimeout(1300); };
     return { ctx, p, go };

@@ -156,6 +156,10 @@ bullets(s, 0.6, 5.5, 6.1, ["Demandes regroupées par thème — une seule demand
 bullets(s, 6.9, 5.5, 6.1, ["Documents rangés tout seuls — type, période, nom, dossier Drive", "Pastille et e-mail — l'agent est prévenu"], size=15, gap=8)
 
 # 10 contrat
+s = new(PAPER); title(s, "Chaque demande, en un coup d'œil", "Une jauge remplace les longues phrases : on voit où en est la demande")
+pic(s, '62-demandes-agent.png', 0.6, 1.7, w=6.0, maxh=5.2); pic(s, '70-demandes-chef.png', 6.9, 1.7, w=6.0, maxh=5.2)
+text(s, 0.6, 6.55, 12.1, 0.5, "Reçue  ›  Direction  ›  Réponse  ›  Clôturée — et, pour le responsable, un tableau de bord : en cours, chez la direction, à clôturer.", size=15, color=NAVY, bold=True)
+
 s = new(); title(s, "Une demande pour toute l'équipe, en une fois", "Le responsable coche les agents : un seul envoi part à la direction, avec la liste")
 pic(s, '71-demandes-groupees.png', 0.6, 1.7, w=7.6)
 bullets(s, 8.5, 1.9, 4.4, ["Un, plusieurs ou tous les agents — une demande par personne, avec son suivi", "Types réglables — « Certificat de travail » en deux clics dans Setup → Demandes", "Un seul message à la direction — modèle prêt, liste des agents concernés", "Réponse, clôture, document remis — l'agent est prévenu par e-mail"], size=16, gap=14)
@@ -210,9 +214,13 @@ for i, c in enumerate(cols):
         r = p.add_run(); r.text = '✔  '; r.font.color.rgb = TEAL; r.font.size = Pt(17); r.font.bold = True; r.font.name = FONT
         r = p.add_run(); r.text = it; r.font.size = Pt(16); r.font.color.rgb = NAVY; r.font.name = FONT
 
+s = new(); title(s, "Essayez dès maintenant, sans compte", "Identifiant demo, mot de passe demo : tout est fictif, tout peut être testé")
+pic(s, '98-demo-connexion.png', 0.6, 1.7, w=5.6, maxh=5.0); pic(s, '99-demo-bandeau.png', 6.5, 1.7, w=6.3, maxh=3.0)
+bullets(s, 6.6, 4.9, 6.3, ["Entreprise fictive complète — personnel, matériel, demandes à tous les stades", "Un clic pour changer de profil — administrateur, responsable, agent, client", "Rien n'est envoyé — remise à zéro chaque nuit"], size=15, gap=8)
+
 # 17 mise en route
 s = new(); title(s, 'Prêt en trois étapes', 'Du premier essai au premier pointage')
-for i, (h_, b) in enumerate([('1. Demandez votre essai', "Un formulaire sur la page d'accueil. Votre espace est créé et les accès vous sont envoyés par e-mail."), ('2. Déposez votre contrat', "Le bordereau des prix est lu automatiquement. Ajoutez vos agents : leurs accès partent par e-mail."), ('3. Pointez', "Dès le premier jour. Les prévisions, les soldes et les vues se calculent seuls.")]):
+for i, (h_, b) in enumerate([('1. Essayez, puis demandez', "Entrez avec demo / demo pour tout tester, puis demandez votre essai : votre espace est créé et les accès vous sont envoyés par e-mail."), ('2. Déposez votre contrat', "Le bordereau des prix est lu automatiquement. Ajoutez vos agents : leurs accès partent par e-mail."), ('3. Pointez', "Dès le premier jour. Les prévisions, les soldes et les vues se calculent seuls.")]):
     card(s, 0.6 + i * 4.2, 2.0, 3.95, 3.6, h_, b, size=17)
 text(s, 0.6, 6.05, 12.1, 0.6, "Besoin de reprendre un historique ? Importez vos fichiers Excel : un mois par onglet.", size=17, color=BLUE, bold=True)
 
@@ -221,7 +229,7 @@ s = new(NAVY)
 pic(s, os.path.join(ROOT, 'brand', 'logo-sijil-symbole.png'), 5.67, 0.9, h=2.0, border=False)
 text(s, 0.5, 3.2, 12.3, 1.0, 'Sijil', size=54, color=WHITE, bold=True, align=PP_ALIGN.CENTER)
 text(s, 0.5, 4.3, 12.3, 0.7, 'Gestion du temps de travail et des rotations', size=26, color=TEAL, bold=True, align=PP_ALIGN.CENTER)
-text(s, 0.5, 5.4, 12.3, 0.6, "Demandez votre essai gratuit depuis la page d'accueil.", size=20, color=WHITE, align=PP_ALIGN.CENTER)
+text(s, 0.5, 5.4, 12.3, 0.6, "Essayez tout de suite : identifiant demo, mot de passe demo.", size=20, color=WHITE, align=PP_ALIGN.CENTER)
 text(s, 0.5, 6.7, 12.3, 0.4, '© 2026 JawlaDev — Tous droits réservés', size=11, color=RGBColor(0xB8, 0xC8, 0xD8), align=PP_ALIGN.CENTER)
 
 out = os.path.join(ROOT, 'docs', 'Sijil-Presentation.pptx'); prs.save(out); print('ok', out, len(prs.slides._sldIdLst), 'diapositives')

@@ -19,6 +19,14 @@ Procédure : modifier l'application → régénérer manuel (`python3 docs/build
 
 Positionnement à reprendre partout : « Gestion du temps de travail qui prend en charge les rotations ; gère la mise à disposition du personnel et du matériel de prestation de services, de A à Z : du bordereau des prix jusqu'à l'attachement et à la facture. » La facturation est un module que l'administrateur active ou désactive (Setup → Contrat). Le matériel (camion 2,5 tonnes, rétrochargeur, véhicule 4x4…) est pointé comme le personnel.
 
+## Démonstration (essai public) et parcours de test
+
+- **Entreprise DEMO** (`appscript/Demo.gs`) : identifiant `demo`, mot de passe `demo` (comptes `demo-chef`, `demo-agent`, `demo-client`), données fictives relatives à la date du jour, remise à zéro chaque nuit par la tâche planifiée (`Auto.run` → `Demo.tick`). Créée / remise à zéro par l'éditeur : Clients → Démonstration. Protections : aucun e-mail réel (`Mail.send`), mot de passe, vidage et sauvegarde verrouillés (`Demo.blocked`), dépôts limités (`Demo.checkUpload`). Tout nouveau point d'entrée de fichier ou d'e-mail doit respecter ces règles. Lien d'essai : `https://rayanem-dev.github.io/pointage-app/?c=DEMO`.
+- **Parcours complet dans un navigateur** : `cd appscript && SIJIL_DEMO=1 node dev/e2e-demo.js /tmp/e2e` (entre avec demo / demo, teste tous les onglets des 4 profils, relève erreurs JavaScript et appels refusés). À rejouer après toute évolution de l'interface ; corriger les défauts trouvés.
+- **Captures de la démonstration** : `SIJIL_DEMO=1 SIJIL_DATE=… node -r ./dev/freeze-date.js dev/captures.js /tmp/cap` (écran d'essai, bandeau, aide), en plus des captures habituelles.
+- Python : si `PIL` plante, `python3 -m pip install --target /tmp/pylibs pillow python-docx python-pptx` puis `PYTHONPATH=/tmp/pylibs`.
+- Travailler sur la branche `main` (la branche de session peut contenir un ancien état).
+
 ## Version PHP / MySQL (`php/`)
 
 Reflète la version Apps Script : après chaque changement de `appscript/`, régénérer (`node appscript/dev/gen-php.js`), reporter à la main la logique dans `php/src/` et rejouer la parité (`SIJIL_CONFIG=/tmp/sijil_test_config.php sh php/tests/parity.sh`, MariaDB local à démarrer).

@@ -31,7 +31,7 @@ im = op('52-exports-facture-full'); im.crop((0, 132, 1360, im.size[1])).save(os.
 # e-mails (hébergées par le site : https://rayanem-dev.github.io/pointage-app/mail/img/)
 M = os.path.join(ROOT, 'mail', 'img')
 for dest, src in [('agent', '60-agent-accueil'), ('annee', '14-vue-1-an'), ('client', '80-client-pointage'), ('completer', '11-completer'), ('demandes', '70-demandes-chef'),
-                  ('mois', '12-global-mois'), ('materiel', '15-materiel-pointage'), ('arabe', '92-arabe'), ('groupees', '71-demandes-groupees'), ('contrat', '82-client-contrat')]:
+                  ('mois', '12-global-mois'), ('materiel', '15-materiel-pointage'), ('arabe', '92-arabe'), ('groupees', '71-demandes-groupees'), ('contrat', '82-client-contrat'), ('demo', '98-demo-connexion'), ('jauge', '62-demandes-agent'), ('suivi', '70-demandes-chef')]:
     jpg(op(src), os.path.join(M, dest + '.jpg'), 1120)
 jpg(Image.open(os.path.join(CROPS, '50-exports.png')).convert('RGB'), os.path.join(M, 'exports.jpg'), 1120)
 jpg(Image.open(os.path.join(CROPS, '52-exports-facture.png')).convert('RGB'), os.path.join(M, 'facture.jpg'), 1120)
@@ -46,7 +46,7 @@ for f in sorted(os.listdir(os.path.join(SRC, 'help'))):
 if JD:
     I = os.path.join(JD, 'assets', 'img')
     for dest, src in [('sijil-10-pointer', '10-pointer'), ('sijil-12-global-mois', '12-global-mois'), ('sijil-60-agent-accueil', '60-agent-accueil'), ('sijil-92-arabe', '92-arabe'),
-                      ('sijil-15-materiel', '15-materiel-pointage'), ('sijil-51-attachement', '51-materiel-attachement'), ('sijil-71-demandes-groupees', '71-demandes-groupees')]:
+                      ('sijil-15-materiel', '15-materiel-pointage'), ('sijil-51-attachement', '51-materiel-attachement'), ('sijil-71-demandes-groupees', '71-demandes-groupees'), ('sijil-98-demo', '98-demo-connexion'), ('sijil-62-demandes', '62-demandes-agent')]:
         jpg(op(src), os.path.join(I, dest + '.jpg'), 1100)
     jpg(Image.open(os.path.join(CROPS, '50-exports.png')).convert('RGB'), os.path.join(I, 'sijil-50-exports.jpg'), 1100)
     jpg(Image.open(os.path.join(CROPS, '52-exports-facture.png')).convert('RGB'), os.path.join(I, 'sijil-52-facture.jpg'), 1100)
