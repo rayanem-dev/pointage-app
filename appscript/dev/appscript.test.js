@@ -441,7 +441,7 @@ test('documents : rangés dans Documents/<agent> à côté du classeur, type et 
 });
 
 test('attachement : quantité du mois = jours T pointés (base pointage) ou base du contrat', () => {
-  const a = T.admin; const mois = '2026-11';
+  const a = T.admin; const mois = '2026-06'; // mois passé de 30 jours : les jours prévus (à partir d'aujourd'hui) ne comptent pas
   ok(call(a, 'setupSave', { contrat_strict: '0' }));
   const ag = ok(call(a, 'agentCreate', { nom: 'BASE PTG', email: 'baseptg@t.local', password: 'pwpwpw12', contrat: 'C1', fonction: 'Technicien électricien' })).agent.id;
   ok(call(a, 'pointer', { agent_id: ag, date: `${mois}-05`, statut: 'T' })); ok(call(a, 'pointer', { agent_id: ag, date: `${mois}-06`, statut: 'T' }));

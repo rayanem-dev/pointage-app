@@ -184,22 +184,23 @@ function mountPrefs() {
 // ---------- connexion ----------
 function loginView() {
   if (S.loginMode === 'forgot') return forgotView();
-  var email = h('input', { type: 'email', required: true, autocomplete: 'username' });
+  var email = h('input', { type: 'text', inputmode: 'email', required: true, autocomplete: 'username', autocapitalize: 'none', spellcheck: 'false' });
   var pw = h('input', { type: 'password', required: true, autocomplete: 'current-password' });
   var box = msgBox();
   var btn = h('button', { class: 'primary' }, 'Se connecter');
   var remember = h('input', { type: 'checkbox', checked: true });
   var info = S.info || {};
   // Plusieurs clients sur ce déploiement : le code entreprise (lien d'invitation, QR code ou saisie) désigne le bon classeur.
-  var code = h('input', { value: S.code, required: true, autocomplete: 'organization', placeholder: 'ex. HORIZON', style: 'text-transform:uppercase' });
+  var code = h('input', { value: S.code === 'DEMO' ? '' : S.code, autocomplete: 'organization', placeholder: 'ex. HORIZON', style: 'text-transform:uppercase' });
   var titre = h('h1', null, info.prestataire || 'Sijil');
   code.addEventListener('change', function () { call('appInfo', code.value).then(function (i) { titre.textContent = i.prestataire || 'Sijil'; }).catch(function () { titre.textContent = 'Sijil'; }); });
   var form = h('form', { class: 'card', onsubmit: function (ev) {
     ev.preventDefault();
-    act(btn, box, function () { return call('login', email.value, pw.value, (info.multi || code.value.trim().toUpperCase() === 'ADMIN') ? code.value : '', remember.checked); }).then(function (r) {
+    var demoId = /^demo(-chef|-agent|-client)?$/.test(email.value.trim().toLowerCase()) && !code.value.trim(); // « demo » ouvre l'entreprise de démonstration sans code
+    act(btn, box, function () { if (info.multi && !code.value.trim() && !demoId) return Promise.reject(new Error('Entrez le code entreprise.')); return call('login', email.value, pw.value, (info.multi || code.value.trim().toUpperCase() === 'ADMIN') ? code.value : '', remember.checked); }).then(function (r) {
       if (!r) return;
       S.flash = null;
-      if (info.multi) { S.code = code.value.trim().toUpperCase(); if (S.code !== 'ADMIN') { try { localStorage.setItem('pt-code', S.code); } catch (e) { /* ignore */ } } } // le code réservé de l'éditeur n'est pas mémorisé
+      if (info.multi) { S.code = demoId ? 'DEMO' : code.value.trim().toUpperCase(); if (S.code !== 'ADMIN' && S.code !== 'DEMO') { try { localStorage.setItem('pt-code', S.code); } catch (e) { /* ignore */ } } } // le code réservé de l'éditeur n'est pas mémorisé
       S.token = r.token; try { sessionStorage.setItem('tk', r.token); } catch (e) { /* ignore */ }
       try { if (r.remember) localStorage.setItem('pt-rm', r.remember); else localStorage.removeItem('pt-rm'); } catch (e) { /* ignore */ }
       S.notice = null; boot();
@@ -207,6 +208,7 @@ function loginView() {
   } },
     h('img', { src: LOGO, alt: 'Sijil', width: 72, height: 72, style: 'display:block;margin:0 auto 6px' }), titre, h('p', { style: 'text-align:center;margin:-4px 0 4px;color:var(--accent);font-weight:600' }, 'Gestion du temps de travail'), h('p', { class: 'muted' }, 'Connectez-vous à votre espace'),
     S.flash ? h('p', { class: 'msg err' }, S.flash) : null, S.notice ? h('p', { class: 'msg ok' }, S.notice) : null,
+    info.demo ? h('div', { class: 'demohint' }, h('b', null, 'Essai immédiat, sans compte'), h('span', null, 'Identifiant ', h('code', null, 'demo'), ' · mot de passe ', h('code', null, 'demo')), h('small', null, 'Entreprise fictive : tout peut être essayé.'), h('button', { type: 'button', onclick: function () { email.value = 'demo'; pw.value = 'demo'; code.value = ''; form.requestSubmit(); } }, 'Entrer dans la démo')) : null,
     h('small', { style: 'text-align:center' }, 'Version ' + (info.version || '?')),
     info.installed === false ? h('p', { class: 'msg warn' }, "Application non installée : le propriétaire du classeur doit lancer le menu « Sijil → Installer / mettre à jour la structure ».") : null,
     info.multi ? field('Code entreprise', code) : null, field('Email', email), field('Mot de passe', pw),
@@ -353,9 +355,17 @@ function render() {
       h('a', { href: '#/motdepasse', onclick: navClick('/motdepasse') }, 'Mot de passe'),
       h('button', { class: 'link', onclick: logoutNow }, 'Déconnexion')));
   var main = h('main', null);
+  // Démonstration : bandeau avec changement de profil (administrateur, responsable, agent, client) et accès à la demande d'essai.
+  var demoBar = S.demo ? h('div', { class: 'demobar' }, h('span', null, h('b', null, tr('Démonstration')), ' · ', tr('données fictives, remises à zéro chaque nuit')),
+    h('span', { class: 'profils', role: 'group', 'aria-label': tr('Changer de profil') }, tr('Voir comme'), ' ', S.demo.profils.map(function (p) {
+      return h('button', { type: 'button', class: p.id === S.demo.profil ? 'on' : '', 'aria-pressed': String(p.id === S.demo.profil), onclick: function () {
+        if (p.id === S.demo.profil) return;
+        call('demoSwitch', p.id).then(function (r) { S.token = r.token; try { sessionStorage.setItem('tk', r.token); } catch (e) { /* ignore */ } S.path = null; boot(); }).catch(function (e) { window.alert(e.message); });
+      } }, tr(p.label));
+    })), S.info && S.info.shell ? h('a', { href: S.info.shell + '#essai', target: '_top', rel: 'noopener' }, tr('Demander mon essai gratuit')) : null) : null;
   var back = S.back ? h('div', { class: 'msg warn', style: 'margin:0;border-radius:0;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap' }, 'Mode support : vous êtes dans l\'espace de « ' + S.back.societe + ' » en tant que ' + S.user.nom + ' (' + tr(ROLE_LIB[S.user.role] || S.user.role) + ').',
     h('button', { type: 'button', class: 'primary', onclick: function () { call('logout').catch(function () {}).then(function () { S.token = S.back.token; setBack(null); S.path = null; try { sessionStorage.setItem('tk', S.token); } catch (e) { /* ignore */ } boot(); }); } }, "‹ Retour à l'administration")) : null;
-  root.replaceChildren.apply(root, [back, bar, main, h('footer', { class: 'muted', style: 'text-align:center;padding:14px;font-size:.8rem' }, 'Sijil · ', h('a', { href: '#/nouveautes', onclick: navClick('/nouveautes') }, 'version ' + ((S.info && S.info.version) || '?') + ' (nouveautés)'), h('br'), copyrightNodes(S.info && S.info.copyright), ' · ', h('a', { href: '#/confidentialite', onclick: navClick('/confidentialite') }, 'Confidentialité'), ' · ', h('a', { href: '#', title: 'Relire les données depuis le serveur', onclick: function (ev) { ev.preventDefault(); actualiser(); } }, '↻ Actualiser'))].filter(Boolean));
+  root.replaceChildren.apply(root, [back, demoBar, bar, main, h('footer', { class: 'muted', style: 'text-align:center;padding:14px;font-size:.8rem' }, 'Sijil · ', h('a', { href: '#/nouveautes', onclick: navClick('/nouveautes') }, 'version ' + ((S.info && S.info.version) || '?') + ' (nouveautés)'), h('br'), copyrightNodes(S.info && S.info.copyright), ' · ', h('a', { href: '#/confidentialite', onclick: navClick('/confidentialite') }, 'Confidentialité'), ' · ', h('a', { href: '#', title: 'Relire les données depuis le serveur', onclick: function (ev) { ev.preventDefault(); actualiser(); } }, '↻ Actualiser'))].filter(Boolean));
   if (S.owner) checkVersion().then(function (r) { var fl = document.querySelector('footer a[href="#/nouveautes"]'); if (fl && r.c !== null) { fl.textContent += r.c === 0 ? ' ✓' : ' ⚠'; fl.title = r.c === 0 ? tr('✓ Tout est à jour') : (r.c < 0 ? tr('⚠ Le serveur est en retard : v' + r.srv + ' au lieu de v' + r.site + '. À déployer.') : tr('⚠ Le site est en retard : v' + r.site + ' au lieu de v' + r.srv + '. À publier (patientez 1 à 2 minutes).')); } var a = document.querySelector('a[data-path="/version"]'); if (a) { a.textContent = tr('Version') + (r.c === 0 ? ' ✓' : r.c === null ? '' : ' ⚠'); a.title = r.c === 0 ? tr('✓ Tout est à jour') : ''; } });
   setTimeout(refreshBadges, 0);
   main.append(ROUTES[path]());
@@ -430,7 +440,7 @@ function bootInfo2() {
   Promise.all([infoP, meP]).then(function (r) {
     S.info = r[0];
     var me = r[1];
-    if (me) { S.user = me.user; S.canSetup = me.canSetup; S.owner = me.owner; S.params = me.params; S.rotations = me.rotations || ['28/28']; applyColors(); }
+    if (me) { S.user = me.user; S.canSetup = me.canSetup; S.owner = me.owner; S.params = me.params; S.rotations = me.rotations || ['28/28']; S.demo = me.demo || null; applyColors(); }
     render();
   });
 }
@@ -727,7 +737,6 @@ function DemandesPage() {
   }
   function demandeCard(d, mine) {
     var periode = d.date_debut ? ' · du ' + frDate(d.date_debut) + (d.date_fin ? ' au ' + frDate(d.date_fin) : '') + (d.reprise ? ' · reprise prévue le ' + frDate(d.reprise) : '') : '';
-    var transmise = d.statut === 'envoyee' ? h('p', { class: 'muted' }, 'Transmise à la direction (' + (S.params.prestataire || 'prestataire') + '), en attente de sa réponse') : null;
     var direct = ['acceptee', 'refusee', 'traitee'].indexOf(d.statut) >= 0 && !d.envoi_id; // décision prise sans passer par la direction
     var ferme = d.cloturee; // clôturée : plus de modification sans annuler la clôture
     var mod = (d.statut === 'en_attente' || (direct && !mine && !ferme)) ? h('button', { type: 'button', onclick: function () { editor(d, card); } }, 'Modifier') : null;
@@ -735,17 +744,22 @@ function DemandesPage() {
     var sup = (d.statut === 'en_attente' || (direct && !mine && !ferme)) ? supBtn(d) : null;
     var card = h('article', { class: 'item' }, h('div', null, h('b', null, d.type_label), h('span', { class: 'badge ' + d.statut }, STATUT_LABEL[d.statut]), ' ', mod, ' ', rouvre, ' ', sup),
       h('small', null, (mine ? '' : d.agent_nom + ' · ') + frDateTime(d.date_creation) + periode),
-      stepper(d), transmise, d.message ? h('p', null, d.message) : null, d.reponse ? h('p', { class: 'reply' }, 'Réponse' + (d.traite_par ? ' (' + d.traite_par + ')' : '') + ' : ' + d.reponse) : null,
+      stepper(d), d.message ? h('p', null, d.message) : null, d.reponse ? h('p', { class: 'reply' }, 'Réponse' + (d.traite_par ? ' (' + d.traite_par + ')' : '') + ' : ' + d.reponse) : null,
       docBloc(d), !mine && d.a_cloturer ? clotureCtl(d) : null, !mine && ferme ? annulCloture(d) : null);
     return card;
   }
-  // Avancement : reçue → transmise à la direction → réponse → clôturée (document remis). Visible de l'agent (pour ses demandes), du responsable et de l'administrateur.
+  // Avancement en jauge : reçue → direction → réponse → clôturée (document remis). Une pastille par étape, la ligne se remplit au fil de la demande.
+  var ETAPE_LABEL = { recue: 'Reçue', transmise: 'Direction', reponse: 'Réponse', cloturee: 'Clôturée' };
   function stepper(d) {
     var et = d.etapes || []; if (!et.length) return null;
-    return h('ol', { class: 'etapes', 'aria-label': tr('Avancement de la demande'), style: 'list-style:none;display:flex;gap:6px;flex-wrap:wrap;padding:0;margin:8px 0' }, et.map(function (s, i) {
-      var fait = s.etat === 'fait';
-      return h('li', { title: s.date ? frDateTime(s.date) : '', style: 'display:flex;align-items:center;gap:5px;font-size:.8rem;padding:3px 9px;border-radius:12px;border:1px solid var(--line);' + (fait ? 'background:var(--ok-bg);color:var(--ok-fg)' : 'color:var(--muted)') },
-        h('span', { 'aria-hidden': 'true' }, fait ? '●' : '○'), tr(s.label), s.date && fait ? h('small', { style: 'opacity:.8' }, frDate(String(s.date).slice(0, 10))) : null);
+    var now = -1; et.forEach(function (x, i) { if (now < 0 && x.etat !== 'fait') now = i; });
+    var refus = d.statut === 'refusee';
+    var actuel = now < 0 ? 'Terminée' : ETAPE_LABEL[et[now].cle];
+    return h('ol', { class: 'gauge', role: 'img', 'aria-label': tr('Avancement de la demande') + ' : ' + tr(actuel) }, et.map(function (x, i) {
+      var fait = x.etat === 'fait'; var rep = x.cle === 'reponse'; var no = rep && fait && refus;
+      var label = rep && fait ? (STATUT_LABEL[d.statut] || ETAPE_LABEL.reponse) : ETAPE_LABEL[x.cle];
+      return h('li', { class: no ? 'no' : fait ? 'done' : i === now ? 'now' : 'todo', title: x.date ? frDateTime(x.date) : '' },
+        h('span', { class: 'dot', 'aria-hidden': 'true' }, no ? '✕' : fait ? '✓' : ''), h('span', { class: 'lb' }, tr(label)));
     }));
   }
   // Document remis à la clôture : visible de l'agent, du responsable et de l'administrateur.
@@ -766,7 +780,7 @@ function DemandesPage() {
         var m = msgBox(); var ok = h('button', { type: 'button', class: 'primary' }, 'Clôturer'); var no = h('button', { type: 'button' }, 'Annuler');
         ok.onclick = function () { act(ok, m, function () { return call('demandeCloturer', d.id, sel.value); }).then(function (r) { if (r) { flash = { text: 'Demande clôturée : l’agent est prévenu.', ok: true }; load(); } }); };
         no.onclick = function () { zone.replaceChildren(); ouvrir.disabled = false; };
-        zone.replaceChildren(h('p', { class: 'muted' }, docs.length ? tr('Documents classés chez cet agent (★ = type correspondant). Pour en ajouter un, déposez-le d’abord dans l’onglet Documents.') : tr('Aucun document chez cet agent : déposez-le d’abord dans l’onglet Documents.')), field('Document à remettre', sel), m, h('div', { class: 'sendbar' }, ok, no));
+        zone.replaceChildren(h('p', { class: 'muted' }, docs.length ? tr('★ = type correspondant') : tr('Aucun document : déposez-le d’abord dans l’onglet Documents.')), field('Document à remettre', sel), m, h('div', { class: 'sendbar' }, ok, no));
       }).catch(function (e) { zone.replaceChildren(h('p', { class: 'msg err' }, e.message)); ouvrir.disabled = false; });
     };
     return h('div', null, ouvrir, zone);
@@ -835,7 +849,7 @@ function DemandesPage() {
         chosen.forEach(function (x) { chain = chain.then(function () { return call('demandeCreate', { type: type.value, message: msg.value, date_debut: d1.value, date_fin: d2.value, agent_id: x.id || undefined }); }); });
         return chain;
       }, ok).then(function (r) { if (r) { flash = { text: ok + '.', ok: true }; load(); } });
-    } }, h('h2', null, 'Nouvelle demande'), h('p', { class: 'muted' }, chefMode ? 'Pour vous, pour un agent ou pour plusieurs agents à la fois (une demande par personne) ; elles arrivent dans « Demandes en cours ».' : 'Elle sera transmise ' + dest + '.'),
+    } }, h('h2', null, 'Nouvelle demande'), chefMode ? h('p', { class: 'muted' }, 'Une demande par personne cochée.') : null,
       h('div', { class: 'row' }, chefMode ? field('Pour', pour, 'grow2') : null, field('Type de demande', type, 'grow2'), field('Du (facultatif)', d1), field('Au (facultatif)', d2)), field('Message', msg), box, btn);
   }
   var OFFERED = null; // types proposés pour une nouvelle demande (réglés dans Setup → Demandes), fournis par le serveur
@@ -872,8 +886,8 @@ function DemandesPage() {
       });
     };
     updateCount();
-    return h('section', { class: 'card' }, h('h2', null, 'Demandes en cours' + (pending.length ? ' (' + pending.length + ')' : '')),
-      h('p', { class: 'muted' }, "Les demandes de votre groupe arrivent ici, regroupées par thème. Acceptez ou refusez ; tant qu’une demande n’est pas envoyée, vous pouvez la modifier, annuler votre décision ou la supprimer. Cochez celles à transmettre : une seule demande groupée part à la direction."),
+    return h('section', { class: 'card', id: 'dem-encours' }, h('h2', null, 'Demandes en cours' + (pending.length ? ' (' + pending.length + ')' : '')),
+      h('p', { class: 'muted' }, 'Acceptez ou refusez, cochez, envoyez : une seule demande part à la direction.'),
       themes.length ? themes : h('p', { class: 'muted' }, 'Aucune demande en cours.'), box,
       themes.length ? h('div', { class: 'sendbar' }, note, send) : null);
   }
@@ -902,7 +916,7 @@ function DemandesPage() {
     return h('div', { class: 'sendbar' }, b, m);
   }
   function envoisView(L) {
-    return h('section', { class: 'card' }, h('h2', null, 'Historique des demandes transmises à la direction'),
+    return h('section', { class: 'card', id: 'dem-envois' }, h('h2', null, 'Chez la direction'),
       L.envois.length ? L.envois.map(function (e) {
         var box = msgBox();
         var res = h('select', null, h('option', { value: 'acceptee' }, 'Acceptées'), h('option', { value: 'refusee' }, 'Refusées'), h('option', { value: 'traitee' }, 'Traitées'));
@@ -911,26 +925,39 @@ function DemandesPage() {
         return h('article', { class: 'item' }, h('div', null, h('b', null, 'Envoi du ' + frDateTime(e.date_envoi)), h('span', { class: 'badge ' + (e.statut === 'envoye' ? 'envoyee' : 'traitee') }, e.statut === 'envoye' ? 'En attente de la direction' : 'Réponse reçue')),
           h('small', null, (isAdmin ? plural(+e.nb, 'demande') + ' · par ' : plural(+e.nb, 'demande') + ' de votre équipe · envoyé par ') + e.chef_nom + (e.note ? ' · ' + e.note : '')),
           e.statut === 'envoye'
-            ? [h('p', { class: 'muted' }, 'La direction n\u2019a pas encore répondu : vous pouvez corriger, retirer ou supprimer une demande, ou annuler tout l\u2019envoi. Le message déjà envoyé à la direction n\u2019est pas rappelé.'),
+            ? [null,
               e.groupes.map(function (g) { return h('div', { class: 'theme' }, h('h3', null, g.label, h('span', { class: 'badge' }, g.items.length)), g.items.map(function (d) { return envoiLigne(d); })); }),
               e.peut_agir ? annulerBouton(e) : null]
             : e.groupes.map(function (g) { return h('div', { class: 'theme' }, h('h3', null, g.label, h('span', { class: 'badge' }, g.items.length)), g.items.map(function (d) { return h('div', { class: 'pick' }, h('div', null, h('b', null, d.agent_nom), ' ', h('span', { class: 'badge ' + d.statut }, STATUT_LABEL[d.statut] || d.statut), d.reponse ? h('div', { class: 'reply' }, 'Réponse' + (d.traite_par ? ' (' + d.traite_par + ')' : '') + ' : ' + d.reponse) : null)); })); }),
           e.statut === 'envoye' && e.peut_agir ? h('div', { class: 'sendbar' }, res, rep, btn) : (e.reponse ? h('p', { class: 'reply' }, 'Réponse : ' + e.reponse) : null), box);
       }) : h('p', { class: 'muted' }, 'Aucune demande transmise pour le moment.'));
   }
+  // Tableau de bord : où en sont les demandes (en cours → chez la direction → à clôturer → clôturées). Un clic mène à la liste.
+  function pipeline(L) {
+    var enCours = L.toHandle.filter(function (d) { return d.statut === 'en_attente' || (d.statut === 'acceptee' && !d.envoi_id); }).length;
+    var chez = L.toHandle.filter(function (d) { return d.statut === 'envoyee'; }).length;
+    var aClore = L.toHandle.filter(function (d) { return d.a_cloturer; }).length;
+    var closes = L.toHandle.filter(function (d) { return d.cloturee; }).length;
+    var steps = [['En cours', enCours, 'dem-encours'], ['Chez la direction', chez, 'dem-envois'], ['À clôturer', aClore, 'dem-aclore'], ['Clôturées', closes, 'dem-closes']];
+    return h('div', { class: 'pipeline' }, steps.map(function (x, i) {
+      var a = h('a', { href: '#', class: x[1] ? 'on' : '', onclick: function (ev) { ev.preventDefault(); var t = document.getElementById(x[2]); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, h('b', null, String(x[1])), h('span', null, tr(x[0])));
+      return h('div', { class: 'pstep' }, a, i < steps.length - 1 ? h('span', { class: 'arrow', 'aria-hidden': 'true' }, '›') : null);
+    }));
+  }
   function view(L) {
     var out = [];
     if (L.proposes) { OFFERED = {}; L.proposes.forEach(function (k) { if (L.types[k]) OFFERED[k] = L.types[k]; }); }
     if (!isAdmin) out.push(newForm());
     if (staff) {
+      out.push(pipeline(L));
       out.push(inbox(L));
       var aClore = L.toHandle.filter(function (d) { return d.a_cloturer; });
-      if (aClore.length) out.push(h('section', { class: 'card' }, h('h2', null, 'À clôturer (' + aClore.length + ')'), h('p', { class: 'muted' }, 'La réponse est arrivée : remettez le document à l’agent et clôturez la demande. L’agent voit l’avancement, la clôture et le document.'), aClore.map(function (d) { return demandeCard(d, false); })));
+      if (aClore.length) out.push(h('section', { class: 'card', id: 'dem-aclore' }, h('h2', null, 'À clôturer (' + aClore.length + ')'), h('p', { class: 'muted' }, 'Réponse reçue : remettez le document à l’agent.'), aClore.map(function (d) { return demandeCard(d, false); })));
       out.push(envoisView(L));
       var closes = L.toHandle.filter(function (d) { return d.cloturee; }).sort(function (a, b) { return a.date_cloture < b.date_cloture ? 1 : -1; }).slice(0, 25);
-      if (closes.length) out.push(h('section', { class: 'card' }, h('h2', null, 'Demandes clôturées'), closes.map(function (d) { return demandeCard(d, false); })));
+      if (closes.length) out.push(h('section', { class: 'card', id: 'dem-closes' }, h('h2', null, 'Demandes clôturées'), closes.map(function (d) { return demandeCard(d, false); })));
       var done = L.toHandle.filter(function (d) { return ['refusee', 'traitee'].indexOf(d.statut) >= 0 && !d.envoi_id; }).slice(0, 25); // les demandes envoyées sont dans « Envois à la direction »
-      if (done.length) out.push(h('section', { class: 'card' }, h('h2', null, 'Demandes refusées ou traitées directement'), h('p', { class: 'muted' }, 'Une erreur ? Vous pouvez modifier la demande, annuler votre décision (elle repasse en cours) ou la supprimer.'), done.map(function (d) { return demandeCard(d, false); })));
+      if (done.length) out.push(h('section', { class: 'card' }, h('h2', null, 'Demandes refusées ou traitées directement'), done.map(function (d) { return demandeCard(d, false); })));
     }
     if (!isAdmin) out.push(h('section', { class: 'card' }, h('h2', null, 'Mes demandes'), L.mine.length ? L.mine.map(function (d) { return demandeCard(d, true); }) : h('p', { class: 'muted' }, "Vous n'avez fait aucune demande.")));
     return out;
@@ -1280,6 +1307,26 @@ function ClientsPage() {
   var open = {}; // clients dont le panneau « Administrateur » est ouvert
   function copy(text, btn) { try { navigator.clipboard.writeText(text).then(function () { var t = btn.textContent; btn.textContent = tr('Copié ✓'); setTimeout(function () { btn.textContent = t; }, 1500); }); } catch (e) { window.prompt('Copiez :', text); } }
   function load() { wrap.replaceChildren(loading()); call('clients').then(function (r) { S.clientsFetched = true; S.clientsList = r.clients.map(function (c) { return { code: c.code, nom: c.nom }; }); try { sessionStorage.setItem('cl', JSON.stringify(S.clientsList)); } catch (e) { /* ignore */ } var es = document.querySelector('.entsel'); if (es) { var v = es.value; es.replaceChildren.apply(es, [h('option', { value: '' }, 'Mon espace (éditeur)')].concat(S.clientsList.map(function (c) { return h('option', { value: c.code }, c.nom + ' (' + c.code + ')'); }))); es.value = v; } return r; }).then(draw).catch(function (e) { wrap.replaceChildren(h('p', { class: 'msg err' }, e.message)); }); }
+  // Entreprise de démonstration (essai public : identifiant demo, mot de passe demo) : création, remise à zéro, lien à partager.
+  function demoCard(note) {
+    var card = h('section', { class: 'card' }, h('h2', null, 'Démonstration'), loading());
+    call('demoStatus').then(function (st) {
+      var box = msgBox(); var btn = h('button', { class: 'primary', type: 'button' }, st.existe ? 'Remettre à zéro maintenant' : 'Créer l’entreprise de démonstration');
+      btn.onclick = function () {
+        if (st.existe && !window.confirm(tr('Remettre la démonstration à zéro ? Les ajouts des visiteurs sont effacés.'))) return;
+        var enCours = act(btn, box, function () { return call('demoReset'); }, null); box.show(tr('Patientez, la démonstration se prépare (environ une minute)…'), true);
+        enCours.then(function (r) { if (r) { card.replaceWith(demoCard('Démonstration remise à zéro : comptes demo, demo-chef, demo-agent, demo-client (mot de passe demo).')); } });
+      };
+      var lien = (S.info && S.info.shell ? S.info.shell : '') + '?c=DEMO';
+      var copyBtn = h('button', { type: 'button' }, 'Copier le lien'); copyBtn.onclick = function () { copy(lien, copyBtn); };
+      card.replaceChildren(h('h2', null, 'Démonstration'),
+        h('p', { class: 'muted' }, st.existe ? 'Les visiteurs entrent avec l’identifiant demo et le mot de passe demo (comptes : demo, demo-chef, demo-agent, demo-client).' : 'Crée une entreprise fictive complète pour que vos prospects essaient Sijil avant de demander un essai.'),
+        st.existe ? h('p', null, h('b', null, tr('Lien') + ' : '), h('code', null, lien), ' ', copyBtn) : null,
+        st.existe ? h('small', { class: 'muted' }, st.derniere ? tr('Dernière remise à zéro') + ' : ' + frDate(st.derniere) + ' · ' + tr('automatique chaque nuit') : tr('Pas encore remise à zéro')) : null, box, h('div', { class: 'sendbar' }, btn));
+      if (note) box.show(tr(note), true);
+    }).catch(function (e) { card.replaceChildren(h('h2', null, 'Démonstration'), h('p', { class: 'msg err' }, e.message)); });
+    return card;
+  }
   function draw(data) {
     var f = { code: '', nom: '', admin_email: '', admin_nom: '', contact: '', fin_licence: '', statut: 'actif', partager_lecture: false };
     var share = h('input', { type: 'checkbox' }); share.onchange = function () { f.partager_lecture = share.checked; };
@@ -1358,7 +1405,7 @@ function ClientsPage() {
       cardContact.replaceChildren(h('h2', null, 'Mon contact (affiché à mes clients)'), h('p', { class: 'muted' }, "Les clients voient ce contact dans leur onglet « À propos » et vous écrivent à cette adresse e-mail."),
         h('div', { class: 'row' }, field('Nom', nom), field('E-mail', mail, 'grow2'), field('Téléphone', tel)), cbox, sv);
     }).catch(function (e) { cardContact.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
-    wrap.replaceChildren(form, res, h('section', { class: 'card' }, h('h2', null, 'Clients (' + data.clients.length + ')'),
+    wrap.replaceChildren(demoCard(), form, res, h('section', { class: 'card' }, h('h2', null, 'Clients (' + data.clients.length + ')'),
       h('p', { class: 'muted' }, "Suspendre ou laisser expirer la licence bloque aussitôt la connexion et les sessions ouvertes de ce client, sans toucher aux autres. Le lien d'invitation fonctionne aussi en QR code."),
       h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Code', 'Société', 'Statut', 'Fin de licence', 'Vitrine', 'Adresse /exec dédiée (facultatif)', 'Actions'].map(function (t) { return h('th', null, t); }))), h('tbody', null, rows)))), cardContact);
   }
@@ -1530,7 +1577,7 @@ function SetupPage() {
   return wrap;
 }
 // Setup → Demandes : types proposés pour les nouvelles demandes, et types ajoutés (par exemple « Certificat de travail »).
-function typesDemandeCard() {
+function typesDemandeCard(note) {
   var card = h('section', { class: 'card' }); card.append(loading());
   call('typesDemandeGet').then(function (cfg) {
     var box = msgBox(); var btn = h('button', { class: 'primary' }, 'Enregistrer');
@@ -1551,12 +1598,13 @@ function typesDemandeCard() {
     btn.onclick = function () {
       var builtin = {}; builtinRows.forEach(function (b) { builtin[b.cle] = b.cb.checked; });
       var custom = rows.map(function (r) { return { cle: r.cle, label: r.label.value, doc: r.doc.value, propose: r.cb.checked }; }).filter(function (c) { return String(c.label).trim() || c.cle; });
-      act(btn, box, function () { return call('typesDemandeSave', { builtin: builtin, custom: custom }); }, 'Types de demande enregistrés').then(function (r) { if (r) { OFFEREDRESET(); card.replaceWith(typesDemandeCard()); } });
+      act(btn, box, function () { return call('typesDemandeSave', { builtin: builtin, custom: custom }); }, 'Types de demande enregistrés').then(function (r) { if (r) { OFFEREDRESET(); card.replaceWith(typesDemandeCard('Types de demande enregistrés')); } });
     };
     card.replaceChildren(h('h2', null, 'Types de demande'), h('p', { class: 'muted' }, 'Choisissez les types proposés aux agents et aux responsables pour une nouvelle demande, et ajoutez les vôtres (par exemple « Certificat de travail »). Les demandes déjà faites restent visibles.'),
       h('fieldset', null, h('legend', null, 'Types proposés'), builtinRows.map(function (b) { return b.node; })),
       h('fieldset', null, h('legend', null, 'Types ajoutés'), customHost, add,
         h('p', { class: 'muted' }, 'Le document remis à la clôture sert à proposer en premier le bon document de l’agent quand la demande est clôturée.')), box, btn);
+    if (note) box.show(tr(note), true); // la carte est rechargée après l'enregistrement : la confirmation doit survivre
   }).catch(function (e) { card.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
   return card;
 }
@@ -1964,9 +2012,14 @@ function ConnexionsPage() {
 function ExportsPage() {
   var ro = S.user.role !== 'admin'; // responsable d’équipe : extraction en lecture seule (pas de validation, de saisie ni de création de facture)
   var wrap = h('div', { style: 'display:grid;gap:16px' });
-  call('contratsLite').then(function (cfg) {
+  // L'administrateur arrive sur le premier mois à valider (les attachements se valident dans l'ordre), pas forcément sur le mois en cours.
+  var tCible = S.target; var synP = (tCible && tCible.month) || ro ? Promise.resolve(null) : call('contratsSynthese').catch(function () { return null; });
+  Promise.all([call('contratsLite'), synP]).then(function (res) {
+    var cfg = res[0]; var syn = res[1];
     var t = S.target; S.target = null; // venant de la page Contrats : mois et contrat déjà choisis
-    var month = (t && t.month) || thisMonth(); var contrat = (t && t.contrat) || (cfg.contrats[0] ? cfg.contrats[0].numero : '');
+    var contrat = (t && t.contrat) || (cfg.contrats[0] ? cfg.contrats[0].numero : '');
+    var month = (t && t.month) || thisMonth();
+    if (!(t && t.month) && syn) { var cs = syn.filter(function (x) { return x.numero === contrat; })[0]; if (cs && cs.prochain && cs.prochain < month) month = cs.prochain; }
     var box = msgBox(); var host = h('div', { style: 'display:grid;gap:16px' });
     var csel = h('select', { onchange: function () { contrat = csel.value; draw(); } }, cfg.contrats.map(function (c) { return h('option', { value: c.numero }, c.numero); })); csel.value = contrat;
     var top = h('section', { class: 'card' }, h('div', { class: 'toolbar' }, monthNav(month, function (m) { month = m; draw(); }), cfg.contrats.length ? h('label', { class: 'inline' }, 'Contrat ', csel) : null),

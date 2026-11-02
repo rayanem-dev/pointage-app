@@ -264,7 +264,7 @@ var Bordereau = (function () {
   function readFile(o) {
     var name = String(o.nom || 'bordereau'); var ext = (/\.([a-z0-9]+)$/i.exec(name) || [])[1] || '';
     ext = ext.toLowerCase();
-    var bytes = Utilities.base64Decode(o.base64 || '');
+    var bytes = Utilities.base64Decode(o.base64 || ''); Demo.checkUpload(bytes.length);
     if (!bytes.length) throw httpErr_('Fichier vide');
     if (bytes.length > CFG.MAX_UPLOAD_BYTES) throw httpErr_('Fichier trop volumineux (10 Mo maximum)');
     if (ext === 'csv' || ext === 'txt') {
@@ -299,7 +299,7 @@ var Bordereau = (function () {
   function ocrText(o) {
     var ext = ((/\.([a-z0-9]+)$/i.exec(String(o.nom || '')) || [])[1] || '').toLowerCase();
     if (['pdf', 'png', 'jpg', 'jpeg', 'gif', 'bmp', 'tif', 'tiff'].indexOf(ext) < 0) return '';
-    var bytes = Utilities.base64Decode(o.base64 || '');
+    var bytes = Utilities.base64Decode(o.base64 || ''); Demo.checkUpload(bytes.length);
     var mime = o.mime || (ext === 'pdf' ? 'application/pdf' : 'image/' + (ext === 'jpg' ? 'jpeg' : ext));
     var id = driveConvert(bytes, mime, String(o.nom || 'document'), 'application/vnd.google-apps.document');
     try { return exportText(id, 'text/plain'); } finally { trash(id); }

@@ -35,6 +35,7 @@ var Mail = (function () {
       + '</table></td></tr></table></body></html>';
   }
   function send(o) {
+    if (typeof Demo !== 'undefined' && Demo.isDemo()) { Logger.log('Démonstration : e-mail non envoyé (' + (o.subject || '') + ')'); return null; } // jamais d'e-mail réel depuis la démonstration
     var m = { to: o.to, subject: o.subject, body: o.body || '', htmlBody: html(o) };
     if (o.replyTo) m.replyTo = o.replyTo;
     if (o.name !== false) m.name = 'Sijil';

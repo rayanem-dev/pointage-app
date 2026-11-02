@@ -138,6 +138,7 @@
       </details>
       <div id="setup-err" class="err" role="alert"></div>
       <button type="submit">Ouvrir l'application</button>
+      <button id="setup-demo" type="button" class="secondary" style="background:none;color:#16598D;text-decoration:underline;padding:0">Essayer la démonstration (identifiant demo · mot de passe demo)</button>
       <small>Le code est mémorisé sur cet appareil. Un lien d'invitation (?c=CODE) l'enregistre automatiquement.</small>
     </form>
     <small>© 2026 <a href="https://rayanem-dev.github.io/JawlaDev/" target="_blank" rel="noopener">JawlaDev</a> — Tous droits réservés · <a href="confidentialite.html">Confidentialité</a></small>
@@ -296,6 +297,8 @@
     var known = store.get('app-code') || store.get('app-url-custom');
     if (change) showSetup(); else if (known && (standalone || /[?&]go\b/.test(location.search))) open(); else if (known) showLauncher(); else setup.hidden = false;
     
+    document.getElementById('setup-demo').addEventListener('click', function () { document.getElementById('setup-code').value = 'DEMO'; document.getElementById('setup-form').requestSubmit(); });
+    if (location.hash === '#essai') { var tr0 = document.getElementById('trial'); if (tr0) tr0.open = true; }
     document.getElementById('setup-form').addEventListener('submit', function (e) {
       e.preventDefault();
       var err = document.getElementById('setup-err'); err.textContent = '';

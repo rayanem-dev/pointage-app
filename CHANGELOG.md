@@ -2,6 +2,10 @@
 
 © 2026 JawlaDev — Tous droits réservés
 
+## 3.44.0 — 2026-11-02 — Suivi des demandes en un coup d'œil et démonstration
+
+- Chaque demande affiche son avancement en jauge : Reçue, Direction, Réponse, Clôturée. Les longues phrases ont disparu : on voit d'un coup d'œil où en est la demande.
+
 ## 3.43.0 — 2026-10-28 — Aide enrichie
 
 - L'aide explique maintenant le matériel mis à disposition (camions, engins, 4x4) et son pointage, les demandes groupées pour l'équipe, et les captures d'écran sont toutes renouvelées.

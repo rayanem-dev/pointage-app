@@ -57,6 +57,7 @@ var Auto = (function () {
       }
     });
     Store.setTenant('', '');
+    try { Demo.tick(); } catch (e) { Logger.log('Démonstration (remise à zéro) : ' + e.message); }
     return faits;
   }
   return { get: get, set: set, run: run, ensureTrigger: ensureTrigger, hasTrigger: hasTrigger };

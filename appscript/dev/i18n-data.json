@@ -6433,5 +6433,185 @@
   "Module Facturation : n° et date de facture, facture PDF / Excel générée à partir de l'attachement validé (décoché : Sijil s'arrête à l'attachement)",
   "Invoicing module: invoice number and date, PDF / Excel invoice generated from the validated statement (off: Sijil stops at the statement)",
   "وحدة الفوترة: رقم الفاتورة وتاريخها، وفاتورة PDF / Excel مولّدة من الكشف المعتمد (معطّلة: يتوقف «سجل» عند الكشف)"
+ ],
+ [
+  "Reçue",
+  "Received",
+  "مستلمة"
+ ],
+ [
+  "Direction",
+  "Management",
+  "الإدارة"
+ ],
+ [
+  "Terminée",
+  "Completed",
+  "منتهية"
+ ],
+ [
+  "En cours",
+  "In progress",
+  "جارية"
+ ],
+ [
+  "Chez la direction",
+  "With management",
+  "لدى الإدارة"
+ ],
+ [
+  "Clôturées",
+  "Closed",
+  "المغلقة"
+ ],
+ [
+  "Une demande par personne cochée.",
+  "One request per ticked person.",
+  "طلب لكل شخص محدَّد."
+ ],
+ [
+  "Acceptez ou refusez, cochez, envoyez : une seule demande part à la direction.",
+  "Accept or refuse, tick, send: a single message goes to management.",
+  "اقبل أو ارفض ثم حدّد وأرسل: تُرسل رسالة واحدة إلى الإدارة."
+ ],
+ [
+  "Réponse reçue : remettez le document à l’agent.",
+  "Reply received: hand the document over to the employee.",
+  "وصل الرد: سلِّم الوثيقة للعون."
+ ],
+ [
+  "★ = type correspondant",
+  "★ = matching type",
+  "★ = النوع المطابق"
+ ],
+ [
+  "Aucun document : déposez-le d’abord dans l’onglet Documents.",
+  "No document: upload it first in the Documents tab.",
+  "لا توجد وثيقة: ارفعها أولاً في تبويب الوثائق."
+ ],
+ [
+  "Réservé à la démonstration",
+  "Reserved for the demonstration",
+  "مخصّص للنسخة التجريبية"
+ ],
+ [
+  "Profil inconnu",
+  "Unknown profile",
+  "ملف غير معروف"
+ ],
+ [
+  "Compte de démonstration introuvable : demandez la remise à zéro à l'éditeur",
+  "Demonstration account not found: ask the publisher to reset it",
+  "حساب التجربة غير موجود: اطلب من الناشر إعادة التهيئة"
+ ],
+ [
+  "Démonstration : 2 Mo maximum par fichier",
+  "Demonstration: 2 MB maximum per file",
+  "النسخة التجريبية: 2 ميغابايت كحد أقصى للملف"
+ ],
+ [
+  "Démonstration : trop de dépôts pour le moment, réessayez plus tard",
+  "Demonstration: too many uploads right now, try again later",
+  "النسخة التجريبية: عدد كبير من الرفع حالياً، أعد المحاولة لاحقاً"
+ ],
+ [
+  "Désactivé dans la démonstration",
+  "Disabled in the demonstration",
+  "معطّل في النسخة التجريبية"
+ ],
+ [
+  "Entrez le code entreprise.",
+  "Enter the company code.",
+  "أدخل رمز الشركة."
+ ],
+ [
+  "Démonstration",
+  "Demonstration",
+  "نسخة تجريبية"
+ ],
+ [
+  "données fictives, remises à zéro chaque nuit",
+  "fictional data, reset every night",
+  "بيانات وهمية، تُعاد تهيئتها كل ليلة"
+ ],
+ [
+  "Voir comme",
+  "View as",
+  "عرض بصفة"
+ ],
+ [
+  "Changer de profil",
+  "Switch profile",
+  "تغيير الملف"
+ ],
+ [
+  "Demander mon essai gratuit",
+  "Request my free trial",
+  "اطلب تجربتي المجانية"
+ ],
+ [
+  "Essai immédiat, sans compte",
+  "Instant trial, no account needed",
+  "تجربة فورية دون حساب"
+ ],
+ [
+  "Identifiant ",
+  "Username ",
+  "المعرّف "
+ ],
+ [
+  " · mot de passe ",
+  " · password ",
+  " · كلمة المرور "
+ ],
+ [
+  "Entreprise fictive : tout peut être essayé.",
+  "Fictional company: everything can be tried.",
+  "شركة وهمية: يمكن تجربة كل شيء."
+ ],
+ [
+  "Entrer dans la démo",
+  "Enter the demo",
+  "ادخل إلى التجربة"
+ ],
+ [
+  "Remettre la démonstration à zéro ? Les ajouts des visiteurs sont effacés.",
+  "Reset the demonstration? Visitors' additions are erased.",
+  "إعادة تهيئة النسخة التجريبية؟ تُمحى إضافات الزوار."
+ ],
+ [
+  "Patientez, la démonstration se prépare (environ une minute)…",
+  "Please wait, the demonstration is being prepared (about a minute)…",
+  "يرجى الانتظار، يجري تجهيز النسخة التجريبية (حوالي دقيقة)…"
+ ],
+ [
+  "Remettre à zéro maintenant",
+  "Reset now",
+  "إعادة التهيئة الآن"
+ ],
+ [
+  "Créer l’entreprise de démonstration",
+  "Create the demonstration company",
+  "إنشاء شركة التجربة"
+ ],
+ [
+  "Lien",
+  "Link",
+  "الرابط"
+ ],
+ [
+  "Dernière remise à zéro",
+  "Last reset",
+  "آخر إعادة تهيئة"
+ ],
+ [
+  "automatique chaque nuit",
+  "automatic every night",
+  "تلقائية كل ليلة"
+ ],
+ [
+  "Pas encore remise à zéro",
+  "Not reset yet",
+  "لم تُعَد تهيئتها بعد"
  ]
 ]

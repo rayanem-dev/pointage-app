@@ -47,7 +47,7 @@ var HANDLERS = {
     pub: true,
     fn: function (u, a) {
       var multi = Tenants.multi();
-      var base = { multi: multi, version: CFG.VERSION, copyright: CFG.COPYRIGHT, shell: CFG.APP_SHELL_URL };
+      var base = { multi: multi, version: CFG.VERSION, copyright: CFG.COPYRIGHT, shell: CFG.APP_SHELL_URL, demo: multi && Demo.available() };
       if (multi && !a[0]) { base.installed = true; base.prestataire = ''; return base; }
       Tenants.use(a[0]);
       var p = Params.get(); base.installed = Setup.hasAdmin(); base.prestataire = p.prestataire_nom; base.code = Store.tenantCode();
@@ -65,7 +65,7 @@ var HANDLERS = {
   passwordReset: { pub: true, write: true, fn: function (u, a) { return Auth.resetPassword(a[0], a[1], a[2], a[3]); } },
   // ----- tout utilisateur connecté -----
   logout: { fn: function (u, a, token) { Auth.logout(token); return true; } },
-  me: { fn: function (u) { return { owner: Tenants.isOwner(u), code: Store.tenantCode(), user: Agents.publicAgent(u), canSetup: Auth.canSetup(u), params: Params.pub(Params.get()), rotations: CFG.ROTATIONS }; } },
+  me: { fn: function (u) { return { owner: Tenants.isOwner(u), code: Store.tenantCode(), user: Agents.publicAgent(u), canSetup: Auth.canSetup(u), params: Params.pub(Params.get()), rotations: CFG.ROTATIONS, demo: Demo.info(u) }; } },
   // Pastilles du menu : documents déposés pour moi (dates et noms, le navigateur retient ce qu'il a déjà vu) et demandes à traiter.
   remarqueAdd: { roles: ['client', 'agent'], write: true, fn: function (u, a) { return Remarques.add(u, a[0] || {}); } },
   remarqueTraiter: { roles: STAFF, write: true, fn: function (u, a) { return Remarques.traiter(u, a[0], a[1] || {}); } },
@@ -74,6 +74,10 @@ var HANDLERS = {
   } },
   documentsLus: { roles: WORKERS, write: true, fn: function (u) { return Documents.marquerLus(u); } },
   params: { fn: function () { return Params.pub(Params.get()); } },
+  // Démonstration : essai gratuit sans compte (identifiant demo, mot de passe demo), remise à zéro par l'éditeur.
+  demoSwitch: { fn: function (u, a) { return Demo.switchTo(String(a[0] || '')); } },
+  demoStatus: { roles: ['admin'], fn: function (u) { Tenants.requireOwner(u); return Demo.status(); } },
+  demoReset: { roles: ['admin'], fn: function (u) { Tenants.requireOwner(u); return Demo.reset(u); } },
   passwordOwn: { write: true, fn: function (u, a) { Agents.changeOwnPassword(u, a[0], a[1]); return true; } },
   overview: {
     roles: WORKERS,
@@ -291,6 +295,7 @@ function rpc(token, name, args) {
     var h = HANDLERS[name];
     if (!h) throw httpErr_('Fonction inconnue : ' + name);
     var user = h.pub ? null : Auth.userFromToken(token);
+    if (user && Demo.isDemo() && Demo.blocked(name)) throw httpErr_('Désactivé dans la démonstration', 'DEMO');
     if (h.roles && h.roles.indexOf(user.role) < 0) throw httpErr_('Accès refusé', 'FORBIDDEN');
     if (h.setup && !Auth.canSetup(user)) throw httpErr_("Accès au Setup non autorisé (demandez-le à l'administrateur)", 'FORBIDDEN');
     var run = function () { return h.fn(user, args || [], token); };

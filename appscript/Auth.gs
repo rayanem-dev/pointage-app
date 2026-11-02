@@ -59,18 +59,22 @@ var Auth = (function () {
     var salt = newSalt();
     return { salt: salt, password_hash: hash(String(password), salt) };
   }
+  // Mot de passe sans contrôle de longueur : réservé aux comptes publics de la démonstration.
+  function rawCredentials(password) { var salt = newSalt(); return { salt: salt, password_hash: hash(String(password), salt) }; }
   function check(agent, password) { return !!agent && !!agent.salt && hash(String(password || ''), agent.salt) === agent.password_hash; }
 
   function login(email, password, code, remember) {
     email = String(email || '').trim().toLowerCase();
+    var demo = Demo.resolveLogin(email, code); if (demo) { email = demo.email; code = demo.code; } // « demo » ouvre l'entreprise de démonstration
     if (!email) throw httpErr_('Email ou mot de passe incorrect');
     var tenant = Tenants.use(code); // classeur du client (ou classeur unique sans annuaire)
     var cache = CacheService.getScriptCache();
     var key = 'L_' + tenant.code + '_' + email;
     var tries = Number(cache.get(key) || 0);
-    if (tries >= 8) throw httpErr_('Trop de tentatives, réessayez dans 15 minutes');
+    var publique = tenant.code === Demo.CODE; // mot de passe public : pas de blocage (il serait facile de bloquer la démonstration pour tous)
+    if (tries >= 8 && !publique) throw httpErr_('Trop de tentatives, réessayez dans 15 minutes');
     var agent = Store.readTable('Agents').filter(function (a) { return a.email.toLowerCase() === email && a.actif === '1'; })[0];
-    if (!check(agent, password)) { cache.put(key, String(tries + 1), 900); throw httpErr_('Email ou mot de passe incorrect'); }
+    if (!check(agent, password)) { if (!publique) cache.put(key, String(tries + 1), 900); throw httpErr_('Email ou mot de passe incorrect'); }
     cache.remove(key);
     var token = Utilities.getUuid() + Utilities.getUuid().replace(/-/g, '');
     cache.put('S_' + token, tenant.code + '|' + agent.id, CFG.SESSION_SECONDS);
@@ -171,5 +175,5 @@ var Auth = (function () {
     return agent;
   }
   function canSetup(user) { return user.role === 'admin' || (user.role === 'chef' && user.acces_setup === '1'); }
-  return { journalSupport: journalSupport, journal: journal, activity: activity, forgot: forgot, resetPassword: resetPassword, resume: resume, forget: forget, revokeAll: revokeAll, openSession: openSession, makeCredentials: makeCredentials, check: check, login: login, logout: logout, userFromToken: userFromToken, canSetup: canSetup };
+  return { journalSupport: journalSupport, journal: journal, activity: activity, forgot: forgot, resetPassword: resetPassword, resume: resume, forget: forget, revokeAll: revokeAll, openSession: openSession, makeCredentials: makeCredentials, check: check, login: login, rawCredentials: rawCredentials, logout: logout, userFromToken: userFromToken, canSetup: canSetup };
 })();

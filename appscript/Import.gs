@@ -101,7 +101,7 @@ var PointageImport = (function () {
 
   function readSheets(o) {
     var name = String(o.nom || 'pointage'); var ext = ((/\.([a-z0-9]+)$/i.exec(name) || [])[1] || '').toLowerCase();
-    var bytes = Utilities.base64Decode(o.base64 || '');
+    var bytes = Utilities.base64Decode(o.base64 || ''); Demo.checkUpload(bytes.length);
     if (!bytes.length) throw httpErr_('Fichier vide');
     if (bytes.length > CFG.MAX_UPLOAD_BYTES) throw httpErr_('Fichier trop volumineux (10 Mo maximum)');
     if (ext === 'csv') {

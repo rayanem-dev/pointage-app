@@ -154,4 +154,25 @@ select.langsel { width: auto; padding: 3px 6px; font-size: .8rem; }
 [dir=rtl] .table th, [dir=rtl] .table td { text-align: right; } [dir=rtl] .right { text-align: left; } [dir=rtl] label { text-align: right; }
 [dir=rtl] .gridwrap:has(.grid) { direction: ltr; } [dir=rtl] .grid td.name, [dir=rtl] .grid .sticky { text-align: left; direction: rtl; }
 [dir=rtl] .release ul { padding-left: 0; padding-right: 20px; } [dir=rtl] .release h3 small { margin-left: 0; margin-right: 8px; }
+
+/* Demandes : jauge d'avancement et tableau de bord */
+.gauge { display: flex; list-style: none; padding: 0; margin: 12px 0 4px; } .gauge li { flex: 1; position: relative; text-align: center; font-size: .72rem; color: var(--muted); }
+.gauge li::before { content: ''; position: absolute; top: 9px; inset-inline-start: -50%; width: 100%; height: 3px; background: var(--track); } .gauge li:first-child::before { display: none; }
+.gauge li.done::before, .gauge li.now::before, .gauge li.no::before { background: var(--accent); } .gauge li.no::before { background: var(--neg); }
+.gauge .dot { position: relative; z-index: 1; display: inline-flex; width: 20px; height: 20px; border-radius: 50%; align-items: center; justify-content: center; background: var(--card); border: 2px solid var(--track); font-size: .65rem; font-weight: 700; color: var(--on-accent); }
+.gauge li.done .dot { background: var(--accent); border-color: var(--accent); } .gauge li.no .dot { background: var(--neg); border-color: var(--neg); }
+.gauge li.now .dot { border-color: var(--accent); box-shadow: 0 0 0 4px var(--info2); } .gauge .lb { display: block; margin-top: 4px; } .gauge li.done .lb, .gauge li.now .lb, .gauge li.no .lb { color: var(--ink); font-weight: 600; }
+.pipeline { display: flex; align-items: stretch; gap: 0; margin: 0; } .pipeline .pstep { flex: 1; display: flex; align-items: center; min-width: 0; }
+.pipeline a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--muted); text-decoration: none; min-width: 0; }
+.pipeline a b { font-size: 1.5rem; line-height: 1; color: var(--muted); } .pipeline a span { font-size: .78rem; text-align: center; }
+.pipeline a.on { border-color: var(--accent); color: var(--ink); } .pipeline a.on b { color: var(--accent); } .pipeline .arrow { padding: 0 4px; color: var(--muted); font-size: 1.4rem; }
+[dir="rtl"] .pipeline .arrow { transform: scaleX(-1); }
+@media (max-width: 560px) { .pipeline .arrow { display: none; } .pipeline { gap: 6px; } .demobar { font-size: .72rem; gap: 6px 10px; padding: 6px 8px; } .demobar button { padding: 2px 8px; font-size: .72rem; } }
+
+/* Démonstration */
+.demobar { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; justify-content: center; padding: 8px 12px; background: var(--navy); color: var(--on-accent); font-size: .85rem; }
+.demobar .profils { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; } .demobar button { background: transparent; color: inherit; border: 1px solid currentColor; border-radius: 14px; padding: 3px 11px; font-size: .8rem; cursor: pointer; opacity: .85; }
+.demobar button.on { background: var(--card); color: var(--navy); border-color: var(--card); opacity: 1; font-weight: 700; } .demobar a { color: inherit; text-decoration: underline; font-weight: 600; }
+.demohint { display: grid; gap: 4px; justify-items: center; text-align: center; padding: 10px 12px; border: 1px dashed var(--accent); border-radius: 10px; background: var(--info); } .demohint code { background: var(--card); padding: 1px 6px; border-radius: 4px; font-weight: 700; }
+.demohint button { margin-top: 4px; }
 </style>

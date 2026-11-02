@@ -30,6 +30,12 @@ app.env.fetchHandler = (url) => {
 
 function seed() {
   const { run, call } = app;
+  if (process.env.SIJIL_DEMO) { // mode démonstration : éditeur + une entreprise (pour activer le multi-entreprises) + l'entreprise DEMO (identifiant demo / mot de passe demo)
+    run("Setup.install('editeur@demo.local', 'editeur123', 'Éditeur')");
+    const ed = ok(call(null, 'login', 'editeur@demo.local', 'editeur123', 'ADMIN')).token;
+    ok(call(ed, 'clientCreate', { code: 'ALPHA', nom: 'ALPHA SERVICES', admin_email: 'admin@alpha.dz', admin_password: 'alphapass1' }));
+    ok(call(ed, 'demoReset')); return;
+  }
   run("Setup.install('admin@demo.local', 'admin1234', 'Administrateur')");
   const admin = ok(call(null, 'login', 'admin@demo.local', 'admin1234')).token;
   ok(call(admin, 'setupSave', { prestataire_nom: 'SARL HORIZON SERVICES', direction_nom: 'Direction RH', direction_email: 'direction@client.dz', prestataire_ville: 'Hassi Demo', prestataire_capital: '10 000 000,00 DA', client_entete: 'DIRECTION RÉGIONALE\nHASSI DEMO', signature_client: 'P/ENERGIE DU SUD', signature_prestataire: 'le prestataire SARL HORIZON SERVICES' }));
@@ -92,6 +98,15 @@ function seed() {
   const tadj = ok(call(null, 'login', 'boudiaf@demo.local', 'demo1234')).token;
   ok(call(tadj, 'demandeCreate', { type: 'titre_conge', message: '' }));
   ok(call(tadj, 'demandeCreate', { type: 'fiche_emolument', message: 'Septembre' }));
+  // des demandes à tous les stades (jauge d'avancement) : acceptée et envoyée, réponse de la direction, clôturée, refusée
+  const ls = ok(call(chefTok, 'demandesList')).toHandle; const par = (t) => ls.filter((d) => d.type === t);
+  const fdp = par('fiche_emolument')[0]; const cnas = par('attestation_cnas')[0]; const tcs = par('titre_conge');
+  ok(call(chefTok, 'demandeRepondre', cnas.id, 'refusee', 'Dossier incomplet'));
+  tcs.forEach((d) => ok(call(chefTok, 'demandeRepondre', d.id, 'acceptee', '')));
+  const env1 = ok(call(chefTok, 'demandesEnvoyer', [tcs[0].id], ''));
+  ok(call(chefTok, 'demandeRepondre', fdp.id, 'acceptee', ''));
+  const env2 = ok(call(chefTok, 'demandesEnvoyer', [fdp.id], '')); ok(call(admin, 'envoiTraiter', env2.envoi.id, 'acceptee', 'Document prêt'));
+  void env1;
 }
 
 const read = (f) => fs.readFileSync(path.join(DIR, f), 'utf8');

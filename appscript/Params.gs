@@ -92,7 +92,7 @@ var Params = (function () {
     var key = logoKey(o.qui);
     if (!o.base64) throw httpErr_('Fichier manquant');
     if (!/^image\/(png|jpeg|gif)$/.test(String(o.mime || ''))) throw httpErr_('Format non pris en charge (PNG, JPG ou GIF)');
-    var bytes = Utilities.base64Decode(o.base64);
+    var bytes = Utilities.base64Decode(o.base64); Demo.checkUpload(bytes.length);
     if (bytes.length > LOGO_MAX) throw httpErr_('Logo trop volumineux (1,5 Mo maximum)');
     var sig = bytes.slice(0, 4).map(function (b) { return (b + 256) % 256; }); var hex = sig.map(function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
     var okSig = o.mime === 'image/png' ? hex === '89504e47' : o.mime === 'image/gif' ? hex.indexOf('47494638') === 0 : hex.slice(0, 4) === 'ffd8';

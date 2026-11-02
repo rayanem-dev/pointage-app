@@ -239,7 +239,7 @@ var Documents = (function () {
   function mimeOf(ext) { return MIME_OK[String(ext || '').toLowerCase()] || 'application/octet-stream'; }
   function readBytes(data) {
     if (!data.base64 || !data.nom) throw httpErr_('Fichier manquant');
-    var bytes = Utilities.base64Decode(data.base64);
+    var bytes = Utilities.base64Decode(data.base64); Demo.checkUpload(bytes.length);
     if (bytes.length > CFG.MAX_UPLOAD_BYTES) throw httpErr_('Fichier trop volumineux (10 Mo maximum)');
     return bytes;
   }
