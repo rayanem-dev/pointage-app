@@ -173,8 +173,16 @@ var HANDLERS = {
     fn: function (u, a) {
       var o = a[0] || {};
       if (u.role === 'client') { o.tous = false; if (u.contrat) o.contrat = u.contrat; }
-      var data = DocData.ficheData(o.month, o.contrat, { prevu: !!o.prevu, tous: !!o.tous, agents: Agents.visibleTo(u) });
-      return Export.render('fiche', data, o.format, 'Fiche_pointage_' + o.month);
+      var opts = { prevu: !!o.prevu, tous: !!o.tous, agents: Agents.visibleTo(u) }; var suffixe = '';
+      if (o.agent_id) { // un seul agent (parmi ceux que l'utilisateur voit), sans le filtre du contrat
+        var un = opts.agents.filter(function (x) { return x.id === o.agent_id; })[0];
+        if (!un) throw httpErr_('Agent non accessible', 'FORBIDDEN');
+        opts.agents = [un]; opts.tous = true; suffixe = '_' + Format.norm(un.nom).replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      }
+      var mois = DocData.moisPlage(o.month, o.from, o.contrat);
+      var parts = mois.map(function (m) { return DocData.ficheData(m, o.contrat, opts); });
+      var nom = 'Fiche_pointage_' + (mois.length > 1 ? mois[0] + '_a_' + mois[mois.length - 1] : o.month) + suffixe;
+      return Export.render('fiche', parts.length > 1 ? { parts: parts } : parts[0], o.format, nom);
     }
   },
   // ----- onglet Setup : admin, ou chef avec accès accordé par l'admin -----

@@ -6613,5 +6613,35 @@
   "Pas encore remise à zéro",
   "Not reset yet",
   "لم تُعَد تهيئتها بعد"
+ ],
+ [
+  "Mois affiché",
+  "Displayed month",
+  "الشهر المعروض"
+ ],
+ [
+  "Depuis le début",
+  "Since the beginning",
+  "منذ البداية"
+ ],
+ [
+  "Plage de mois…",
+  "Range of months…",
+  "نطاق أشهر…"
+ ],
+ [
+  "Période trop longue (36 mois maximum)",
+  "Period too long (36 months maximum)",
+  "الفترة طويلة جداً (36 شهراً كحد أقصى)"
+ ],
+ [
+  "Mois de début invalide (AAAA-MM)",
+  "Invalid start month (YYYY-MM)",
+  "شهر البداية غير صالح (سنة-شهر)"
+ ],
+ [
+  "Le mois de début doit précéder le mois de fin",
+  "The start month must come before the end month",
+  "يجب أن يسبق شهر البداية شهر النهاية"
  ]
 ]

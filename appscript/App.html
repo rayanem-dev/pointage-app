@@ -2053,13 +2053,20 @@ function ExportsPage() {
     function draw() {
       var chk = h('input', { type: 'checkbox', checked: prevu, onchange: function () { prevu = chk.checked; } });
       var tousChk = h('input', { type: 'checkbox', onchange: function () { tousChk.checked = tousChk.checked; } });
+      // Période : le mois affiché (par défaut), depuis le début, ou une plage de mois ; et un seul agent au choix.
+      var per = h('select', { 'aria-label': 'Période' }, h('option', { value: 'mois' }, 'Mois affiché'), h('option', { value: 'debut' }, 'Depuis le début'), h('option', { value: 'plage' }, 'Plage de mois…'));
+      var from = h('input', { type: 'month', value: month, 'aria-label': 'Du mois' }); var fromF = field('Du mois', from); fromF.hidden = true; per.onchange = function () { fromF.hidden = per.value !== 'plage'; };
+      var ag = h('select', { 'aria-label': 'Agent' }, h('option', { value: '' }, 'Tous les agents'));
+      call('agentsVisible', true).then(function (list) { list.filter(function (a) { return a.role === 'agent' || a.role === 'chef'; }).forEach(function (a) { ag.append(h('option', { value: a.id }, a.nom)); }); ag.onchange = function () { tousChk.disabled = !!ag.value; }; }).catch(function () { /* liste indisponible : « Tous les agents » reste proposé */ });
       var info = h('p', { class: 'muted' });
       if (contrat) call('ficheApercu', { month: month, contrat: contrat }).then(function (a) {
         info.textContent = tr(a.dans + ' agent(s) du contrat dans la fiche' + (a.hors ? ', ' + a.hors + ' hors contrat' : '') + '.' + (a.avertissements.length ? ' ⚠ ' + a.avertissements.join(' ') : ''));
       }).catch(function () {});
       var prev = h('div', null, loading()); var fsec = h('section', { class: 'card', style: S.params.facturation === false ? 'display:none' : '' }, h('h2', null, '3. Facture'), loading());
       host.replaceChildren(
-        h('section', { class: 'card' }, h('h2', null, '1. Fiche de pointage ', h('small', null, 'à valider avec le client')), h('label', { class: 'inline' }, chk, ' Inclure les jours prévus'), h('label', { class: 'inline' }, tousChk, ' Inclure tous les agents (ignorer le contrat)'), info, buttons('Fiche', function () { return { prevu: prevu, tous: tousChk.checked }; })),
+        h('section', { class: 'card' }, h('h2', null, '1. Fiche de pointage ', h('small', null, 'à valider avec le client')), h('label', { class: 'inline' }, chk, ' Inclure les jours prévus'), h('label', { class: 'inline' }, tousChk, ' Inclure tous les agents (ignorer le contrat)'),
+          h('div', { class: 'row' }, field('Période', per), fromF, field('Agent', ag)), info,
+          buttons('Fiche', function () { return { prevu: prevu, tous: tousChk.checked, from: per.value === 'debut' ? 'debut' : per.value === 'plage' ? from.value : '', agent_id: ag.value }; })),
         h('section', { class: 'card' }, h('h2', null, '2. Attachement'), prev), fsec);
       if (ro && !chefExports()) { prev.replaceChildren(h('p', { class: 'muted' }, "L'attachement et la facture ne sont pas autorisés pour votre compte : demandez ce privilège à l'administrateur.")); fsec.replaceChildren(h('h2', null, '3. Facture')); return; }
       if (!contrat) { prev.replaceChildren(h('p', { class: 'muted' }, 'Choisissez un contrat.')); fsec.replaceChildren(h('h2', null, '3. Facture')); return; }

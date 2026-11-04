@@ -19,6 +19,22 @@ var DocData = (function () {
     var titre = contrat ? (client ? client + '/' : '') + prest + ' N°' + contrat.numero : prest;
     return { key: key, label: g.label, nd: g.nd, rows: g.rows, prevu: !!opts.prevu, titre: titre, params: params, contrat: contrat };
   }
+  // Mois à exporter, du plus ancien au plus récent : « to » seul, ou depuis un mois donné, ou « debut » = premier mois pointé (pas avant le début du contrat).
+  function moisPlage(to, from, numero) {
+    if (!Dates.isMonthKey(to)) throw httpErr_('Mois invalide (AAAA-MM)');
+    if (!from || from === to) return [to];
+    var start = from;
+    if (from === 'debut') {
+      var tabs = Store.listTabs().filter(Dates.isMonthKey).sort(); var c = numero ? findContrat(numero) : null;
+      var min = c && /^\d{4}-\d{2}/.test(c.date_debut || '') ? String(c.date_debut).slice(0, 7) : '';
+      tabs = tabs.filter(function (k) { return !min || k >= min; });
+      start = tabs.length ? tabs[0] : to;
+    }
+    if (!Dates.isMonthKey(start)) throw httpErr_('Mois de début invalide (AAAA-MM)');
+    if (start > to) throw httpErr_('Le mois de début doit précéder le mois de fin');
+    var out = []; for (var k = start; k <= to; k = Dates.addMonths(k, 1)) { out.push(k); if (out.length > 36) throw httpErr_('Période trop longue (36 mois maximum)'); }
+    return out;
+  }
   // Aperçu avant export de la fiche : agents retenus / écartés et avertissements.
   function ficheApercu(key, numero, visibles) {
     var params = Params.get();
@@ -171,5 +187,5 @@ var DocData = (function () {
     att.totalHT = att.lines.reduce(function (s2, l) { return s2 + l.montant; }, 0);
     return att;
   }
-  return { ficheData: ficheData, attachementData: attachementData, factureData: factureData, ficheApercu: ficheApercu, refMonth: refMonth, repPrestataire: repPrestataire, valider: valider, rouvrir: rouvrir, facturer: facturer, validation: validation };
+  return { moisPlage: moisPlage, ficheData: ficheData, attachementData: attachementData, factureData: factureData, ficheApercu: ficheApercu, refMonth: refMonth, repPrestataire: repPrestataire, valider: valider, rouvrir: rouvrir, facturer: facturer, validation: validation };
 })();

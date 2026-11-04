@@ -190,6 +190,16 @@ test('exports : fiche (chef), attachement N°16 et facture de mai (admin)', () =
   assert.strictEqual(f.mime, 'application/pdf'); assert.match(Buffer.from(f.base64, 'base64').toString(), /PDF/);
   assert.match(env.fetches.at(-1), /export\?format=pdf&size=A4&portrait=false/);
   ok(call(T.chef, 'exportFiche', { month: TODAY.slice(0, 7), format: 'xlsx' }));
+  // plusieurs mois (depuis le début, plage) et un seul agent
+  const mois0 = TODAY.slice(0, 7);
+  assert.deepStrictEqual(JSON.parse(run(`JSON.stringify(DocData.moisPlage('${mois0}', '', ''))`)), [mois0]);
+  const dep = JSON.parse(run(`JSON.stringify(DocData.moisPlage('${mois0}', 'debut', ''))`)); assert.strictEqual(dep[dep.length - 1], mois0);
+  assert.deepStrictEqual(JSON.parse(run(`JSON.stringify(DocData.moisPlage('2026-03', '2026-01', ''))`)), ['2026-01', '2026-02', '2026-03']);
+  fail(call(T.chef, 'exportFiche', { month: '2026-01', from: '2026-03', format: 'xlsx' }), /précéder/);
+  fail(call(T.chef, 'exportFiche', { month: '2026-12', from: '2020-01', format: 'xlsx' }), /36 mois/);
+  const unAgent = ok(call(T.chef, 'agentsVisible', true))[0];
+  ok(call(T.chef, 'exportFiche', { month: mois0, from: 'debut', agent_id: unAgent.id, format: 'xlsx' }));
+  fail(call(T.chef, 'exportFiche', { month: mois0, agent_id: 'A-inconnu', format: 'xlsx' }), /non accessible/);
   assert.match(env.fetches.at(-1), /format=xlsx$/);
   // le responsable d’équipe extrait (lecture seule) : attachement, copie de facture ; mais ne valide ni ne facture
   fail(call(T.chef, 'exportAttachement', { month: '2026-08', contrat: 'C1', format: 'pdf' }), /non accordé/); // privilège à donner par l'administrateur

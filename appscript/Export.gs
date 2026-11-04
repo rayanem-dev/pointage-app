@@ -158,14 +158,17 @@ var Export = (function () {
     var tmp = SpreadsheetApp.create('tmp_export_' + Date.now());
     var id = tmp.getId();
     try {
-      var sheet = tmp.getSheets()[0];
-      sheet.setName(baseName.slice(0, 90));
-      sheet.setHiddenGridlines(true);
-      ensureGrid(sheet, 60 + (data.rows ? data.rows.length : 0) + (data.lines ? data.lines.length : 0), 40);
-      BUILDERS[doc](sheet, data);
+      var parts = data.parts || [data]; // fiche sur plusieurs mois : un onglet par mois (en PDF, une page par mois)
+      parts.forEach(function (d, i) {
+        var sheet = i === 0 ? tmp.getSheets()[0] : tmp.insertSheet();
+        sheet.setName(data.parts ? String(d.key) : baseName.slice(0, 90));
+        sheet.setHiddenGridlines(true);
+        ensureGrid(sheet, 60 + (d.rows ? d.rows.length : 0) + (d.lines ? d.lines.length : 0), 40);
+        BUILDERS[doc](sheet, d);
+      });
       SpreadsheetApp.flush();
       var url = 'https://docs.google.com/spreadsheets/d/' + id + '/export?format=' + format;
-      if (format === 'pdf') url += '&size=A4&portrait=' + (LANDSCAPE[doc] ? 'false' : 'true') + '&fitw=true&gridlines=false&sheetnames=false&printtitle=false&pagenumbers=false&top_margin=0.4&bottom_margin=0.4&left_margin=0.4&right_margin=0.4&horizontal_alignment=CENTER&gid=' + sheet.getSheetId();
+      if (format === 'pdf') url += '&size=A4&portrait=' + (LANDSCAPE[doc] ? 'false' : 'true') + '&fitw=true&gridlines=false&sheetnames=false&printtitle=false&pagenumbers=false&top_margin=0.4&bottom_margin=0.4&left_margin=0.4&right_margin=0.4&horizontal_alignment=CENTER' + (parts.length > 1 ? '' : '&gid=' + tmp.getSheets()[0].getSheetId()); // plusieurs mois : tout le classeur (une page par mois)
       var res = UrlFetchApp.fetch(url, { headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }, muteHttpExceptions: true });
       if (res.getResponseCode() !== 200) throw httpErr_("Export impossible (code " + res.getResponseCode() + ')');
       var blob = res.getBlob();
