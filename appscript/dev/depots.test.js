@@ -193,3 +193,19 @@ test('dépôt : un texte lu avec des « dates » impossibles (tampon, bruit) ne 
   assert.deepStrictEqual([r.type, r.champs.date, r.pret], ['titre_conge', '2026-10-11', true], 'les vraies dates sont lues, les fausses ignorées');
   assert.strictEqual(a2.run("Dates.isDate('2026-00-33')"), false); assert.strictEqual(a2.run("Dates.isDate('2026-02-30')"), false); assert.strictEqual(a2.run("Dates.isDate('2026-10-11')"), true);
 });
+
+test('noms de fichiers sans espaces (ceux que Sijil génère) : CertificatTravail, AttestationTravail, AttestationEmoluments, FicheDePaie', () => {
+  ocr = ''; // document scanné : aucun texte lisible, seul le nom du fichier renseigne
+  const cas = [
+    ['DUPONT_Marc-Antoine_CertificatTravail_2025-05-01.pdf', 'certificat_travail', '2025-05-01'],
+    ['KADRI_Sofiane_AttestationTravail_2026-05-04.pdf', 'attestation_travail', '2026-05-04'],
+    ['KADRI_Sofiane_AttestationEmoluments_Janvier2026_Mars2026.pdf', 'attestation_emoluments', ''],
+    ['KADRI_Sofiane_FicheDePaie_Mars2026.pdf', 'fiche_emolument', ''],
+    ['KADRI_Sofiane_Certificat de travail_2026-02-10.pdf', 'certificat_travail', '2026-02-10'],
+  ];
+  cas.forEach(([nom, type, date]) => {
+    const r = add(nom);
+    assert.strictEqual(r.type, type, nom + ' → ' + r.type);
+    if (date) assert.strictEqual((typeof r.champs === 'string' ? JSON.parse(r.champs || '{}') : r.champs).date, date, nom + ' : date');
+  });
+});

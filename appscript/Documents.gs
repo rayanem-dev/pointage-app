@@ -95,10 +95,10 @@ var Documents = (function () {
     if (/titre de conge|titre.?conge|\btc\b/.test(t)) return 'titre_conge';
     if (/(mise a jour|\bmaj\b).{0,40}(cnas|assurances? sociales?|affiliation)|(cnas|affiliation).{0,40}(mise a jour|\bmaj\b)/.test(t)) return 'maj_cnas';
     if (/attestation d.?affiliation|attestation.{0,10}cnas|\bcnas\b|caisse nationale des assurances sociales/.test(t)) return 'attestation_cnas';
-    if (/attestations? (?:d|des|de)[^a-z]{0,3}emoluments?|attestations? de salaire/.test(t)) return 'attestation_emoluments';
-    if (/fiche de paie|bulletin de paie|bulletin de salaire|fiche de salaire|fiche d.?emoluments?|\bfdp\b/.test(t)) return 'fiche_emolument';
-    if (/certificat de travail/.test(t)) return 'certificat_travail';
-    if (/attestation de travail/.test(t)) return 'attestation_travail';
+    if (/attestations?\s*(?:d|des|de)?[^a-z]{0,3}emoluments?|attestations?\s*de\s*salaire/.test(t)) return 'attestation_emoluments'; // « AttestationEmoluments » (nom généré par Sijil) comme « attestation d'émoluments »
+    if (/fiche\s*de\s*paie|bulletin\s*de\s*(?:paie|salaire)|fiche\s*de\s*salaire|fiche\s*d.?emoluments?|\bfdp\b/.test(t)) return 'fiche_emolument';
+    if (/certificat\s*(?:de\s*)?travail/.test(t)) return 'certificat_travail'; // avec ou sans espaces : « CertificatTravail » est le nom que Sijil génère
+    if (/attestation\s*(?:de\s*)?travail/.test(t)) return 'attestation_travail';
     if (/contrat de travail|contrat a duree|\bcontrat\b/.test(t)) return 'contrat';
     return '';
   }
@@ -107,7 +107,7 @@ var Documents = (function () {
     var f = { date: '', mois: '', mois2: '', nss: '' }; var first = allDates(t)[0]; first = first ? first.iso : '';
     if (type === 'titre_conge') f.date = dateAfter(t, /(a compter du|a partir du|depart le|debut(?: du conge)?\s*:?|du)\s*/) || first;
     else if (type === 'contrat') f.date = dateAfter(t, /(a compter du|prenant effet le|debut(?:ant)? le|date d.?effet|effet le|du)\s*/) || first;
-    else if (type === 'attestation_travail') f.date = dateAfter(t, /(fait a [a-z ]{2,30},? le|delivree? le|etablie? le|alger,? le|le)\s*/) || first;
+    else if (type === 'attestation_travail' || type === 'certificat_travail') f.date = dateAfter(t, /(fait a [a-z ]{2,30},? le|delivree? le|etablie? le|alger,? le|le)\s*/) || first;
     else if (type === 'attestation_cnas') { f.date = dateAfter(t, /(fait a [a-z ]{2,30},? le|delivree? le|etablie? le|edition le|date d.?edition|le)\s*/) || first; f.nss = nssOf(t); }
     else if (type === 'ats') f.date = first;
     else if (type === 'fiche_emolument') f.mois = moisSeul(t);
