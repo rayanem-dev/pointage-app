@@ -209,3 +209,18 @@ test('noms de fichiers sans espaces (ceux que Sijil génère) : CertificatTravai
     if (date) assert.strictEqual((typeof r.champs === 'string' ? JSON.parse(r.champs || '{}') : r.champs).date, date, nom + ' : date');
   });
 });
+
+test('scan nommé par le scanner (Doc0234.pdf) : type, agent et date lus dans le contenu (certificat de travail)', () => {
+  env.fetchHandler = (url) => { // lecture automatique simulée : renvoie le texte du scan
+    if (url.startsWith('https://www.googleapis.com/upload/drive/v3/files')) return { code: 200, body: JSON.stringify({ id: 'ocr1' }) };
+    if (url.includes('/files/ocr1/export')) return { code: 200, body: ocr };
+    return null;
+  };
+  const meziane = ok(call(T.admin, 'agentCreate', { nom: 'MEZIANE Karim', email: 'meziane@t.fr', role: 'agent', password: 'mezianepw1' })).agent.id;
+  ocr = "SARL EXEMPLE - BP 100 VILLE W. EXEMPLE 00001 SARL EXEMPLE BP 100 VILLE W. EXEMPLE N° D'EMPLOYEUR : 0000000000 Certificat de Travail Nous soussignés Gérant de la SARL EXEMPLE Sise à la zone industrielle VILLE, certifie par la présente que : Monsieur : Nom : MEZIANE Prénom : Karim Date de naissance : 01-01-1970 Lieu de naissance : LIEU N° de Sécurité Sociale : 700101000000 A été employé au sein de notre SARL En qualité de : CONDUCTEUR TRAVAUX Est ce depuis : 12-02-2025 Au : 31-10-2026 Le présent certificat lui est délivré pour servir et faire valoir ce que de droit. Fait à Ville le : 01-11-2026 LA DIRECTION";
+  const r = ok(call(T.admin, 'depotAdd', { nom: 'Doc0234.pdf', mime: 'application/pdf', base64: unique() }));
+  assert.strictEqual(r.type, 'certificat_travail', JSON.stringify(r).slice(0, 400)); assert.strictEqual(r.agent_id, meziane, 'agent reconnu dans le contenu');
+  const champs = typeof r.champs === 'string' ? JSON.parse(r.champs) : r.champs;
+  assert.strictEqual(champs.date, '2026-11-01', 'date de délivrance (« Fait à … le »), pas la date d\'entrée');
+  assert.match(r.nom_final || r.nom || '', /MEZIANE.*CertificatTravail_2026-11-01/i);
+});

@@ -33,6 +33,10 @@ final class Documents {
         }
         return $out;
     }
+    // Date de délivrance : « Fait à In Amenas le : 01-11-2026 » d'abord, puis « délivré le »…, enfin « le » isolé.
+    private static function dateEmission(string $t): string {
+        return self::dateAfter($t, '~fait a [a-z ]{2,30},? le\s*:?\s*~') ?: self::dateAfter($t, '~(delivree? le|etablie? le|edition le|date d.?edition|alger,? le)\s*:?\s*~') ?: self::dateAfter($t, '~\ble\s*:?\s*~');
+    }
     private static function dateAfter(string $t, string $re): string {
         if (!preg_match($re, $t, $m, PREG_OFFSET_CAPTURE)) return '';
         $rest = substr($t, $m[0][1] + strlen($m[0][0]), 40); $d = self::allDates($rest)[0] ?? null;
@@ -87,8 +91,8 @@ final class Documents {
         $f = ['date' => '', 'mois' => '', 'mois2' => '', 'nss' => '']; $first = self::allDates($t)[0]['iso'] ?? '';
         if ($type === 'titre_conge') $f['date'] = self::dateAfter($t, '~(a compter du|a partir du|depart le|debut(?: du conge)?\s*:?|du)\s*~') ?: $first;
         elseif ($type === 'contrat') $f['date'] = self::dateAfter($t, '~(a compter du|prenant effet le|debut(?:ant)? le|date d.?effet|effet le|du)\s*~') ?: $first;
-        elseif ($type === 'attestation_travail' || $type === 'certificat_travail') $f['date'] = self::dateAfter($t, '~(fait a [a-z ]{2,30},? le|delivree? le|etablie? le|alger,? le|le)\s*~') ?: $first;
-        elseif ($type === 'attestation_cnas') { $f['date'] = self::dateAfter($t, '~(fait a [a-z ]{2,30},? le|delivree? le|etablie? le|edition le|date d.?edition|le)\s*~') ?: $first; $f['nss'] = self::nssOf($t); }
+        elseif ($type === 'attestation_travail' || $type === 'certificat_travail') $f['date'] = self::dateEmission($t) ?: $first;
+        elseif ($type === 'attestation_cnas') { $f['date'] = self::dateEmission($t) ?: $first; $f['nss'] = self::nssOf($t); }
         elseif ($type === 'ats') $f['date'] = $first;
         elseif ($type === 'fiche_emolument') $f['mois'] = self::moisSeul($t);
         elseif ($type === 'maj_cnas' || $type === 'attestation_emoluments') { $r = self::moisRange($t); $f['mois'] = $r['mois']; $f['mois2'] = $r['mois2']; }

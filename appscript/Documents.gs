@@ -53,6 +53,10 @@ var Documents = (function () {
     return out;
   }
   function dateAfter(t, re) { var m = re.exec(t); if (!m) return ''; var rest = t.slice(m.index + m[0].length, m.index + m[0].length + 40); var d = allDates(rest)[0]; return d && d.i < 25 ? d.iso : ''; }
+  // Date de délivrance d'une attestation / d'un certificat : « Fait à In Amenas le : 01-11-2026 » d'abord (et non la date d'entrée ou de naissance citée plus haut), puis « délivré le »…, enfin « le » isolé.
+  function dateEmission(t) {
+    return dateAfter(t, /fait a [a-z ]{2,30},? le\s*:?\s*/) || dateAfter(t, /(delivree? le|etablie? le|edition le|date d.?edition|alger,? le)\s*:?\s*/) || dateAfter(t, /\ble\s*:?\s*/);
+  }
   function moisOfIso(iso) { return iso ? moisKey(iso.slice(5, 7), iso.slice(0, 4)) : ''; }
   // Période de mois couverte : « du 01/01/2026 au 31/03/2026 », « de janvier 2026 à mars 2026 », « janv à mars 26 », « 01/2026 à 03/2026 ».
   function mk(nom, an) { return MOIS[ALIAS[nom] - 1] + an4(an); }
@@ -107,8 +111,8 @@ var Documents = (function () {
     var f = { date: '', mois: '', mois2: '', nss: '' }; var first = allDates(t)[0]; first = first ? first.iso : '';
     if (type === 'titre_conge') f.date = dateAfter(t, /(a compter du|a partir du|depart le|debut(?: du conge)?\s*:?|du)\s*/) || first;
     else if (type === 'contrat') f.date = dateAfter(t, /(a compter du|prenant effet le|debut(?:ant)? le|date d.?effet|effet le|du)\s*/) || first;
-    else if (type === 'attestation_travail' || type === 'certificat_travail') f.date = dateAfter(t, /(fait a [a-z ]{2,30},? le|delivree? le|etablie? le|alger,? le|le)\s*/) || first;
-    else if (type === 'attestation_cnas') { f.date = dateAfter(t, /(fait a [a-z ]{2,30},? le|delivree? le|etablie? le|edition le|date d.?edition|le)\s*/) || first; f.nss = nssOf(t); }
+    else if (type === 'attestation_travail' || type === 'certificat_travail') f.date = dateEmission(t) || first;
+    else if (type === 'attestation_cnas') { f.date = dateEmission(t) || first; f.nss = nssOf(t); }
     else if (type === 'ats') f.date = first;
     else if (type === 'fiche_emolument') f.mois = moisSeul(t);
     else if (type === 'maj_cnas' || type === 'attestation_emoluments') { var r = moisRange(t); f.mois = r.mois; f.mois2 = r.mois2; }
