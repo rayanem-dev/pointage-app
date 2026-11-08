@@ -103,9 +103,27 @@ const slug = (s) => s.replace(/[^a-z0-9]+/gi, '-').toLowerCase().slice(0, 50);
     await go('Documents'); await voir(/Déposer des documents/);
     const pdf = path.join(OUT, 'FDP_Hamlaoui_octobre2026.pdf');
     fs.writeFileSync(pdf, '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 100]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF');
+    await p.getByLabel(/Lire et renommer les fichiers sur mon PC/).uncheck(); // lecture par le serveur
     await p.locator('input[type=file]').first().setInputFiles(pdf); await wait(2500); await shot('06-depot'); await sansErreurVisible();
     await p.locator('table select').first().selectOption({ index: 1 }); await wait(500); const mois = p.locator('table input[placeholder*="mars"]').first(); if (await mois.count()) { await mois.fill('octobre 2026'); await mois.dispatchEvent('change'); await wait(700); } await p.locator('table tbody input[type=checkbox]').first().check(); await wait(400);
     await p.getByRole('button', { name: /Envoyer vers les espaces des agents/ }).click(); await wait(3000); await sansErreurVisible(); await voir(/Documents de l'agent|envoyé|rangé/i);
+  });
+  await step('Documents : lire et renommer sur mon PC (PDF avec texte, .zip, envoi vers la vérification)', async () => {
+    await go('Documents'); await voir(/Déposer des documents/);
+    const cdn = path.join(__dirname, '..', 'node_modules_pdf'); // pdf.js local si disponible (réseau CDN fermé dans le bac à sable)
+    const pdfjs = ['/tmp/claude-0/npm/node_modules/pdfjs-dist/build', cdn].find((d) => fs.existsSync(path.join(d, 'pdf.min.js')));
+    if (pdfjs) await ctx.route(/cdnjs\.cloudflare\.com\/ajax\/libs\/pdf\.js\/3\.11\.174\/(pdf(?:\.worker)?\.min\.js)/, (r) => r.fulfill({ path: path.join(pdfjs, r.request().url().split('/').pop()), contentType: 'text/javascript' }));
+    const pg = await ctx.newPage(); await pg.setContent('<p>CERTIFICAT DE TRAVAIL</p><p>Nom : HAMLAOUI Prénom : Karim Date et lieu de naissance 01/01/1980</p><p>Fait à Alger, le 14 février 2026</p>');
+    const pdf = path.join(OUT, 'Doc0239.pdf'); fs.writeFileSync(pdf, await pg.pdf()); await pg.close();
+    const casse = await p.getByLabel(/Lire et renommer les fichiers sur mon PC/).isChecked(); if (!casse) await p.getByLabel(/Lire et renommer les fichiers sur mon PC/).check();
+    await p.locator('input[type=file]').first().setInputFiles(pdf); await wait(3500); await shot('06b-lecture-pc'); await sansErreurVisible();
+    await voir(/Lu sur votre PC/); await voir(/Nom final/);
+    const t = await texte(); if (pdfjs && !/CertificatTravail_2026-02-14/.test(t)) throw new Error('nom proposé absent : ' + t.slice(t.indexOf('Lu sur votre PC'), t.indexOf('Lu sur votre PC') + 600));
+    if (pdfjs) {
+      await p.locator('section', { hasText: 'Lu sur votre PC' }).locator('select').first().selectOption({ label: 'SAMIR HAMLAOUI' }); await wait(600); // deux agents portent ce nom de famille : on choisit
+      const dl = p.waitForEvent('download'); await p.getByRole('button', { name: /Enregistrer les copies renommées/ }).click(); const d = await dl; if (!/\.zip$/.test(d.suggestedFilename())) throw new Error('zip attendu');
+      await clickBtn(/Envoyer vers la vérification/); await wait(2500); await sansErreurVisible(); await voir(/À vérifier avant envoi/); await voir(/envoyé\(s\) vers la vérification|Envoyé à la vérification/);
+    }
   });
   await step('Exports : fiche Excel et PDF', async () => { await go('Exports'); await voir(/Fiche de pointage/); await p.getByRole('button', { name: 'Excel (.xlsx)' }).first().click(); await wait(2000); await p.getByRole('button', { name: 'PDF' }).first().click(); await wait(2000); await sansErreurVisible(); });
   await step('Exports : attachement du mois précédent (brouillon, quantité, validation)', async () => {

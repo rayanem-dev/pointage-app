@@ -76,7 +76,7 @@ text(s, 5.6, 1.6, 7.2, 1.6, 'Gestion du temps de travail', size=40, color=NAVY, 
 text(s, 5.6, 3.0, 7.2, 0.5, 'avec prise en charge des rotations', size=20, color=TEAL, bold=True)
 text(s, 5.6, 3.7, 7.0, 1.4, "La mise à disposition du personnel et du matériel de prestation de services, de A à Z : du bordereau des prix jusqu'à l'attachement et à la facture (module facturation activable par l'administrateur).", size=18, color=INK)
 text(s, 5.6, 5.4, 7, 0.5, 'En français, en arabe et en anglais · sur ordinateur et sur téléphone', size=16, color=BLUE, bold=True)
-text(s, 5.6, 6.6, 7, 0.4, "Version 3.46.1 · Octobre 2026 · Captures : entreprise fictive", size=11, color=GREY)
+text(s, 5.6, 6.6, 7, 0.4, "Version 3.47.0 · Octobre 2026 · Captures : entreprise fictive", size=11, color=GREY)
 
 # 2 problème
 s = new(); title(s, "Un personnel en rotation, c'est vite le désordre", "Fichiers Excel, messages, papiers : chacun a sa version")
@@ -100,7 +100,7 @@ tiles = [("Temps de travail et rotations", ["Pointage T / R / ABS en un clic", "
          ("Personnel et matériel", ["Agents, responsables, administrateurs", "Camions, rétrochargeurs, 4x4 pointés aussi", "Effectifs bornés par le contrat", "Accès envoyés par e-mail"]),
          ("Du contrat à la facture", ["Bordereau des prix lu automatiquement", "Attachement calculé, validé, figé", "Facture en option (module activable)", "Excel et PDF avec votre logo"]),
          ("Demandes", ["Titre de congé, attestations, certificat de travail…", "Types réglables par l'administrateur", "Demandes groupées pour toute l'équipe", "Un seul envoi à la direction, suivi et clôture"]),
-         ("Documents", ["Dépôt en vrac, reconnus et renommés", "Photos converties en PDF, aperçu, doublons", "Rangés dans Google Drive", "Pastilles et e-mails au bon moment"]),
+         ("Documents", ["Lus et renommés sur votre PC, puis envoyés", "Photos converties en PDF, aperçu, doublons", "Rangés dans Google Drive", "Pastilles et e-mails au bon moment"]),
          ("Client, droits et confort", ["Compte client en lecture et remarques", "Droits réglables par profil", "Français, arabe, anglais, mode sombre", "Installable, données chez vous"])]
 for i, (h_, b) in enumerate(tiles):
     card(s, 0.6 + (i % 3) * 4.15, 1.75 + (i // 3) * 2.65, 3.95, 2.5, h_, ['● ' + x for x in b], size=13, hc=[BLUE, TEAL, NAVY, BLUE, TEAL, NAVY][i])
@@ -204,7 +204,7 @@ pic(s, os.path.join(ROOT, 'docs/captures/crops/43-setup-maintenance.png'), 7.6, 
 # 16 toutes les fonctions
 s = new(PAPER); title(s, 'Et ce n\'est pas tout', 'Toutes les fonctions utiles au quotidien')
 cols = [["Pointage automatique chaque jour", "Rattraper les jours oubliés", "Vues 1 mois, 3, 6, 12 mois", "Jours fériés algériens", "Solde T − CR et solde au départ", "Rotation propre à chaque agent", "Modification de plusieurs agents", "Matériel : camions, engins, 4x4", "Effectifs bornés par le contrat", "Import et export Excel"],
-        ["Demandes groupées pour l'équipe", "Types de demande personnalisés", "Suivi et clôture des demandes", "Date de reprise calculée", "Dépôt de documents en vrac", "Photos converties en PDF, doublons", "Documents rangés et renommés", "Pastilles et notifications", "Accès par e-mail", "Mot de passe oublié, rester connecté"],
+        ["Demandes groupées pour l'équipe", "Types de demande personnalisés", "Suivi et clôture des demandes", "Date de reprise calculée", "Lecture et renommage sur votre PC", "Photos converties en PDF, doublons", "Documents rangés et renommés", "Pastilles et notifications", "Accès par e-mail", "Mot de passe oublié, rester connecté"],
         ["Bordereau des prix lu (OCR)", "Attachement figé, puis facture", "Module Facturation activable", "Historique et reste à facturer", "Fiche de pointage Excel / PDF", "Compte client et remarques", "Droits réglables par profil", "Qui est en ligne ?", "Sauvegarde et restauration", "Arabe, anglais, mode sombre, mobile"]]
 for i, c in enumerate(cols):
     tb = s.shapes.add_textbox(Inches(0.6 + i * 4.2), Inches(1.8), Inches(4.0), Inches(5))

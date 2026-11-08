@@ -97,7 +97,7 @@ DOCUMENTS : fiches de paie, titres de congé, attestations déposés en vrac, re
 COMPTE CLIENT : le client suit le pointage et consulte les attachements et factures validés, en lecture seule.
 SUIVI DES DEMANDES : une jauge montre où en est chaque demande (reçue, direction, réponse, clôturée) ; tableau de bord pour le responsable.
 ESSAI : identifiant demo, mot de passe demo — {DEMO}
-ET AUSSI : rotations 28/28, 14/14, 21/21, 6/2, 3/3… par agent ; pointage automatique ; dépôt de documents en vrac (photos converties en PDF, doublons signalés) ; suivi et clôture des demandes ; facturation en option (module activable, accès des responsables réglable) ; import et export Excel ; sauvegarde ; aide en trois langues.
+ET AUSSI : rotations 28/28, 14/14, 21/21, 6/2, 3/3… par agent ; pointage automatique ; dépôt de documents en vrac, lus et renommés sur votre PC avant l'envoi (photos converties en PDF, doublons signalés) ; suivi et clôture des demandes ; facturation en option (module activable, accès des responsables réglable) ; import et export Excel ; sauvegarde ; aide en trois langues.
 PROTECTION : chacun ne voit que ce qui le concerne ; mots de passe jamais en clair ; mot de passe oublié par e-mail ; option « Rester connecté ».
 
 Se connecter à l'application : {APP}

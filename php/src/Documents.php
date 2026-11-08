@@ -179,20 +179,20 @@ final class Documents {
         $flou = array_values(array_filter($agents, function ($a) use ($mots) { foreach (explode(' ', self::n($a['nom'])) as $tok) { if (strlen($tok) < 4) continue; foreach ($mots as $w) if ($w !== $tok && levenshtein($tok, (string)$w) <= (strlen($tok) >= 7 ? 2 : 1)) return true; } return false; }));
         return [$flou, true];
     }
-    private static function detect(array $data, string $chosen, ?array $agent, ?array $agents): array {
+    private static function detect(array $data, string $chosen, ?array $agent, ?array $agents, bool $sansAgent = false): array {
         $base = str_replace('_', ' ', preg_replace('/\.[a-z0-9]+$/i', '', (string)($data['nom'] ?? '')));
         $tn = self::n($base); $type = $chosen ?: self::detectType($tn); $source = $chosen ? 'choix' : ($type ? 'nom' : '');
         $f = $type ? self::extract($type, $tn) : ['date' => '', 'mois' => '', 'mois2' => '', 'nss' => ''];
-        [$cands, $flou] = $agent ? [[$agent], false] : self::findAgents($tn, $agents ?? []); $avert = [];
-        $besoin = !$type || count(self::missing($type, $f)) > 0 || (!$agent && count($cands) !== 1);
+        [$cands, $flou] = $agent ? [[$agent], false] : ($sansAgent ? [[], false] : self::findAgents($tn, $agents ?? [])); $avert = []; // $sansAgent : case « Reconnaître l'agent » décochée
+        $besoin = !$type || count(self::missing($type, $f)) > 0 || (!$agent && !$sansAgent && count($cands) !== 1);
         if ($besoin) {
             $text = '';
             try { $text = mb_substr(self::n(Ocr::text((string)$data['_bytes'], self::extOf($data['nom'] ?? ''))), 0, 12000); } catch (Throwable $e) { $avert[] = 'Lecture automatique impossible (' . $e->getMessage() . ').'; }
             if ($text !== '') {
                 if (!$type) { $tt = self::detectType($text); if ($tt) { $type = $tt; $source = 'contenu'; } }
                 if ($type) { $avant = self::merge($f, []); $f = self::merge($f, self::extract($type, $text)); foreach (['date', 'mois', 'mois2'] as $k) if ($f[$k] && !$avant[$k]) { $avert[] = 'Dates lues dans le contenu du document : à vérifier.'; break; } }
-                if (!$agent && count($cands) !== 1) { [$byText] = self::findAgents($text, $agents ?? []); if ($byText) { $cands = $byText; $flou = false; } }
-                if (!$agent && !$cands) { $lu = self::nomLu($text); if ($lu) $avert[] = 'Nom lu dans le document : ' . $lu . ' (aucun agent de ce nom : choisissez-le ou créez-le).'; }
+                if (!$agent && !$sansAgent && count($cands) !== 1) { [$byText] = self::findAgents($text, $agents ?? []); if ($byText) { $cands = $byText; $flou = false; } }
+                if (!$agent && !$sansAgent && !$cands) { $lu = self::nomLu($text); if ($lu) $avert[] = 'Nom lu dans le document : ' . $lu . ' (aucun agent de ce nom : choisissez-le ou créez-le).'; }
                 if ($agent) {
                     foreach (($agents ?? Agents::list()) as $x) if ($x['id'] !== $agent['id'] && Agents::isPerson($x) && strpos(self::n($x['nom']), ' ') > 0 && strpos($text, self::n($x['nom'])) !== false) { if (strpos($text, self::n($agent['nom'])) === false) $avert[] = 'Ce document semble concerner ' . $x['nom'] . ', pas ' . $agent['nom'] . '.'; break; }
                 }
@@ -372,7 +372,7 @@ final class Documents {
         $bytes = self::readBytes($data); $data['_bytes'] = $bytes; $agents = self::visibles($user); $forced = null;
         if (!empty($data['agent_id'])) { foreach ($agents as $a) if ($a['id'] === $data['agent_id']) $forced = $a; if (!$forced) throw httpErr("Cet agent n'est pas dans votre groupe", 'FORBIDDEN'); }
         $chosen = isset(CFG()['TYPES_DOC'][$data['type'] ?? '']) ? $data['type'] : '';
-        $info = self::detect($data, $chosen, $forced, $agents);
+        $info = self::detect($data, $chosen, $forced, $agents, ($data['auto_agent'] ?? true) === false);
         $agent = $forced ?: (count($info['candidats']) === 1 ? $info['candidats'][0] : null);
         if ($agent && $info['flou'] && !$forced) $info['avertissement'] = trim($info['avertissement'] . " Agent deviné d'après un nom proche : à vérifier.");
         if (!$agent && count($info['candidats']) > 1) $info['avertissement'] = trim($info['avertissement'] . ' Plusieurs agents possibles : choisissez.');

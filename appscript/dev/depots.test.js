@@ -262,3 +262,19 @@ test('lecture à vide : seconde tentative automatique, bouton « Relire », text
   const champs = typeof rel.champs === 'string' ? JSON.parse(rel.champs) : rel.champs; assert.strictEqual(champs.date, '2026-11-01');
   fail(call(T.admin, 'depotRelire', 'Q-inconnu'), /introuvable/);
 });
+
+test('case « Reconnaître l\'agent » décochée (auto_agent:false) : l\'agent n\'est pas deviné, ni par le nom ni par le contenu', () => {
+  const r = add('KADRI_Sofiane_FDP_mars_2026.pdf', '', { auto_agent: false });
+  assert.strictEqual(r.agent_id, ''); assert.strictEqual(r.type, 'fiche_emolument'); assert.strictEqual(r.pret, false);
+  const r2 = add('Doc77.pdf', 'Certificat de travail fait a Alger, le 01/05/2025 BENALI NADIA', { auto_agent: false });
+  assert.strictEqual(r2.agent_id, ''); assert.strictEqual(r2.type, 'certificat_travail');
+  const r3 = add('Doc78.pdf', 'Certificat de travail fait a Alger, le 01/05/2025 BENALI NADIA');
+  assert.strictEqual(r3.agent_id, T.benali, 'coché (défaut) : l\'agent est reconnu dans le contenu');
+});
+
+test('fichier renommé sur le PC puis déposé : type, agent et date repris du nouveau nom, sans lecture du contenu', () => {
+  const avant = env.fetches.filter((u) => u.startsWith('https://www.googleapis.com/upload/drive/v3/files')).length;
+  const r = add('KADRI_Sofiane_CertificatTravail_2025-05-01.pdf', '', { agent_id: T.kadri, type: 'certificat_travail' });
+  assert.deepStrictEqual([r.agent_id, r.type, r.pret, r.nom_final], [T.kadri, 'certificat_travail', true, 'KADRI_Sofiane_CertificatTravail_2025-05-01.pdf']);
+  assert.strictEqual(env.fetches.filter((u) => u.startsWith('https://www.googleapis.com/upload/drive/v3/files')).length, avant);
+});

@@ -217,12 +217,12 @@ var Documents = (function () {
   }
 
   // Type et champs d'un fichier : nom du fichier d'abord, contenu (OCR) seulement si nécessaire.
-  function detect(data, chosen, agent, agents) {
+  function detect(data, chosen, agent, agents, sansAgent) {
     var base = String(data.nom || '').replace(/\.[a-z0-9]+$/i, '').replace(/_/g, ' ');
     var tn = n(base); var type = chosen || detectType(tn); var source = chosen ? 'choix' : (type ? 'nom' : '');
     var f = type ? extract(type, tn) : { date: '', mois: '', mois2: '', nss: '' };
-    var cands = agent ? [agent] : findAgents(tn, agents || []); var avert = [];
-    var besoin = !type || missing(type, f).length > 0 || (!agent && cands.length !== 1);
+    var cands = agent ? [agent] : (sansAgent ? [] : findAgents(tn, agents || [])); var avert = []; // sansAgent : case « Reconnaître l'agent » décochée, l'agent sera choisi à la main
+    var besoin = !type || missing(type, f).length > 0 || (!agent && !sansAgent && cands.length !== 1);
     if (besoin) {
       var text = '';
       try { text = lireTexte(data); } catch (e) { avert.push('Lecture automatique impossible (' + e.message + ').'); }
@@ -230,8 +230,8 @@ var Documents = (function () {
       if (text) {
         if (!type) { var tt = detectType(text); if (tt) { type = tt; source = 'contenu'; } }
         if (type) { var avant = merge(f, {}); f = merge(f, extract(type, text)); if (['date', 'mois', 'mois2'].some(function (k) { return f[k] && !avant[k]; })) avert.push('Dates lues dans le contenu du document : à vérifier.'); }
-        if (!agent && cands.length !== 1) { var byText = findAgents(text, agents || []); if (byText.length) cands = byText; }
-        if (!agent && !cands.length) { var lu = nomLu(text); if (lu) avert.push('Nom lu dans le document : ' + lu + ' (aucun agent de ce nom : choisissez-le ou créez-le).'); }
+        if (!agent && !sansAgent && cands.length !== 1) { var byText = findAgents(text, agents || []); if (byText.length) cands = byText; }
+        if (!agent && !sansAgent && !cands.length) { var lu = nomLu(text); if (lu) avert.push('Nom lu dans le document : ' + lu + ' (aucun agent de ce nom : choisissez-le ou créez-le).'); }
         if (agent) {
           var autre = (agents || Agents.list()).filter(function (x) { return x.id !== agent.id && Agents.isPerson(x) && n(x.nom).indexOf(' ') > 0 && text.indexOf(n(x.nom)) >= 0; })[0];
           if (autre && text.indexOf(n(agent.nom)) < 0) avert.push('Ce document semble concerner ' + autre.nom + ', pas ' + agent.nom + '.');
@@ -506,7 +506,7 @@ var Documents = (function () {
     var bytes = readBytes(data); var agents = visibles(user); var forced = null;
     if (data.agent_id) { forced = agents.filter(function (a) { return a.id === data.agent_id; })[0]; if (!forced) throw httpErr_("Cet agent n'est pas dans votre groupe", 'FORBIDDEN'); }
     var chosen = CFG.TYPES_DOC[data.type] ? data.type : '';
-    var info = detect(data, chosen, forced, agents);
+    var info = detect(data, chosen, forced, agents, data.auto_agent === false);
     var agent = forced || (info.candidats.length === 1 ? info.candidats[0] : null);
     if (agent && info.flou && !forced) info.avertissement = (info.avertissement + ' Agent deviné d\'après un nom proche : à vérifier.').trim();
     if (!agent && info.candidats.length > 1) info.avertissement = (info.avertissement + ' Plusieurs agents possibles : choisissez.').trim();

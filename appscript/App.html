@@ -1004,7 +1004,8 @@ function DocumentsPage() {
   if (staff) {
     var fmtMois = function (k) { return String(k || '').replace(/^([a-z]+)(\d{4})$/, '$1 $2'); };
     var Q = []; var agentsAll = []; var chk = {};
-    var forceAgent = h('select', null, h('option', { value: '' }, 'Reconnaître l’agent automatiquement'));
+    var autoAgent = h('input', { type: 'checkbox', checked: true });
+    var localChk = h('input', { type: 'checkbox', checked: true });
     var pdfChk = h('input', { type: 'checkbox', checked: true });
     var files = h('input', { type: 'file', multiple: true, accept: '.pdf,.png,.jpg,.jpeg,.gif,.bmp,.doc,.docx,.xls,.xlsx' });
     var upBox = msgBox(); var go = h('button', { class: 'primary', type: 'button' }, 'Analyser les documents');
@@ -1072,14 +1073,99 @@ function DocumentsPage() {
       });
     };
     go.onclick = function () { analyser(Array.prototype.slice.call(files.files)); };
+    // ----- Lire et renommer sur mon PC : lecture dans le navigateur (rien n'est envoyé), renommage, puis dépôt dans la liste de vérification -----
+    var L = []; var lcard = h('section', { class: 'card', hidden: true }); var lBox = msgBox(); var dossier = null;
+    function personnes() { return agentsAll.filter(function (a) { return a.type !== 'vehicule'; }).map(function (a) { return { id: a.id, nom: a.nom }; }); }
+    function lNoms() { return SijilLocal.nomsUniques(L); }
+    function lRow(it, nom) {
+      var cb = h('input', { type: 'checkbox', checked: !!it.coche, disabled: !!it.envoye, onchange: function () { it.coche = cb.checked; lCount(); } });
+      var ag = h('select', { style: 'min-width:170px', disabled: !!it.envoye }, [h('option', { value: '' }, '— choisir l’agent —')].concat(personnes().map(function (a) { return h('option', { value: a.id }, a.nom); })));
+      ag.value = it.agent ? it.agent.id : ''; ag.onchange = function () { it.agent = personnes().filter(function (a) { return a.id === ag.value; })[0] || null; drawLocal(); };
+      var ty = h('select', { style: 'min-width:190px', disabled: !!it.envoye }, Object.keys(DOC_TYPES).map(function (k) { return h('option', { value: k }, DOC_TYPES[k]); }));
+      ty.value = it.type; ty.onchange = function () { it.champs = AutoDetectDoc.adapt(ty.value, it.champs); it.type = ty.value; drawLocal(); };
+      var per = h('input', { value: AutoDetectDoc.periodeOf(it.type, it.champs), placeholder: it.type === 'autre' ? 'aucune date nécessaire' : 'jj/mm/aaaa ou mois', disabled: !!it.envoye || it.type === 'autre', style: 'min-width:150px' });
+      per.onchange = function () { try { it.champs = AutoDetectDoc.parsePeriode(it.type, per.value); lBox.hide(); } catch (e) { lBox.show(e.message, false); } drawLocal(); };
+      var manque = AutoDetectDoc.missing(it.type, it.champs);
+      var etat = it.envoye ? h('b', { style: 'color:var(--pos,#2e9e4f)' }, '✓ Envoyé à la vérification') : it.renomme ? h('b', { style: 'color:var(--pos,#2e9e4f)' }, '✓ Renommé sur le PC') : (!it.agent ? h('b', { style: 'color:#b45309' }, '⚠ Agent à choisir') : manque.length ? h('b', { style: 'color:#b45309' }, '⚠ À compléter') : h('b', { style: 'color:var(--pos,#2e9e4f)' }, '✓ Prêt'));
+      var rm = h('button', { type: 'button', class: 'danger', title: 'Retirer de la liste (le fichier n’est pas touché)' }, '✕'); rm.onclick = function () { L = L.filter(function (x) { return x !== it; }); drawLocal(); };
+      return h('tr', null, h('td', null, cb), h('td', null, h('small', null, it.nom_original), it.nom_local && it.nom_local !== it.nom_original ? h('small', { class: 'muted', style: 'display:block' }, 'renommé en ' + it.nom_local) : null), h('td', null, ag, it.candidats && it.candidats.length > 1 ? h('small', { class: 'muted', style: 'display:block' }, 'Possibles : ' + it.candidats.map(function (c) { return c.nom; }).join(', ')) : null),
+        h('td', null, ty), h('td', null, per), h('td', null, h('b', null, nom), it.avertissement ? h('small', { class: 'muted', style: 'display:block' }, it.avertissement) : null), h('td', null, etat), h('td', null, rm));
+    }
+    var lSend = h('button', { class: 'primary', type: 'button' }, 'Envoyer vers la vérification');
+    var lSurPlace = h('button', { type: 'button', title: 'Renomme directement les fichiers dans leur dossier, sur votre ordinateur' }, 'Renommer dans mon dossier');
+    var lZip = h('button', { type: 'button', title: 'Enregistre une copie de chaque fichier sous son nouveau nom (archive .zip)' }, 'Enregistrer les copies renommées (.zip)');
+    var lOpen = h('button', { type: 'button', title: 'Choisir un dossier de votre ordinateur : ses PDF et images sont lus et peuvent être renommés sur place' }, 'Ouvrir un dossier (renommage sur place)');
+    var lVider = h('button', { type: 'button' }, 'Vider la liste');
+    function lSel() { return L.filter(function (x) { return x.coche && !x.envoye; }); }
+    function lPret(x) { return x.agent && !AutoDetectDoc.missing(x.type, x.champs).length; }
+    function lCount() { var sel = lSel(); lSend.textContent = tr('Envoyer vers la vérification') + ' (' + sel.filter(lPret).length + ')'; lSend.disabled = !sel.filter(lPret).length; lZip.disabled = !sel.length; lSurPlace.disabled = !sel.length || !dossier; }
+    function drawLocal() {
+      lcard.hidden = !L.length; if (!L.length) return;
+      var noms = lNoms();
+      var all = h('input', { type: 'checkbox', title: 'Tout cocher', onchange: function () { L.forEach(function (x) { if (!x.envoye) x.coche = all.checked; }); drawLocal(); } });
+      lcard.replaceChildren(h('h2', null, 'Lu sur votre PC (' + L.length + ')'),
+        h('p', { class: 'muted' }, 'Les documents ont été lus dans votre navigateur : rien n’a quitté votre ordinateur. Corrigez si besoin, puis renommez les fichiers sur votre PC (dossier ou .zip) et/ou envoyez-les vers la vérification, étape suivante avant l’espace des agents.'),
+        h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, [all, 'Fichier d’origine', 'Agent', 'Type', 'Date / période', 'Nom final', 'État', ''].map(function (t) { return h('th', null, t); }))), h('tbody', null, L.map(function (x, i) { return lRow(x, noms[i]); })))),
+        lBox, h('div', { class: 'sendbar' }, lSend, SijilLocal.peutSurPlace() ? lSurPlace : null, lZip, SijilLocal.peutSurPlace() ? lOpen : null, lVider));
+      lCount();
+    }
+    lVider.onclick = function () { L = []; dossier = null; drawLocal(); };
+    lZip.onclick = function () {
+      var sel = lSel(); var noms = lNoms(); var entrees = sel.map(function (x) { return { nom: noms[L.indexOf(x)], octets: x.buf }; });
+      SijilLocal.telecharger('documents-renommes.zip', SijilLocal.zip(entrees), 'application/zip'); lBox.show('✓ ' + sel.length + ' copie(s) renommée(s) enregistrée(s) (archive .zip dans vos téléchargements). Les originaux ne sont pas modifiés.', true);
+    };
+    lOpen.onclick = function () {
+      lOpen.disabled = true;
+      SijilLocal.ouvrirDossier().then(function (r) {
+        dossier = r.dir; if (!r.files.length) { lBox.show('Aucun PDF ou image directement dans ce dossier.', false); return; }
+        return lireLocal(r.files);
+      }).catch(function (e) {
+        if (e && e.name === 'AbortError') lBox.show('Aucun dossier ouvert (annulé, ou refusé par le navigateur : Documents, Téléchargements et Bureau sont refusés, choisissez un sous-dossier).', 'warn');
+        else lBox.show('Ouverture du dossier impossible dans cette fenêtre (' + ((e && (e.message || e.name)) || 'refusé') + ') : utilisez « Enregistrer les copies renommées (.zip) ».', false);
+      }).then(function () { lOpen.disabled = false; });
+    };
+    lSurPlace.onclick = function () {
+      var sel = lSel().filter(function (x) { return x.agent; }); var noms = lNoms(); if (!sel.length || !dossier) return;
+      if (!window.confirm(tr('Renommer ' + sel.length + ' fichier(s) dans le dossier choisi ? Aucun fichier existant n’est remplacé.'))) return;
+      lSurPlace.disabled = true;
+      SijilLocal.renommerSurPlace(dossier, sel, sel.map(function (x) { return noms[L.indexOf(x)]; })).then(function (n) { lBox.show('✓ ' + n + ' fichier(s) renommé(s) dans le dossier.', true); drawLocal(); })
+        .catch(function (e) { lBox.show('Renommage impossible : ' + e.message, false); drawLocal(); });
+    };
+    lSend.onclick = function () {
+      var sel = lSel().filter(lPret); if (!sel.length) return; var noms = lNoms(); var done = 0; var bad = [];
+      lSend.disabled = true;
+      var next = function () {
+        if (done >= sel.length) { lBox.show('✓ ' + (sel.length - bad.length) + ' document(s) envoyé(s) vers la vérification' + (bad.length ? ' · ⚠ ' + bad.join(' ; ') : '') + '. Vérifiez la liste « À vérifier avant envoi » ci-dessous.', !bad.length); drawLocal(); drawQueue(); return; }
+        var x = sel[done]; var nom = x.nom_local || noms[L.indexOf(x)]; lBox.show('⏳ Envoi ' + (done + 1) + '/' + sel.length + ' : ' + nom + '…', 'warn');
+        var b64 = SijilLocal.base64(x.buf);
+        call('depotAdd', { nom: nom, mime: x.file.type, base64: b64, agent_id: x.agent.id, type: x.type, pdf: pdfChk.checked })
+          .then(function (r) { Q.push(r); if (r.pret && !r.doublon_exact) chk[r.id] = true; x.envoye = true; x.coche = false; }).catch(function (e) { bad.push(nom + ' : ' + e.message); })
+          .then(function () { done += 1; next(); });
+      };
+      next();
+    };
+    function lireLocal(fl) {
+      var done = 0; var bad = [];
+      return new Promise(function (resolve) {
+        var next = function () {
+          if (done >= fl.length) { upBox.show('✓ ' + (fl.length - bad.length) + ' document(s) lu(s) sur votre PC' + (bad.length ? ' · ⚠ ' + bad.join(' ; ') : '') + '. Vérifiez la liste ci-dessous.', !bad.length); drawLocal(); resolve(); return; }
+          var f = fl[done]; upBox.show('⏳ Lecture sur votre PC ' + (done + 1) + '/' + fl.length + ' : ' + f.name + '…', 'warn');
+          if (f.size > 10 * 1024 * 1024) { bad.push(f.name + ' : plus de 10 Mo'); done += 1; next(); return; }
+          SijilLocal.analyser(f, { agents: personnes(), reconnaitreAgent: autoAgent.checked }).then(function (it) { it.coche = true; L.push(it); }).catch(function (e) { bad.push(f.name + ' : ' + e.message); })
+            .then(function () { done += 1; drawLocal(); next(); });
+        };
+        next();
+      });
+    }
     function analyser(fl) {
       if (!fl.length) { upBox.show('Choisissez un ou plusieurs fichiers.', false); return; }
       if (go.disabled) return;
+      if (localChk.checked) { go.disabled = true; files.value = ''; lireLocal(fl).then(function () { go.disabled = false; }); return; }
       go.disabled = true; var done = 0; var bad = [];
       var next = function () {
         if (done >= fl.length) { go.disabled = false; files.value = ''; upBox.show('✓ ' + (fl.length - bad.length) + ' document(s) analysé(s)' + (bad.length ? ' · ⚠ ' + bad.join(' ; ') : '') + '. Vérifiez la liste ci-dessous avant l’envoi.', !bad.length); drawQueue(); return; }
         var f = fl[done]; upBox.show('⏳ Analyse ' + (done + 1) + '/' + fl.length + ' : ' + f.name + '…', 'warn');
-        fileToBase64(f).then(function (b64) { return call('depotAdd', { nom: f.name, mime: f.type, base64: b64, agent_id: forceAgent.value, pdf: pdfChk.checked }); })
+        fileToBase64(f).then(function (b64) { return call('depotAdd', { nom: f.name, mime: f.type, base64: b64, auto_agent: autoAgent.checked, pdf: pdfChk.checked }); })
           .then(function (r) { Q.push(r); if (r.pret && !r.doublon_exact) chk[r.id] = true; }).catch(function (e) { bad.push(f.name + ' : ' + e.message); })
           .then(function () { done += 1; drawQueue(); next(); });
       };
@@ -1094,12 +1180,13 @@ function DocumentsPage() {
     zone.addEventListener('drop', function (e) { var fl = e.dataTransfer && e.dataTransfer.files; if (fl && fl.length) analyser(Array.prototype.slice.call(fl)); });
     var form = h('section', { class: 'card' }, h('h2', null, 'Déposer des documents en vrac'),
       h('p', { class: 'muted' }, 'Déposez plusieurs documents à la fois (fiches de paie, titres de congé, contrats, attestations CNAS…). Sijil reconnaît l’agent, le type et les dates, puis propose le nom. Vous vérifiez, puis vous envoyez : rien n’arrive chez l’agent avant votre accord.'),
-      zone, h('div', { class: 'row' }, field('Agent pour tous les fichiers (facultatif)', forceAgent)),
-      h('label', { class: 'inline' }, pdfChk, ' Convertir les images (photos, scans JPG ou PNG) en PDF'), upBox);
-    wrap.append(form, queue);
+      zone, h('div', { style: 'display:grid;gap:6px;margin:10px 0' }, h('label', { class: 'inline' }, autoAgent, ' Reconnaître l’agent automatiquement'),
+        h('label', { class: 'inline' }, localChk, ' Lire et renommer les fichiers sur mon PC avant l’envoi (rien n’est envoyé tant que vous n’avez pas validé)'),
+        h('label', { class: 'inline' }, pdfChk, ' Convertir les images (photos, scans JPG ou PNG) en PDF')), upBox);
+    wrap.append(form, lcard, queue);
     sel.onchange = loadList;
     call('agentsVisible', true).then(function (agents) {
-      agentsAll = agents; forceAgent.append.apply(forceAgent, agents.map(function (a) { return h('option', { value: a.id }, a.nom); }));
+      agentsAll = agents;
       sel.replaceChildren.apply(sel, agents.map(function (a) { return h('option', { value: a.id }, a.nom); })); loadList();
       call('depotList').then(function (rows) { Q = rows; rows.forEach(function (r) { if (r.pret && !r.doublon_exact) chk[r.id] = true; }); drawQueue(); }).catch(function () {});
     });

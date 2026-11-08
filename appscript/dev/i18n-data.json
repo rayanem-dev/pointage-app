@@ -6728,5 +6728,85 @@
   "Aucun texte lu dans le document (service de lecture occupé ou scan trop pâle) : cliquez sur « Relire », ou renseignez le type et l'agent.",
   "No text read from the document (reading service busy or scan too faint): click “Re-read”, or fill in the type and the employee.",
   "لم يُقرأ أي نص في الوثيقة (خدمة القراءة مشغولة أو المسح باهت): انقر «إعادة القراءة» أو حدّد النوع والعون."
+ ],
+ [
+  "Lire et renommer les fichiers sur mon PC avant l’envoi (rien n’est envoyé tant que vous n’avez pas validé)",
+  "Read and rename the files on my PC before sending (nothing is sent until you confirm)",
+  "قراءة الملفات وإعادة تسميتها على حاسوبي قبل الإرسال (لا يُرسل شيء قبل تأكيدك)"
+ ],
+ [
+  "Envoyer vers la vérification",
+  "Send to verification",
+  "إرسال إلى المراجعة"
+ ],
+ [
+  "Renommer dans mon dossier",
+  "Rename in my folder",
+  "إعادة التسمية في مجلدي"
+ ],
+ [
+  "Renomme directement les fichiers dans leur dossier, sur votre ordinateur",
+  "Renames the files directly in their folder, on your computer",
+  "يعيد تسمية الملفات مباشرة في مجلدها على حاسوبك"
+ ],
+ [
+  "Enregistrer les copies renommées (.zip)",
+  "Save the renamed copies (.zip)",
+  "حفظ النسخ المعاد تسميتها (.zip)"
+ ],
+ [
+  "Enregistre une copie de chaque fichier sous son nouveau nom (archive .zip)",
+  "Saves a copy of each file under its new name (.zip archive)",
+  "يحفظ نسخة من كل ملف باسمه الجديد (أرشيف .zip)"
+ ],
+ [
+  "Ouvrir un dossier (renommage sur place)",
+  "Open a folder (rename in place)",
+  "فتح مجلد (إعادة التسمية في مكانه)"
+ ],
+ [
+  "Choisir un dossier de votre ordinateur : ses PDF et images sont lus et peuvent être renommés sur place",
+  "Choose a folder on your computer: its PDFs and images are read and can be renamed in place",
+  "اختر مجلدًا في حاسوبك: تُقرأ ملفات PDF والصور فيه ويمكن إعادة تسميتها في مكانها"
+ ],
+ [
+  "Vider la liste",
+  "Clear the list",
+  "إفراغ القائمة"
+ ],
+ [
+  "Retirer de la liste (le fichier n’est pas touché)",
+  "Remove from the list (the file is not touched)",
+  "إزالة من القائمة (لا يُمسّ الملف)"
+ ],
+ [
+  "Lu sur votre PC (",
+  "Read on your PC (",
+  "قُرئ على حاسوبك ("
+ ],
+ [
+  "Fichier d’origine",
+  "Original file",
+  "الملف الأصلي"
+ ],
+ [
+  "Date / période",
+  "Date / period",
+  "التاريخ / الفترة"
+ ],
+ [
+  "✓ Renommé sur le PC",
+  "✓ Renamed on the PC",
+  "✓ أُعيدت تسميته على الحاسوب"
+ ],
+ [
+  "✓ Envoyé à la vérification",
+  "✓ Sent to verification",
+  "✓ أُرسل إلى المراجعة"
+ ],
+ [
+  "Les documents ont été lus dans votre navigateur : rien n’a quitté votre ordinateur. Corrigez si besoin, puis renommez les fichiers sur votre PC (dossier ou .zip) et/ou envoyez-les vers la vérification, étape suivante avant l’espace des agents.",
+  "The documents were read in your browser: nothing left your computer. Correct if needed, then rename the files on your PC (folder or .zip) and/or send them to verification, the step before the agents' space.",
+  "قُرئت المستندات في متصفحك: لم يغادر شيء حاسوبك. صحّح عند الحاجة ثم أعد تسمية الملفات على حاسوبك (مجلد أو .zip) و/أو أرسلها إلى المراجعة، وهي الخطوة التي تسبق فضاء الأعوان."
  ]
 ]

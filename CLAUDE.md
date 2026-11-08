@@ -19,6 +19,12 @@ Procédure : modifier l'application → régénérer manuel (`python3 docs/build
 
 Positionnement à reprendre partout : « Gestion du temps de travail qui prend en charge les rotations ; gère la mise à disposition du personnel et du matériel de prestation de services, de A à Z : du bordereau des prix jusqu'à l'attachement et à la facture. » La facturation est un module que l'administrateur active ou désactive (Setup → Contrat). Le matériel (camion 2,5 tonnes, rétrochargeur, véhicule 4x4…) est pointé comme le personnel.
 
+## Documents : lecture et renommage sur le poste
+
+- Le moteur de reconnaissance (`appscript/dev/autodetect-renommage.js`) est la copie telle quelle de la brique `rayanem-dev/lib` → `_autodetect-renommage` ; la lecture locale (pdf.js, Tesseract, renommage sur place, .zip) est `appscript/dev/local.js`. `node dev/gen-detecter.js` produit `Detecter.html` (inclus par `Index.html`, listé dans `files.json`). Toute correction de reconnaissance dans `Documents.gs` (et `php/src/Documents.php`) est reportée dans la brique `lib` (puis recopiée ici), pour que Sijil et le portail restent identiques.
+- La case « Lire et renommer les fichiers sur mon PC » est cochée par défaut ; la case « Reconnaître l'agent automatiquement » envoie `auto_agent:false` à `depotAdd` quand elle est décochée. L'étape suivante est inchangée : liste « À vérifier avant envoi » puis envoi vers l'espace des agents.
+- `showDirectoryPicker` est refusé dans l'iframe d'Apps Script : le renommage sur place peut échouer (message clair, repli sur l'archive .zip). Dans le bac à sable, pdf.js se teste en interceptant les URL cdnjs (voir `dev/e2e-demo.js`).
+
 ## Démonstration (essai public) et parcours de test
 
 - **Entreprise DEMO** (`appscript/Demo.gs`) : identifiant `demo`, mot de passe `demo` (comptes `demo-chef`, `demo-agent`, `demo-client`), données fictives relatives à la date du jour, remise à zéro chaque nuit par la tâche planifiée (`Auto.run` → `Demo.tick`). Créée / remise à zéro par l'éditeur : Clients → Démonstration. Protections : aucun e-mail réel (`Mail.send`), mot de passe, vidage et sauvegarde verrouillés (`Demo.blocked`), dépôts limités (`Demo.checkUpload`). Tout nouveau point d'entrée de fichier ou d'e-mail doit respecter ces règles. Lien d'essai : `https://rayanem-dev.github.io/pointage-app/?c=DEMO`.
