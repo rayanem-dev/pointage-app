@@ -61,7 +61,12 @@ var Demandes = (function () {
   // Titre de congé : date de reprise = fin du congé + 1 jour ; sans date de fin, départ + durée du repos de la rotation de l'agent (ex. 16/10 + 28 j = 13/11).
   // Document déjà transmis à l'agent pour cette demande (même type, déposé depuis la demande, le plus récent) : proposé tel quel à la clôture, par n'importe quel responsable, qu'il l'ait déposé lui-même ou non.
   function docPropose(d, ctx) {
-    var voulu = docDe(d.type); if (!voulu) return null;
+    var voulu = docDe(d.type);
+    if (!voulu) { // type ajouté sans document attendu : on le retrouve par son libellé (« Certificat de travail » → certificat_travail)
+      var lib = Format.norm(T[d.type] || ''); Object.keys(CFG.TYPES_DOC).forEach(function (k) { var l = Format.norm(CFG.TYPES_DOC[k]); if (!voulu && l && lib && (lib === l || lib.indexOf(l) >= 0)) voulu = k; });
+    }
+    var apres = (ctx.parAgent[d.agent_id] || []).filter(function (x) { return String(x.date || '') >= String(d.date_creation || ''); }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+    if (!voulu) { var un = apres.length === 1 ? apres[0] : null; return un ? { id: un.id, nom: un.nom_original || un.titre, periode: un.periode || '', depose_par: un.depose_par || '', date: un.date || '' } : null; }
     var ok = (ctx.parAgent[d.agent_id] || []).filter(function (x) { return x.type === voulu && String(x.date || '') >= String(d.date_creation || ''); }).sort(function (a, b) { return a.date < b.date ? 1 : -1; })[0];
     return ok ? { id: ok.id, nom: ok.nom_original || ok.titre, periode: ok.periode || '', depose_par: ok.depose_par || '', date: ok.date || '' } : null;
   }

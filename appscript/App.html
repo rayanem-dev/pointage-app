@@ -747,7 +747,7 @@ function DemandesPage() {
     var rouvre = direct && !mine && !ferme ? h('button', { type: 'button', onclick: function () { reouvrirDem(d, rouvre); } }, 'Annuler la décision') : null;
     var sup = (d.statut === 'en_attente' || (direct && !mine && !ferme)) ? supBtn(d) : null;
     var card = h('article', { class: 'item' }, h('div', null, h('b', null, d.type_label), h('span', { class: 'badge ' + d.statut }, STATUT_LABEL[d.statut]), ' ', mod, ' ', rouvre, ' ', sup),
-      h('small', null, (mine ? '' : d.agent_nom + ' · ') + frDateTime(d.date_creation) + periode),
+      h('small', null, (mine ? '' : h('b', { style: 'font-size:1.05rem' }, d.agent_nom)), (mine ? '' : ' · ') + frDateTime(d.date_creation) + periode),
       stepper(d), d.message ? h('p', null, d.message) : null, d.reponse ? h('p', { class: 'reply' }, 'Réponse' + (d.traite_par ? ' (' + d.traite_par + ')' : '') + ' : ' + d.reponse) : null,
       docBloc(d), !mine && d.a_cloturer ? clotureCtl(d) : null, !mine && ferme ? annulCloture(d) : null);
     return card;

@@ -232,3 +232,15 @@ test('types de demande réglables dans Setup : ajout (« Certificat de travail �
   assert.ok(!ok(call(am, 'demandesList')).proposes.includes('x_certificat_de_travail'));
   assert.strictEqual(ok(call(am, 'demandesList')).mine.find((x) => x.id === d.id).type_label, 'Certificat de travail');
 });
+
+test('clôture : type ajouté sans document attendu, le document est retrouvé par le libellé du type', () => {
+  const admin = ok(call(null, 'login', 'admin@t.fr', 'adminpw12')).token;
+  ok(call(admin, 'typesDemandeSave', { custom: [{ label: 'Certificat de travail' }] }));
+  const ag = ok(call(admin, 'agentCreate', { nom: 'CHAREF KAMEL', email: 'ck@t.fr', role: 'agent', password: 'agentpw123' })).agent;
+  const tk = ok(call(null, 'login', 'ck@t.fr', 'agentpw123')).token;
+  const d = ok(call(tk, 'demandeCreate', { type: 'x_certificat_de_travail' }));
+  ok(call(admin, 'demandeRepondre', d.id, 'traitee', 'transmis'));
+  const doc = ok(call(admin, 'documentUpload', { agent_id: ag.id, type: 'certificat_travail', nom: 'CHAREF_Kamel_CertificatTravail_2026-11-01.pdf', base64: Buffer.from('%PDF-1.4 ct').toString('base64') }));
+  assert.strictEqual(ok(call(admin, 'demandesList')).toHandle.find((x) => x.id === d.id).doc_propose.id, doc.id);
+  assert.strictEqual(ok(call(admin, 'demandeCloturer', d.id, '')).document.id, doc.id);
+});

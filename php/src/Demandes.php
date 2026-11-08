@@ -24,7 +24,9 @@ final class Demandes {
     private static function contexte(): array { $docs = Store::readTable('Documents'); $par = []; foreach ($docs as $x) $par[$x['agent_id']][] = $x; return ['envois' => self::byId(Store::readTable('Envois')), 'docs' => self::byId($docs), 'parAgent' => $par]; }
     // Document déjà transmis à l'agent pour cette demande (même type, déposé depuis la demande, le plus récent).
     private static function docPropose(array $d, array $ctx): ?array {
-        $voulu = self::docDe($d['type']); if ($voulu === '') return null; $best = null;
+        $voulu = self::docDe($d['type']); $best = null;
+        if ($voulu === '') { $lib = Format::norm(self::T()[$d['type']] ?? ''); foreach (CFG()['TYPES_DOC'] as $k => $l) { $l = Format::norm($l); if ($voulu === '' && $l !== '' && $lib !== '' && ($lib === $l || strpos($lib, $l) !== false)) $voulu = $k; } }
+        if ($voulu === '') { $apres = array_values(array_filter($ctx['parAgent'][$d['agent_id']] ?? [], fn($x) => (string)$x['date'] >= (string)$d['date_creation'])); $un = count($apres) === 1 ? $apres[0] : null; return $un ? ['id' => $un['id'], 'nom' => $un['nom_original'] ?: $un['titre'], 'periode' => $un['periode'] ?? '', 'depose_par' => $un['depose_par'] ?? '', 'date' => $un['date'] ?? ''] : null; }
         foreach ($ctx['parAgent'][$d['agent_id']] ?? [] as $x) if ($x['type'] === $voulu && (string)$x['date'] >= (string)$d['date_creation'] && (!$best || $x['date'] > $best['date'])) $best = $x;
         return $best ? ['id' => $best['id'], 'nom' => $best['nom_original'] ?: $best['titre'], 'periode' => $best['periode'] ?? '', 'depose_par' => $best['depose_par'] ?? '', 'date' => $best['date'] ?? ''] : null;
     }
