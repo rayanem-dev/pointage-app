@@ -176,13 +176,14 @@ test('demandes : parcours complet reçue → transmise → réponse → clôture
   assert.strictEqual(etat(ok(c7(tc, 'demandesList')).toHandle, d1.id), 'recue:fait transmise:fait reponse:fait cloturee:attente');
   assert.strictEqual(ok(c7(tc, 'demandesList')).toHandle.find((d) => d.id === d1.id).a_cloturer, true);
   // pas de clôture sans document (hors refus) ; l'agent ne peut pas clôturer ; document d'un autre agent refusé
-  fail(c7(tc, 'demandeCloturer', d1.id, ''), /Choisissez le document/);
+  fail(c7(tc, 'demandeCloturer', d1.id, ''), /Aucun document transmis/);
   fail(c7(t1, 'demandeCloturer', d1.id, ''), /./);
   const pdf = Buffer.from('%PDF-1.4 tc').toString('base64');
   const doc = ok(c7(tc, 'documentUpload', { agent_id: ag1.id, type: 'titre_conge', nom: 'TC_AG_Un_2026-11-01.pdf', base64: pdf }));
   const docs = ok(c7(tc, 'demandeDocuments', d1.id)); assert.strictEqual(docs[0].correspond, true);
   fail(c7(tc, 'demandeCloturer', d1.id, 'inconnu'), /introuvable/);
-  const r = ok(c7(tc, 'demandeCloturer', d1.id, doc.id));
+  assert.strictEqual(ok(c7(tc, 'demandesList')).toHandle.find((d) => d.id === d1.id).doc_propose.id, doc.id, 'le document transmis est proposé tel quel');
+  const r = ok(c7(tc, 'demandeCloturer', d1.id, ''));  // sans choix : le document déjà transmis est associé
   assert.deepStrictEqual([r.cloturee, r.document.id, r.a_cloturer], [true, doc.id, false]);
   // l'agent voit l'avancement complet, la clôture et le document ; mais pas la demande d'un autre
   const mine = ok(c7(t1, 'demandesList')).mine; assert.strictEqual(mine.length, 1);
@@ -192,6 +193,7 @@ test('demandes : parcours complet reçue → transmise → réponse → clôture
   // clôturée : plus de modification sans annuler la clôture
   fail(c7(tc, 'demandeModifier', d1.id, { message: 'x' }), /clôturée/); fail(c7(tc, 'demandeSupprimer', d1.id), /clôturée/);
   ok(c7(tc, 'demandeAnnulerCloture', d1.id)); assert.strictEqual(ok(c7(tc, 'demandesList')).toHandle.find((d) => d.id === d1.id).cloturee, false);
+  assert.strictEqual(ok(c7(tc, 'demandeCloturerPretes')).clotures, 1, 'clôture groupée des demandes dont le document est transmis');
   assert.ok(d2.id);
 });
 

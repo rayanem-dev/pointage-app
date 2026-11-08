@@ -6808,5 +6808,50 @@
   "Les documents ont été lus dans votre navigateur : rien n’a quitté votre ordinateur. Corrigez si besoin, puis renommez les fichiers sur votre PC (dossier ou .zip) et/ou envoyez-les vers la vérification, étape suivante avant l’espace des agents.",
   "The documents were read in your browser: nothing left your computer. Correct if needed, then rename the files on your PC (folder or .zip) and/or send them to verification, the step before the agents' space.",
   "قُرئت المستندات في متصفحك: لم يغادر شيء حاسوبك. صحّح عند الحاجة ثم أعد تسمية الملفات على حاسوبك (مجلد أو .zip) و/أو أرسلها إلى المراجعة، وهي الخطوة التي تسبق فضاء الأعوان."
+ ],
+ [
+  "Document transmis à l’agent",
+  "Document sent to the agent",
+  "المستند المُرسَل إلى العون"
+ ],
+ [
+  "déposé par",
+  "uploaded by",
+  "أودعه"
+ ],
+ [
+  "Aucun document transmis à l’agent : déposez-le d’abord dans l’onglet Documents, puis revenez clôturer.",
+  "No document sent to the agent: upload it first in the Documents tab, then come back to close.",
+  "لا يوجد مستند مُرسَل إلى العون: أودعه أولًا في تبويب المستندات ثم عد للإغلاق."
+ ],
+ [
+  "Aucun document transmis à l’agent pour cette demande : déposez-le d’abord dans l’onglet Documents",
+  "No document sent to the agent for this request: upload it first in the Documents tab",
+  "لا يوجد مستند مُرسَل إلى العون لهذا الطلب: أودعه أولًا في تبويب المستندات"
+ ],
+ [
+  "— choisir le document transmis —",
+  "— choose the document sent —",
+  "— اختر المستند المُرسَل —"
+ ],
+ [
+  "Choisissez le document transmis à l’agent.",
+  "Choose the document sent to the agent.",
+  "اختر المستند المُرسَل إلى العون."
+ ],
+ [
+  "Clôturer les demandes prêtes",
+  "Close the ready requests",
+  "إغلاق الطلبات الجاهزة"
+ ],
+ [
+  "La direction a répondu. Dès que le document est dans l’espace de l’agent, clôturez : l’agent est prévenu.",
+  "Management has replied. As soon as the document is in the agent's space, close the request: the agent is notified.",
+  "ردّت الإدارة. بمجرد وصول المستند إلى فضاء العون، أغلق الطلب: يُبلَّغ العون."
+ ],
+ [
+  "Aucune demande en attente de la direction.",
+  "No request waiting for management.",
+  "لا طلب في انتظار الإدارة."
  ]
 ]

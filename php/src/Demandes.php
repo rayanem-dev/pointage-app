@@ -21,7 +21,13 @@ final class Demandes {
         if ($user['role'] === 'admin') return true;
         return $user['role'] === 'chef' && $d['agent_id'] !== $user['id'] && (Agents::tous($user) || self::handlerId($by[$d['agent_id']] ?? null, $by) === $user['id']);
     }
-    private static function contexte(): array { return ['envois' => self::byId(Store::readTable('Envois')), 'docs' => self::byId(Store::readTable('Documents'))]; }
+    private static function contexte(): array { $docs = Store::readTable('Documents'); $par = []; foreach ($docs as $x) $par[$x['agent_id']][] = $x; return ['envois' => self::byId(Store::readTable('Envois')), 'docs' => self::byId($docs), 'parAgent' => $par]; }
+    // Document déjà transmis à l'agent pour cette demande (même type, déposé depuis la demande, le plus récent).
+    private static function docPropose(array $d, array $ctx): ?array {
+        $voulu = self::docDe($d['type']); if ($voulu === '') return null; $best = null;
+        foreach ($ctx['parAgent'][$d['agent_id']] ?? [] as $x) if ($x['type'] === $voulu && (string)$x['date'] >= (string)$d['date_creation'] && (!$best || $x['date'] > $best['date'])) $best = $x;
+        return $best ? ['id' => $best['id'], 'nom' => $best['nom_original'] ?: $best['titre'], 'periode' => $best['periode'] ?? '', 'depose_par' => $best['depose_par'] ?? '', 'date' => $best['date'] ?? ''] : null;
+    }
     private static function etapes(array $d, array $ctx): array {
         $rep = in_array($d['statut'], self::REPONSES, true); $direct = $d['envoi_id'] === '' && $rep && $d['statut'] !== 'envoyee'; $env = $ctx['envois'][$d['envoi_id']] ?? null;
         $out = [['cle' => 'recue', 'label' => 'Demande reçue', 'date' => $d['date_creation'], 'etat' => 'fait']];
@@ -39,6 +45,7 @@ final class Demandes {
         $doc = $d['document_id'] !== '' ? ($ctx['docs'][$d['document_id']] ?? null) : null;
         $o['document'] = $doc ? ['id' => $doc['id'], 'nom' => $doc['nom_original'] ?: $doc['titre'], 'type' => $doc['type'], 'periode' => $doc['periode'] ?: ''] : null;
         $o['a_cloturer'] = in_array($d['statut'], self::REPONSES, true) && $d['date_cloture'] === '';
+        if ($o['a_cloturer']) $o['doc_propose'] = self::docPropose($d, $ctx);
         $hid = self::handlerId($a ?: null, $by); $o['responsable_nom'] = $hid === 'admin' ? '' : (($by[$hid]['nom'] ?? '') ?: '');
         return $o;
     }
@@ -280,7 +287,11 @@ final class Demandes {
             $doc = null; foreach (Store::readTable('Documents') as $x) if ($x['id'] === $docId) $doc = $x;
             if (!$doc || $doc['agent_id'] !== $d['agent_id']) throw httpErr('Document introuvable chez cet agent');
             $d['document_id'] = $docId;
-        } elseif ($d['statut'] !== 'refusee') throw httpErr('Choisissez le document à remettre à l’agent (ou déposez-le d’abord dans l’onglet Documents)');
+        } elseif ($d['statut'] !== 'refusee') {
+            $p = self::docPropose($d, self::contexte());
+            if (!$p) throw httpErr('Aucun document transmis à l’agent pour cette demande : déposez-le d’abord dans l’onglet Documents');
+            $d['document_id'] = $p['id'];
+        }
         $d['date_cloture'] = nowIso(); $d['cloture_par'] = $user['nom'];
         $copy = $d; unset($d);
         Store::writeTable('Demandes', $all);
@@ -290,6 +301,12 @@ final class Demandes {
                 'body' => 'Bonjour ' . $ag['nom'] . ",\n\nVotre demande « " . ($T[$copy['type']] ?? $copy['type']) . ' » est clôturée (' . (CFG()['STATUTS_DEMANDE'][$copy['statut']] ?? $copy['statut']) . ').' . ($copy['document_id'] ? "\nLe document est disponible dans votre espace Sijil, onglet « Mes documents » et sur la demande." : '') . ($copy['reponse'] ? "\n\nRéponse : " . $copy['reponse'] : '')]);
         } catch (Throwable $e) { error_log('Clôture non notifiée : ' . $e->getMessage()); }
         return self::enrich($copy, $by);
+    }
+    public static function cloturerPretes(array $user): array {
+        $by = self::byId(Agents::list()); $ctx = self::contexte(); $ids = []; $n = 0;
+        foreach (Store::readTable('Demandes') as $d) if (in_array($d['statut'], self::REPONSES, true) && $d['date_cloture'] === '' && self::canHandle($user, $d, $by) && ($d['statut'] === 'refusee' || self::docPropose($d, $ctx))) $ids[] = $d['id'];
+        foreach ($ids as $id) { try { self::cloturer($user, $id, ''); $n++; } catch (Throwable $e) { error_log('Clôture groupée : ' . $e->getMessage()); } }
+        return ['clotures' => $n];
     }
     public static function annulerCloture(array $user, $id): array {
         $by = self::byId(Agents::list()); $all = Store::readTable('Demandes'); $i = self::find($all, $id);

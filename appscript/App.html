@@ -774,20 +774,32 @@ function DemandesPage() {
     dl.onclick = function () { act(dl, m, function () { return call('documentDownload', d.document.id).then(saveFile); }); };
     return h('div', { class: 'reply' }, h('b', null, tr('Document remis') + ' : '), d.document.nom, ' ', pv, ' ', dl, d.cloture_par ? h('small', { class: 'muted' }, ' · ' + tr('clôturée par') + ' ' + d.cloture_par) : null, m);
   }
-  // Clôture (responsable ou administrateur) : choisir le document à remettre, parmi ceux déjà classés chez l'agent.
+  // Clôture (responsable ou administrateur) : en un clic. Le document déjà transmis à l'agent (déposé par n'importe qui) est proposé ; sinon on choisit parmi ceux de l'agent.
   function clotureCtl(d) {
-    var zone = h('div', { style: 'margin-top:8px' }); var ouvrir = h('button', { type: 'button', class: 'primary' }, 'Clôturer et remettre le document');
-    ouvrir.onclick = function () {
-      ouvrir.disabled = true; zone.replaceChildren(loading());
-      call('demandeDocuments', d.id).then(function (docs) {
-        var sel = h('select', null, h('option', { value: '' }, d.statut === 'refusee' ? tr('— sans document —') : tr('— choisir le document —')), docs.map(function (x) { return h('option', { value: x.id }, (x.correspond ? '★ ' : '') + x.nom + (x.periode ? ' · ' + x.periode : '')); }));
-        var m = msgBox(); var ok = h('button', { type: 'button', class: 'primary' }, 'Clôturer'); var no = h('button', { type: 'button' }, 'Annuler');
-        ok.onclick = function () { act(ok, m, function () { return call('demandeCloturer', d.id, sel.value); }).then(function (r) { if (r) { flash = { text: 'Demande clôturée : l’agent est prévenu.', ok: true }; load(); } }); };
-        no.onclick = function () { zone.replaceChildren(); ouvrir.disabled = false; };
-        zone.replaceChildren(h('p', { class: 'muted' }, docs.length ? tr('★ = type correspondant') : tr('Aucun document : déposez-le d’abord dans l’onglet Documents.')), field('Document à remettre', sel), m, h('div', { class: 'sendbar' }, ok, no));
-      }).catch(function (e) { zone.replaceChildren(h('p', { class: 'msg err' }, e.message)); ouvrir.disabled = false; });
-    };
-    return h('div', null, ouvrir, zone);
+    var m = msgBox(); var ok = h('button', { type: 'button', class: 'primary' }, 'Clôturer');
+    var fait = function (docId) { act(ok, m, function () { return call('demandeCloturer', d.id, docId || ''); }).then(function (r) { if (r) { flash = { text: 'Demande clôturée : l’agent est prévenu.', ok: true }; load(); } }); };
+    var p = d.doc_propose;
+    if (p) {
+      var pv = h('button', { type: 'button' }, 'Aperçu'); pv.onclick = function () { act(pv, m, function () { return call('documentDownload', p.id).then(previewFile); }); };
+      ok.onclick = function () { fait(p.id); };
+      return h('div', { class: 'reply' }, h('b', null, '✓ ' + tr('Document transmis à l’agent') + ' : '), p.nom, p.periode ? ' · ' + p.periode : '', h('small', { class: 'muted' }, ' · ' + (p.depose_par ? tr('déposé par') + ' ' + p.depose_par + ' ' : '') + frDateTime(p.date)), h('div', { class: 'sendbar', style: 'margin-top:6px' }, ok, pv), m);
+    }
+    if (d.statut === 'refusee') { ok.onclick = function () { fait(''); }; return h('div', { class: 'sendbar', style: 'margin-top:6px' }, ok, m); }
+    var zone = h('div', { style: 'margin-top:6px' }, loading());
+    call('demandeDocuments', d.id).then(function (docs) {
+      if (!docs.length) { zone.replaceChildren(h('p', { class: 'muted' }, tr('Aucun document transmis à l’agent : déposez-le d’abord dans l’onglet Documents, puis revenez clôturer.'))); return; }
+      var sel = h('select', null, h('option', { value: '' }, tr('— choisir le document transmis —')), docs.map(function (x) { return h('option', { value: x.id }, (x.correspond ? '★ ' : '') + x.nom + (x.periode ? ' · ' + x.periode : '')); }));
+      ok.onclick = function () { if (!sel.value) { m.show('Choisissez le document transmis à l’agent.', false); return; } fait(sel.value); };
+      zone.replaceChildren(sel, h('div', { class: 'sendbar', style: 'margin-top:6px' }, ok), m);
+    }).catch(function (e) { zone.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+    return zone;
+  }
+  // Un seul bouton pour toutes les demandes dont le document est déjà transmis (et les refus).
+  function clorePretes(liste) {
+    var n = liste.filter(function (d) { return d.doc_propose || d.statut === 'refusee'; }).length; if (n < 2) return null;
+    var b = h('button', { type: 'button', class: 'primary' }, tr('Clôturer les demandes prêtes') + ' (' + n + ')'); var m = msgBox();
+    b.onclick = function () { if (!window.confirm(tr('Clôturer ' + n + ' demande(s) dont le document est déjà transmis ? Chaque agent est prévenu.'))) return; act(b, m, function () { return call('demandeCloturerPretes'); }).then(function (r) { if (r) { flash = { text: r.clotures + ' demande(s) clôturée(s).', ok: true }; load(); } }); };
+    return h('div', { class: 'sendbar' }, b, m);
   }
   function annulCloture(d) {
     var b = h('button', { type: 'button' }, 'Annuler la clôture');
@@ -920,8 +932,9 @@ function DemandesPage() {
     return h('div', { class: 'sendbar' }, b, m);
   }
   function envoisView(L) {
+    var attente = L.envois.filter(function (e) { return e.statut === 'envoye'; }); // les envois ayant reçu leur réponse passent dans « À clôturer » puis « Clôturées » : plus de doublon ici
     return h('section', { class: 'card', id: 'dem-envois' }, h('h2', null, 'Chez la direction'),
-      L.envois.length ? L.envois.map(function (e) {
+      attente.length ? attente.map(function (e) {
         var box = msgBox();
         var res = h('select', null, h('option', { value: 'acceptee' }, 'Acceptées'), h('option', { value: 'refusee' }, 'Refusées'), h('option', { value: 'traitee' }, 'Traitées'));
         var rep = h('input', { placeholder: 'Réponse de la direction (facultative)' }); var btn = h('button', { class: 'primary' }, 'Enregistrer la réponse');
@@ -934,7 +947,7 @@ function DemandesPage() {
               e.peut_agir ? annulerBouton(e) : null]
             : e.groupes.map(function (g) { return h('div', { class: 'theme' }, h('h3', null, g.label, h('span', { class: 'badge' }, g.items.length)), g.items.map(function (d) { return h('div', { class: 'pick' }, h('div', null, h('b', null, d.agent_nom), ' ', h('span', { class: 'badge ' + d.statut }, STATUT_LABEL[d.statut] || d.statut), d.reponse ? h('div', { class: 'reply' }, 'Réponse' + (d.traite_par ? ' (' + d.traite_par + ')' : '') + ' : ' + d.reponse) : null)); })); }),
           e.statut === 'envoye' && e.peut_agir ? h('div', { class: 'sendbar' }, res, rep, btn) : (e.reponse ? h('p', { class: 'reply' }, 'Réponse : ' + e.reponse) : null), box);
-      }) : h('p', { class: 'muted' }, 'Aucune demande transmise pour le moment.'));
+      }) : h('p', { class: 'muted' }, 'Aucune demande en attente de la direction.'));
   }
   // Tableau de bord : où en sont les demandes (en cours → chez la direction → à clôturer → clôturées). Un clic mène à la liste.
   function pipeline(L) {
@@ -956,7 +969,7 @@ function DemandesPage() {
       out.push(pipeline(L));
       out.push(inbox(L));
       var aClore = L.toHandle.filter(function (d) { return d.a_cloturer; });
-      if (aClore.length) out.push(h('section', { class: 'card', id: 'dem-aclore' }, h('h2', null, 'À clôturer (' + aClore.length + ')'), h('p', { class: 'muted' }, 'Réponse reçue : remettez le document à l’agent.'), aClore.map(function (d) { return demandeCard(d, false); })));
+      if (aClore.length) out.push(h('section', { class: 'card', id: 'dem-aclore' }, h('h2', null, 'À clôturer (' + aClore.length + ')'), h('p', { class: 'muted' }, 'La direction a répondu. Dès que le document est dans l’espace de l’agent, clôturez : l’agent est prévenu.'), clorePretes(aClore), aClore.map(function (d) { return demandeCard(d, false); })));
       out.push(envoisView(L));
       var closes = L.toHandle.filter(function (d) { return d.cloturee; }).sort(function (a, b) { return a.date_cloture < b.date_cloture ? 1 : -1; }).slice(0, 25);
       if (closes.length) out.push(h('section', { class: 'card', id: 'dem-closes' }, h('h2', null, 'Demandes clôturées'), closes.map(function (d) { return demandeCard(d, false); })));

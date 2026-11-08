@@ -32,8 +32,8 @@ var Demandes = (function () {
   // Contexte de lecture (envois et documents) : lu une fois pour toute une liste.
   function contexte() {
     var e = {}; Store.readTable('Envois').forEach(function (x) { e[x.id] = x; });
-    var dc = {}; Store.readTable('Documents').forEach(function (x) { dc[x.id] = x; });
-    return { envois: e, docs: dc };
+    var dc = {}; var par = {}; Store.readTable('Documents').forEach(function (x) { dc[x.id] = x; (par[x.agent_id] = par[x.agent_id] || []).push(x); });
+    return { envois: e, docs: dc, parAgent: par };
   }
   // Avancement d'une demande : reçue → transmise à la direction → réponse → clôturée (document remis). Une décision prise directement saute la transmission.
   function etapes(d, ctx) {
@@ -54,10 +54,17 @@ var Demandes = (function () {
     o.cloturee = !!d.date_cloture; o.etapes = etapes(d, ctx);
     var doc = d.document_id && ctx.docs[d.document_id]; o.document = doc ? { id: doc.id, nom: doc.nom_original || doc.titre, type: doc.type, periode: doc.periode || '' } : null;
     o.a_cloturer = REPONSES.indexOf(d.statut) >= 0 && !d.date_cloture;
+    if (o.a_cloturer) o.doc_propose = docPropose(d, ctx);
     var hid = handlerId(a, agentsById); o.responsable_nom = hid === 'admin' ? '' : (agentsById[hid] || {}).nom || ''; // qui traite : le responsable d'équipe de l'agent, sinon l'administrateur
     return o;
   }
   // Titre de congé : date de reprise = fin du congé + 1 jour ; sans date de fin, départ + durée du repos de la rotation de l'agent (ex. 16/10 + 28 j = 13/11).
+  // Document déjà transmis à l'agent pour cette demande (même type, déposé depuis la demande, le plus récent) : proposé tel quel à la clôture, par n'importe quel responsable, qu'il l'ait déposé lui-même ou non.
+  function docPropose(d, ctx) {
+    var voulu = docDe(d.type); if (!voulu) return null;
+    var ok = (ctx.parAgent[d.agent_id] || []).filter(function (x) { return x.type === voulu && String(x.date || '') >= String(d.date_creation || ''); }).sort(function (a, b) { return a.date < b.date ? 1 : -1; })[0];
+    return ok ? { id: ok.id, nom: ok.nom_original || ok.titre, periode: ok.periode || '', depose_par: ok.depose_par || '', date: ok.date || '' } : null;
+  }
   function reprise(d, agent) {
     if (d.type !== 'titre_conge' || !d.date_debut || !Dates.isDate(d.date_debut)) return '';
     var fin = d.date_fin && Dates.isDate(d.date_fin) ? d.date_fin : '';
@@ -338,7 +345,11 @@ var Demandes = (function () {
       var doc = Store.readTable('Documents').filter(function (x) { return x.id === docId; })[0];
       if (!doc || doc.agent_id !== d.agent_id) throw httpErr_('Document introuvable chez cet agent');
       d.document_id = docId;
-    } else if (d.statut !== 'refusee') throw httpErr_('Choisissez le document à remettre à l’agent (ou déposez-le d’abord dans l’onglet Documents)');
+    } else if (d.statut !== 'refusee') {
+      var p = docPropose(d, contexte()); // sans choix : le document déjà transmis à l'agent
+      if (!p) throw httpErr_('Aucun document transmis à l’agent pour cette demande : déposez-le d’abord dans l’onglet Documents');
+      d.document_id = p.id;
+    }
     d.date_cloture = new Date().toISOString(); d.cloture_par = user.nom;
     Store.writeTable('Demandes', all);
     try {
@@ -347,6 +358,13 @@ var Demandes = (function () {
         body: 'Bonjour ' + ag.nom + ',\n\nVotre demande « ' + (T[d.type] || d.type) + ' » est clôturée (' + (CFG.STATUTS_DEMANDE[d.statut] || d.statut) + ').' + (d.document_id ? '\nLe document est disponible dans votre espace Sijil, onglet « Mes documents » et sur la demande.' : '') + (d.reponse ? '\n\nRéponse : ' + d.reponse : '') });
     } catch (e) { Logger.log('Clôture non notifiée : ' + e.message); }
     return enrich(d, agentsById);
+  }
+  // Clôture en une fois de toutes les demandes dont le document est déjà transmis à l'agent (et des refus, sans document).
+  function cloturerPretes(user) {
+    var agentsById = byId(Agents.list()); var ctx = contexte(); var n = 0; var ids = [];
+    Store.readTable('Demandes').forEach(function (d) { if (REPONSES.indexOf(d.statut) >= 0 && !d.date_cloture && canHandle(user, d, agentsById) && (d.statut === 'refusee' || docPropose(d, ctx))) ids.push(d.id); });
+    ids.forEach(function (id) { try { cloturer(user, id, ''); n += 1; } catch (e) { Logger.log('Clôture groupée : ' + e.message); } });
+    return { clotures: n };
   }
   function annulerCloture(user, id) {
     var agentsById = byId(Agents.list()); var all = Store.readTable('Demandes');
@@ -399,5 +417,5 @@ var Demandes = (function () {
     memoRaw = null;
     return typesConfig();
   }
-  return { typesConfig: typesConfig, typesSave: typesSave, modifier: modifier, reouvrir: reouvrir, supprimer: supprimer, annulerEnvoi: annulerEnvoi, repondreDirection: repondreDirection, cloturer: cloturer, annulerCloture: annulerCloture, documentsPour: documentsPour, create: create, list: list, repondre: repondre, envoyerDirection: envoyerDirection, traiterEnvoi: traiterEnvoi, counts: counts };
+  return { typesConfig: typesConfig, typesSave: typesSave, modifier: modifier, reouvrir: reouvrir, supprimer: supprimer, annulerEnvoi: annulerEnvoi, repondreDirection: repondreDirection, cloturer: cloturer, cloturerPretes: cloturerPretes, annulerCloture: annulerCloture, documentsPour: documentsPour, create: create, list: list, repondre: repondre, envoyerDirection: envoyerDirection, traiterEnvoi: traiterEnvoi, counts: counts };
 })();

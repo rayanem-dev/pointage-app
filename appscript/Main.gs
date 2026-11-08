@@ -120,6 +120,7 @@ var HANDLERS = {
   demandeReouvrir: { roles: STAFF, write: true, fn: function (u, a) { return Demandes.reouvrir(u, a[0]); } },
   demandeReponseDirection: { roles: STAFF, write: true, fn: function (u, a) { return Demandes.repondreDirection(u, a[0], a[1], a[2]); } },
   demandeDocuments: { roles: STAFF, fn: function (u, a) { return Demandes.documentsPour(u, a[0]); } },
+  demandeCloturerPretes: { roles: STAFF, write: true, fn: function (u) { return Demandes.cloturerPretes(u); } },
   demandeCloturer: { roles: STAFF, write: true, fn: function (u, a) { return Demandes.cloturer(u, a[0], a[1]); } },
   demandeAnnulerCloture: { roles: STAFF, write: true, fn: function (u, a) { return Demandes.annulerCloture(u, a[0]); } },
   envoiAnnuler: { roles: STAFF, write: true, fn: function (u, a) { return Demandes.annulerEnvoi(u, a[0]); } },

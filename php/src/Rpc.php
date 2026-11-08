@@ -57,6 +57,7 @@ final class Rpc {
             'demandeReouvrir' => ['roles' => $S, 'write' => true, 'fn' => fn($u, $a) => Demandes::reouvrir($u, $a[0] ?? '')],
             'demandeReponseDirection' => ['roles' => $S, 'write' => true, 'fn' => fn($u, $a) => Demandes::repondreDirection($u, $a[0] ?? '', $a[1] ?? '', $a[2] ?? '')],
             'demandeDocuments' => ['roles' => $S, 'fn' => fn($u, $a) => Demandes::documentsPour($u, $a[0] ?? '')],
+            'demandeCloturerPretes' => ['roles' => $S, 'write' => true, 'fn' => fn($u, $a) => Demandes::cloturerPretes($u)],
             'demandeCloturer' => ['roles' => $S, 'write' => true, 'fn' => fn($u, $a) => Demandes::cloturer($u, $a[0] ?? '', $a[1] ?? null)],
             'demandeAnnulerCloture' => ['roles' => $S, 'write' => true, 'fn' => fn($u, $a) => Demandes::annulerCloture($u, $a[0] ?? '')],
             'envoiAnnuler' => ['roles' => $S, 'write' => true, 'fn' => fn($u, $a) => Demandes::annulerEnvoi($u, $a[0] ?? '')],
