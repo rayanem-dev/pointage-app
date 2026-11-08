@@ -6713,5 +6713,20 @@
   "fin de licence",
   "license end",
   "نهاية الرخصة"
+ ],
+ [
+  "Relire",
+  "Re-read",
+  "إعادة القراءة"
+ ],
+ [
+  "Refaire la lecture automatique de ce document",
+  "Redo the automatic reading of this document",
+  "إعادة القراءة التلقائية لهذه الوثيقة"
+ ],
+ [
+  "Aucun texte lu dans le document (service de lecture occupé ou scan trop pâle) : cliquez sur « Relire », ou renseignez le type et l'agent.",
+  "No text read from the document (reading service busy or scan too faint): click “Re-read”, or fill in the type and the employee.",
+  "لم يُقرأ أي نص في الوثيقة (خدمة القراءة مشغولة أو المسح باهت): انقر «إعادة القراءة» أو حدّد النوع والعون."
  ]
 ]

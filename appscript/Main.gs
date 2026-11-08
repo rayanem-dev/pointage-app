@@ -162,6 +162,7 @@ var HANDLERS = {
   documentUpload: { roles: STAFF, write: true, fn: function (u, a) { return Documents.upload(u, a[0] || {}); } },
   depotAdd: { roles: STAFF, write: true, fn: function (u, a) { return Documents.depotAdd(u, a[0] || {}); } },
   depotList: { roles: STAFF, fn: function (u) { return Documents.depotList(u); } },
+  depotRelire: { roles: STAFF, write: true, fn: function (u, a) { return Documents.depotRelire(u, a[0]); } },
   depotUpdate: { roles: STAFF, write: true, fn: function (u, a) { return Documents.depotUpdate(u, a[0], a[1] || {}); } },
   depotValider: { roles: STAFF, write: true, fn: function (u, a) { return Documents.depotValider(u, a[0] || [], a[1] === true); } },
   depotApercu: { roles: STAFF, fn: function (u, a) { return Documents.depotApercu(u, a[0]); } },

@@ -85,6 +85,7 @@ final class Documents {
         if (preg_match('~certificat\s*(?:de\s*)?travail~', $t)) return 'certificat_travail';
         if (preg_match('~attestation\s*(?:de\s*)?travail~', $t)) return 'attestation_travail';
         if (preg_match('~contrat de travail|contrat a duree|\bcontrat\b~', $t)) return 'contrat';
+        if (preg_match('~certi\w{2,8}\s*(?:de\s*)?trav\w{0,5}\b~', $t) || (preg_match('~certifie par la presente~', $t) && preg_match('~(?:a ete employe|est ce depuis|employe au sein)~', $t))) return 'certificat_travail'; // repli : lecture imparfaite d'un scan
         return '';
     }
     public static function extract(string $type, string $t): array {

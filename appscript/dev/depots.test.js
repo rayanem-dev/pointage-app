@@ -244,3 +244,21 @@ test('agent retrouvé dans le contenu d\'un certificat : nom composé avec tiret
   const inconnu = lire('INCONNU', 'Jean Paul');
   assert.strictEqual(inconnu.agent_id, ''); assert.match(inconnu.avertissement, /Nom lu dans le document : INCONNU Jean Paul/);
 });
+
+test('lecture à vide : seconde tentative automatique, bouton « Relire », texte mal lu reconnu quand même', () => {
+  let appels = 0; let reponses = ['', '']; // 1er dépôt : lecture vide deux fois ; la relecture : texte
+  env.fetchHandler = (url) => {
+    if (url.startsWith('https://www.googleapis.com/upload/drive/v3/files')) return { code: 200, body: JSON.stringify({ id: 'ocr1' }) };
+    if (url.includes('/files/ocr1/export')) { appels += 1; return { code: 200, body: reponses.length ? reponses.shift() : ocr }; }
+    return null;
+  };
+  ocr = "SARL EXEMPLE Certiticat de Travai1 certifie par la présente que Monsieur Nom : DURAND Prénom : Paul Date de naissance : 02-02-1980 Lieu de naissance : LIEU A été employé au sein de notre SARL Fait à Ville le : 01-11-2026";
+  const durand = ok(call(T.admin, 'agentCreate', { nom: 'DURAND Paul', email: 'durand@t.fr', role: 'agent', password: 'durandpw12' })).agent.id;
+  const r = ok(call(T.admin, 'depotAdd', { nom: 'Doc0999.pdf', mime: 'application/pdf', base64: unique() }));
+  assert.strictEqual(appels, 2, 'une seconde tentative est faite quand la lecture est vide');
+  assert.strictEqual(r.type, 'autre'); assert.match(r.avertissement, /Aucun texte lu/);
+  const rel = ok(call(T.admin, 'depotRelire', r.id)); // le service répond cette fois
+  assert.strictEqual(rel.type, 'certificat_travail', 'texte mal lu (« Certiticat de Travai1 ») reconnu'); assert.strictEqual(rel.agent_id, durand);
+  const champs = typeof rel.champs === 'string' ? JSON.parse(rel.champs) : rel.champs; assert.strictEqual(champs.date, '2026-11-01');
+  fail(call(T.admin, 'depotRelire', 'Q-inconnu'), /introuvable/);
+});

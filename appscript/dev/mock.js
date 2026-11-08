@@ -84,6 +84,7 @@ function makeEnv() {
   const mkBlob = (bytes, mime, name) => ({ getBytes: () => Array.from(bytesOf(bytes)), getDataAsString: () => bytesOf(bytes).toString('utf8'), getContentType: () => mime, getName: () => name, setName() {}, getAs: (m) => mkBlob(bytes, m, String(name).replace(/\.[^.]+$/, '') + (m === 'application/pdf' ? '.pdf' : '')) });
   const Utilities = {
     getUuid: () => crypto.randomUUID(),
+    sleep: () => {},
     computeDigest: (alg, s) => Array.from(crypto.createHash('sha256').update(bytesOf(s)).digest()),
     DigestAlgorithm: { SHA_256: 'SHA_256' },
     base64Encode: (x) => bytesOf(x).toString('base64'),

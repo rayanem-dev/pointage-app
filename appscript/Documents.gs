@@ -93,6 +93,14 @@ var Documents = (function () {
     return any ? any[1] : '';
   }
 
+  // Lecture automatique (OCR Google) : une seconde tentative si le premier résultat est vide (service occupé, scan lu à vide).
+  function lireTexte(data) {
+    var lire = function () { return n(Bordereau.ocrText(data)).slice(0, 12000); };
+    var t = lire();
+    if (t.replace(/\s+/g, '').length >= 20 || !/\.(pdf|png|jpe?g|gif|bmp|tiff?)$/i.test(String(data.nom || ''))) return t;
+    try { Utilities.sleep(1500); } catch (e) { /* pas de pause possible */ }
+    return lire();
+  }
   // ----- reconnaissance du type et des champs (t : texte normalisé : minuscules, sans accents) -----
   function detectType(t) {
     if (/\bats\b|attestation de travail et de salaire/.test(t)) return 'ats';
@@ -104,6 +112,8 @@ var Documents = (function () {
     if (/certificat\s*(?:de\s*)?travail/.test(t)) return 'certificat_travail'; // avec ou sans espaces : « CertificatTravail » est le nom que Sijil génère
     if (/attestation\s*(?:de\s*)?travail/.test(t)) return 'attestation_travail';
     if (/contrat de travail|contrat a duree|\bcontrat\b/.test(t)) return 'contrat';
+    // Repli pour une lecture imparfaite d'un scan : « Certiticat de Travai1 », ou les phrases types d'un certificat de travail.
+    if (/certi\w{2,8}\s*(?:de\s*)?trav\w{0,5}\b/.test(t) || (/certifie par la presente/.test(t) && /(?:a ete employe|est ce depuis|employe au sein)/.test(t))) return 'certificat_travail';
     return '';
   }
   // Champs utiles au type : { date, mois, mois2, nss } (chaînes vides si non lus).
@@ -215,7 +225,8 @@ var Documents = (function () {
     var besoin = !type || missing(type, f).length > 0 || (!agent && cands.length !== 1);
     if (besoin) {
       var text = '';
-      try { text = n(Bordereau.ocrText(data)).slice(0, 12000); } catch (e) { avert.push('Lecture automatique impossible (' + e.message + ').'); }
+      try { text = lireTexte(data); } catch (e) { avert.push('Lecture automatique impossible (' + e.message + ').'); }
+      if (!text && /\.(pdf|png|jpe?g|gif|bmp|tiff?)$/i.test(String(data.nom || '')) && !avert.length) avert.push('Aucun texte lu dans le document (service de lecture occupé ou scan trop pâle) : cliquez sur « Relire », ou renseignez le type et l\'agent.');
       if (text) {
         if (!type) { var tt = detectType(text); if (tt) { type = tt; source = 'contenu'; } }
         if (type) { var avant = merge(f, {}); f = merge(f, extract(type, text)); if (['date', 'mois', 'mois2'].some(function (k) { return f[k] && !avant[k]; })) avert.push('Dates lues dans le contenu du document : à vérifier.'); }
@@ -510,6 +521,24 @@ var Documents = (function () {
     var by = {}; agents.forEach(function (a) { by[a.id] = a; });
     return depotPub(row, by);
   }
+  // Relit un document déjà déposé (nouvelle lecture automatique) : garde l'agent et le type choisis à la main, recalcule le reste.
+  function depotRelire(user, id) {
+    if (user.role === 'agent') throw httpErr_('Accès refusé', 'FORBIDDEN');
+    var all = Store.readTable('Depots'); var agents = visibles(user);
+    var r = depotRows(user).filter(function (x) { return x.id === id; })[0];
+    if (!r) throw httpErr_('Document en attente introuvable');
+    r = all.filter(function (x) { return x.id === id; })[0];
+    var bytes = DriveApp.getFileById(r.file_id).getBlob().getBytes();
+    var data = { nom: r.nom_original, base64: Utilities.base64Encode(bytes) };
+    var forced = r.agent_id ? agents.filter(function (a) { return a.id === r.agent_id; })[0] || null : null;
+    var chosen = r.source === 'choix' ? r.type : '';
+    var info = detect(data, chosen, forced, agents);
+    var agent = forced || (info.candidats.length === 1 ? info.candidats[0] : null);
+    r.agent_id = agent ? agent.id : ''; r.type = info.type; r.champs = JSON.stringify(info.champs); r.source = info.source; r.avert = info.avertissement || ''; r.candidats = JSON.stringify(info.candidats.map(function (a) { return a.id; }));
+    Store.writeTable('Depots', all);
+    var by = {}; agents.forEach(function (a) { by[a.id] = a; });
+    return depotPub(r, by);
+  }
   function depotUpdate(user, id, patch) {
     if (user.role === 'agent') throw httpErr_('Accès refusé', 'FORBIDDEN');
     patch = patch || {};
@@ -572,5 +601,5 @@ var Documents = (function () {
     return { retires: Object.keys(gone).length };
   }
   return { marquerLus: marquerLus, nouveaux: nouveaux, list: list, upload: upload, update: update, download: download, remove: remove, count: count, purgeFiles: purgeFiles, analyse: function (t) { var ty = detectType(t); return { type: ty, champs: ty ? extract(ty, t) : null }; }, fileName: fileName, nameFor: nameFor, detectType: detectType, extract: extract,
-    imageToPdf: imageToPdf, depotAdd: depotAdd, depotList: depotList, depotUpdate: depotUpdate, depotValider: depotValider, depotApercu: depotApercu, depotRejeter: depotRejeter, depotVider: depotVider, purgerAnciens: purgerAnciens};
+    imageToPdf: imageToPdf, depotAdd: depotAdd, depotRelire: depotRelire, depotList: depotList, depotUpdate: depotUpdate, depotValider: depotValider, depotApercu: depotApercu, depotRejeter: depotRejeter, depotVider: depotVider, purgerAnciens: purgerAnciens};
 })();
