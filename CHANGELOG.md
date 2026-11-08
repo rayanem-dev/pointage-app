@@ -2,6 +2,10 @@
 
 © 2026 JawlaDev — Tous droits réservés
 
+## 3.46.0 — 2026-11-08 — Licence : avertissement et consultation seule
+
+- Quand la licence arrive à sa fin, l'administrateur est prévenu 15 jours avant par un bandeau. Après la date de fin, l'entreprise passe en consultation seule pendant 30 jours : on peut tout voir et exporter, mais rien modifier. Ensuite l'accès est bloqué jusqu'au renouvellement.
+
 ## 3.44.0 — 2026-11-02 — Suivi des demandes en un coup d'œil et démonstration
 
 - Chaque demande affiche son avancement en jauge : Reçue, Direction, Réponse, Clôturée. Les longues phrases ont disparu : on voit d'un coup d'œil où en est la demande.

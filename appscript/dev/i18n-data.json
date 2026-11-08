@@ -6643,5 +6643,75 @@
   "Le mois de début doit précéder le mois de fin",
   "The start month must come before the end month",
   "يجب أن يسبق شهر البداية شهر النهاية"
+ ],
+ [
+  "Licence expirée le",
+  "License expired on",
+  "انتهت الرخصة في"
+ ],
+ [
+  "consultation seule : vous pouvez tout voir et exporter, rien modifier.",
+  "read-only: you can view and export everything, but not change anything.",
+  "اطلاع فقط: يمكنك رؤية كل شيء وتصديره دون تعديل أي شيء."
+ ],
+ [
+  "Accès bloqué dans",
+  "Access blocked in",
+  "يُحجب الوصول بعد"
+ ],
+ [
+  "Contactez l’éditeur pour renouveler.",
+  "Contact the publisher to renew.",
+  "اتصل بالناشر للتجديد."
+ ],
+ [
+  "Votre licence se termine dans",
+  "Your license ends in",
+  "تنتهي رخصتك بعد"
+ ],
+ [
+  "Votre licence se termine aujourd’hui",
+  "Your license ends today",
+  "تنتهي رخصتك اليوم"
+ ],
+ [
+  "Pensez à la renouveler auprès de l’éditeur.",
+  "Remember to renew it with the publisher.",
+  "تذكّر تجديدها لدى الناشر."
+ ],
+ [
+  "Licences à surveiller",
+  "Licenses to watch",
+  "رخص تستدعي المتابعة"
+ ],
+ [
+  "bloquée depuis",
+  "blocked for",
+  "محجوبة منذ"
+ ],
+ [
+  "j",
+  "d",
+  "ي"
+ ],
+ [
+  "consultation seule, blocage dans",
+  "read-only, blocked in",
+  "اطلاع فقط، الحجب بعد"
+ ],
+ [
+  "se termine aujourd’hui",
+  "ends today",
+  "تنتهي اليوم"
+ ],
+ [
+  "se termine dans",
+  "ends in",
+  "تنتهي بعد"
+ ],
+ [
+  "fin de licence",
+  "license end",
+  "نهاية الرخصة"
  ]
 ]

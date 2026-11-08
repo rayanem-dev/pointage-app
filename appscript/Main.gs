@@ -37,6 +37,8 @@ function inScope_(user, agentId) { return Agents.visibleTo(user).some(function (
 function facturationOk_() { if (Params.get().facturation === '0') throw httpErr_("Le module Facturation est désactivé (Setup → Contrat, par l'administrateur).", 'FORBIDDEN'); }
 // Accès du responsable d'équipe à l'attachement et à la facture : réglage global du Setup (« individuel » = case de sa fiche Agent). Les comptes liés à un contrat (personnel administratif) gardent leur droit propre.
 function chefExportsOk_(user) { var m = Params.get().chef_exports || 'individuel'; if (user.origine || m === 'individuel') return user.acces_exports === '1'; return m === 'tous'; }
+// Écritures permises même en consultation seule (licence expirée) : session et mot de passe de l'utilisateur.
+var LECTURE_OK = ['logout', 'passwordOwn', 'documentsLus', 'passwordReset', 'resume', 'forget'];
 function exportsOk_(user) { if (user.role === 'chef' && !chefExportsOk_(user)) throw httpErr_("Accès aux exports non accordé (demandez-le à l'administrateur)", 'FORBIDDEN'); }
 function monthOrNow_(m) { return Dates.isMonthKey(m) ? m : Dates.today().slice(0, 7); }
 
@@ -65,7 +67,7 @@ var HANDLERS = {
   passwordReset: { pub: true, write: true, fn: function (u, a) { return Auth.resetPassword(a[0], a[1], a[2], a[3]); } },
   // ----- tout utilisateur connecté -----
   logout: { fn: function (u, a, token) { Auth.logout(token); return true; } },
-  me: { fn: function (u) { return { owner: Tenants.isOwner(u), code: Store.tenantCode(), user: Agents.publicAgent(u), canSetup: Auth.canSetup(u), params: Params.pub(Params.get()), rotations: CFG.ROTATIONS, demo: Demo.info(u) }; } },
+  me: { fn: function (u) { return { owner: Tenants.isOwner(u), code: Store.tenantCode(), user: Agents.publicAgent(u), canSetup: Auth.canSetup(u), params: Params.pub(Params.get()), rotations: CFG.ROTATIONS, demo: Demo.info(u), licence: Tenants.licence() }; } },
   // Pastilles du menu : documents déposés pour moi (dates et noms, le navigateur retient ce qu'il a déjà vu) et demandes à traiter.
   remarqueAdd: { roles: ['client', 'agent'], write: true, fn: function (u, a) { return Remarques.add(u, a[0] || {}); } },
   remarqueTraiter: { roles: STAFF, write: true, fn: function (u, a) { return Remarques.traiter(u, a[0], a[1] || {}); } },
@@ -304,6 +306,7 @@ function rpc(token, name, args) {
     if (!h) throw httpErr_('Fonction inconnue : ' + name);
     var user = h.pub ? null : Auth.userFromToken(token);
     if (user && Demo.isDemo() && Demo.blocked(name)) throw httpErr_('Désactivé dans la démonstration', 'DEMO');
+    if (user && h.write && Tenants.lectureSeule() && LECTURE_OK.indexOf(name) < 0) { var li = Tenants.licence(); throw httpErr_('Licence expirée le ' + li.fin.split('-').reverse().join('/') + ' : consultation seule (blocage dans ' + li.blocage_dans + ' jour(s)). Contactez l\'éditeur pour renouveler.', 'LECTURE_SEULE'); }
     if (h.roles && h.roles.indexOf(user.role) < 0) throw httpErr_('Accès refusé', 'FORBIDDEN');
     if (h.setup && !Auth.canSetup(user)) throw httpErr_("Accès au Setup non autorisé (demandez-le à l'administrateur)", 'FORBIDDEN');
     var run = function () { return h.fn(user, args || [], token); };

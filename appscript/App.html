@@ -363,9 +363,13 @@ function render() {
         call('demoSwitch', p.id).then(function (r) { S.token = r.token; try { sessionStorage.setItem('tk', r.token); } catch (e) { /* ignore */ } S.path = null; boot(); }).catch(function (e) { window.alert(e.message); });
       } }, tr(p.label));
     })), S.info && S.info.shell ? h('a', { href: S.info.shell + '#essai', target: '_top', rel: 'noopener' }, tr('Demander mon essai gratuit')) : null) : null;
+  // Licence : consultation seule après la date de fin (30 jours), puis blocage ; avertissement à l'administrateur dans les 15 jours qui précèdent la fin.
+  var L = S.licence; var plur = function (n) { return n + ' ' + tr(n > 1 ? 'jours' : 'jour'); };
+  var licBar = L && L.lecture_seule ? h('div', { class: 'licbar err', role: 'alert' }, h('b', null, tr('Licence expirée le') + ' ' + frDate(L.fin)), ' · ', tr('consultation seule : vous pouvez tout voir et exporter, rien modifier.'), ' ', tr('Accès bloqué dans'), ' ' + plur(L.blocage_dans) + '. ', tr('Contactez l’éditeur pour renouveler.'))
+    : L && L.avertir && role === 'admin' ? h('div', { class: 'licbar', role: 'status' }, h('b', null, L.restant > 0 ? tr('Votre licence se termine dans') + ' ' + plur(L.restant) : tr('Votre licence se termine aujourd’hui')), ' (' + frDate(L.fin) + '). ', tr('Pensez à la renouveler auprès de l’éditeur.')) : null;
   var back = S.back ? h('div', { class: 'msg warn', style: 'margin:0;border-radius:0;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap' }, 'Mode support : vous êtes dans l\'espace de « ' + S.back.societe + ' » en tant que ' + S.user.nom + ' (' + tr(ROLE_LIB[S.user.role] || S.user.role) + ').',
     h('button', { type: 'button', class: 'primary', onclick: function () { call('logout').catch(function () {}).then(function () { S.token = S.back.token; setBack(null); S.path = null; try { sessionStorage.setItem('tk', S.token); } catch (e) { /* ignore */ } boot(); }); } }, "‹ Retour à l'administration")) : null;
-  root.replaceChildren.apply(root, [back, demoBar, bar, main, h('footer', { class: 'muted', style: 'text-align:center;padding:14px;font-size:.8rem' }, 'Sijil · ', h('a', { href: '#/nouveautes', onclick: navClick('/nouveautes') }, 'version ' + ((S.info && S.info.version) || '?') + ' (nouveautés)'), h('br'), copyrightNodes(S.info && S.info.copyright), ' · ', h('a', { href: '#/confidentialite', onclick: navClick('/confidentialite') }, 'Confidentialité'), ' · ', h('a', { href: '#', title: 'Relire les données depuis le serveur', onclick: function (ev) { ev.preventDefault(); actualiser(); } }, '↻ Actualiser'))].filter(Boolean));
+  root.replaceChildren.apply(root, [back, licBar, demoBar, bar, main, h('footer', { class: 'muted', style: 'text-align:center;padding:14px;font-size:.8rem' }, 'Sijil · ', h('a', { href: '#/nouveautes', onclick: navClick('/nouveautes') }, 'version ' + ((S.info && S.info.version) || '?') + ' (nouveautés)'), h('br'), copyrightNodes(S.info && S.info.copyright), ' · ', h('a', { href: '#/confidentialite', onclick: navClick('/confidentialite') }, 'Confidentialité'), ' · ', h('a', { href: '#', title: 'Relire les données depuis le serveur', onclick: function (ev) { ev.preventDefault(); actualiser(); } }, '↻ Actualiser'))].filter(Boolean));
   if (S.owner) checkVersion().then(function (r) { var fl = document.querySelector('footer a[href="#/nouveautes"]'); if (fl && r.c !== null) { fl.textContent += r.c === 0 ? ' ✓' : ' ⚠'; fl.title = r.c === 0 ? tr('✓ Tout est à jour') : (r.c < 0 ? tr('⚠ Le serveur est en retard : v' + r.srv + ' au lieu de v' + r.site + '. À déployer.') : tr('⚠ Le site est en retard : v' + r.site + ' au lieu de v' + r.srv + '. À publier (patientez 1 à 2 minutes).')); } var a = document.querySelector('a[data-path="/version"]'); if (a) { a.textContent = tr('Version') + (r.c === 0 ? ' ✓' : r.c === null ? '' : ' ⚠'); a.title = r.c === 0 ? tr('✓ Tout est à jour') : ''; } });
   setTimeout(refreshBadges, 0);
   main.append(ROUTES[path]());
@@ -440,7 +444,7 @@ function bootInfo2() {
   Promise.all([infoP, meP]).then(function (r) {
     S.info = r[0];
     var me = r[1];
-    if (me) { S.user = me.user; S.canSetup = me.canSetup; S.owner = me.owner; S.params = me.params; S.rotations = me.rotations || ['28/28']; S.demo = me.demo || null; applyColors(); }
+    if (me) { S.user = me.user; S.canSetup = me.canSetup; S.owner = me.owner; S.params = me.params; S.rotations = me.rotations || ['28/28']; S.demo = me.demo || null; S.licence = me.licence || null; applyColors(); }
     render();
   });
 }
@@ -1327,6 +1331,18 @@ function ClientsPage() {
     }).catch(function (e) { card.replaceChildren(h('h2', null, 'Démonstration'), h('p', { class: 'msg err' }, e.message)); });
     return card;
   }
+  // Licences à surveiller : expirées ou qui se terminent dans les 30 jours (consultation seule pendant 30 jours après la fin, puis blocage).
+  function licencesCard(data) {
+    var auj = new Date().toISOString().slice(0, 10);
+    var l = data.clients.filter(function (c) { return c.fin_licence && c.statut !== 'suspendu'; }).map(function (c) { return { c: c, j: Math.round((new Date(c.fin_licence + 'T00:00:00Z') - new Date(auj + 'T00:00:00Z')) / 86400000) }; })
+      .filter(function (x) { return x.j <= 30; }).sort(function (a, b) { return a.j - b.j; });
+    if (!l.length) return null;
+    return h('section', { class: 'card' }, h('h2', null, tr('Licences à surveiller') + ' (' + l.length + ')'),
+      h('ul', { class: 'docs' }, l.map(function (x) {
+        var etat = x.j < -30 ? tr('bloquée depuis') + ' ' + (-x.j - 30) + ' ' + tr('j') : x.j < 0 ? tr('consultation seule, blocage dans') + ' ' + (30 + x.j) + ' ' + tr('j') : x.j === 0 ? tr('se termine aujourd’hui') : tr('se termine dans') + ' ' + x.j + ' ' + tr('j');
+        return h('li', null, h('div', null, h('b', null, x.c.nom + ' (' + x.c.code + ')'), h('small', null, tr('fin de licence') + ' ' + frDate(x.c.fin_licence) + ' · ' + etat)));
+      })));
+  }
   function draw(data) {
     var f = { code: '', nom: '', admin_email: '', admin_nom: '', contact: '', fin_licence: '', statut: 'actif', partager_lecture: false };
     var share = h('input', { type: 'checkbox' }); share.onchange = function () { f.partager_lecture = share.checked; };
@@ -1405,7 +1421,7 @@ function ClientsPage() {
       cardContact.replaceChildren(h('h2', null, 'Mon contact (affiché à mes clients)'), h('p', { class: 'muted' }, "Les clients voient ce contact dans leur onglet « À propos » et vous écrivent à cette adresse e-mail."),
         h('div', { class: 'row' }, field('Nom', nom), field('E-mail', mail, 'grow2'), field('Téléphone', tel)), cbox, sv);
     }).catch(function (e) { cardContact.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
-    wrap.replaceChildren(demoCard(), form, res, h('section', { class: 'card' }, h('h2', null, 'Clients (' + data.clients.length + ')'),
+    wrap.replaceChildren(licencesCard(data), demoCard(), form, res, h('section', { class: 'card' }, h('h2', null, 'Clients (' + data.clients.length + ')'),
       h('p', { class: 'muted' }, "Suspendre ou laisser expirer la licence bloque aussitôt la connexion et les sessions ouvertes de ce client, sans toucher aux autres. Le lien d'invitation fonctionne aussi en QR code."),
       h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Code', 'Société', 'Statut', 'Fin de licence', 'Vitrine', 'Adresse /exec dédiée (facultatif)', 'Actions'].map(function (t) { return h('th', null, t); }))), h('tbody', null, rows)))), cardContact);
   }

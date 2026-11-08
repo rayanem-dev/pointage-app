@@ -23,14 +23,26 @@ var Tenants = (function () {
     cache.put('CODE_FAILS', String(n + 1), 600);
     throw httpErr_('Code entreprise inconnu');
   }
-  function checkLicense(c) {
-    if (c.statut === 'suspendu') throw httpErr_('Accès suspendu : contactez l\'éditeur ou votre administrateur', 'SUSPENDU');
-    if (c.fin_licence && c.fin_licence < Dates.today()) throw httpErr_('Licence expirée le ' + c.fin_licence.split('-').reverse().join('/') + ' : contactez l\'éditeur', 'SUSPENDU');
+  // Licence : à la date de fin, l'entreprise passe en consultation seule pendant GRACE_JOURS (voir, exporter, sans rien modifier), puis l'accès est bloqué.
+  var GRACE_JOURS = 30; var AVERTIR_JOURS = 15; var licenceCourante = null;
+  function licenceInfo(c) {
+    if (!c || !c.fin_licence) return null;
+    var restant = Dates.diffDays(Dates.today(), c.fin_licence); // négatif une fois expirée
+    return { fin: c.fin_licence, restant: restant, lecture_seule: restant < 0, blocage_dans: restant < 0 ? GRACE_JOURS + restant : null, avertir: restant >= 0 && restant <= AVERTIR_JOURS };
   }
+  function checkLicense(c) {
+    licenceCourante = null;
+    if (c.statut === 'suspendu') throw httpErr_('Accès suspendu : contactez l\'éditeur ou votre administrateur', 'SUSPENDU');
+    var l = licenceInfo(c); if (!l) return;
+    if (l.restant < -GRACE_JOURS) throw httpErr_('Licence expirée le ' + c.fin_licence.split('-').reverse().join('/') + ' : accès bloqué, contactez l\'éditeur', 'SUSPENDU');
+    licenceCourante = l;
+  }
+  function licence() { return licenceCourante; } // état de la licence de l'entreprise courante (null : illimitée ou classeur principal)
+  function lectureSeule() { return !!(licenceCourante && licenceCourante.lecture_seule); }
   // Positionne le client courant. Sans annuaire : classeur principal (comportement historique).
   function use(code) {
     code = normCode(code);
-    Store.setTenant('', '');
+    Store.setTenant('', ''); licenceCourante = null;
     if (code === CFG.CODE_EDITEUR) return { code: code, nom: 'Administration', master: true }; // alias du classeur principal : un seul compte, celui de l'éditeur
     if (!hasRegistry()) return { code: '', nom: '', master: true };
     if (!code) throw httpErr_('Code entreprise requis');
@@ -290,5 +302,5 @@ var Tenants = (function () {
     var m = list().filter(function (r) { return !r.classeur_id; })[0];
     return m ? m.code : '';
   }
-  return { users: users, activityAll: activityAll, codeActuel: codeActuel, lien: lien, envoyerMessage: envoyerMessage, vitrine: vitrine, access: access, admins: admins, adminUpdate: adminUpdate, remove: remove, contact: contact, setContact: setContact, apropos: apropos, commentaire: commentaire, normCode: normCode, multi: multi, use: use, isOwner: isOwner, requireOwner: requireOwner, clients: clients, create: create, update: update, resolve: resolve, test: test, find: find, list: list };
+  return { licence: licence, lectureSeule: lectureSeule, GRACE_JOURS: GRACE_JOURS, users: users, activityAll: activityAll, codeActuel: codeActuel, lien: lien, envoyerMessage: envoyerMessage, vitrine: vitrine, access: access, admins: admins, adminUpdate: adminUpdate, remove: remove, contact: contact, setContact: setContact, apropos: apropos, commentaire: commentaire, normCode: normCode, multi: multi, use: use, isOwner: isOwner, requireOwner: requireOwner, clients: clients, create: create, update: update, resolve: resolve, test: test, find: find, list: list };
 })();

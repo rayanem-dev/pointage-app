@@ -223,3 +223,33 @@ test('nouveautés : chacun ne voit que ce qui le concerne (agent/client < admini
   assert.strictEqual(ok(call(ed, 'changelog')).versions.length, pub.length, 'la version publique reste la même, même pour l\'éditeur connecté');
 });
 
+
+test('licence : avertissement avant la fin, consultation seule 30 jours après, puis blocage', () => {
+  const dans = (n) => run(`Dates.addDays(Dates.today(), ${n})`);
+  const owner = ok(call(null, 'login', 'editeur@t.fr', 'editeurpw1', 'ADMIN')).token;
+  ok(call(owner, 'clientCreate', { code: 'LICENCE', nom: 'LICENCE TEST', admin_email: 'admin@licence.dz', admin_password: 'licencepw1' }));
+  const connect = () => ok(call(null, 'login', 'admin@licence.dz', 'licencepw1', 'LICENCE')).token;
+  const maj = (fin) => ok(call(owner, 'clientUpdate', 'LICENCE', { statut: 'actif', fin_licence: fin }));
+  // 10 jours avant la fin : avertissement, tout fonctionne
+  maj(dans(10)); let tk = connect(); let lic = ok(call(tk, 'me')).licence;
+  assert.strictEqual(lic.avertir, true); assert.strictEqual(lic.restant, 10); assert.strictEqual(lic.lecture_seule, false);
+  ok(call(tk, 'agentCreate', { nom: 'AVANT FIN', email: 'avant@licence.dz', role: 'agent', password: 'avantpw12' }));
+  // 40 jours avant : pas d'avertissement
+  maj(dans(40)); tk = connect(); assert.strictEqual(ok(call(tk, 'me')).licence.avertir, false);
+  // illimitée : pas d'information de licence
+  maj(''); tk = connect(); assert.strictEqual(ok(call(tk, 'me')).licence, null);
+  // expirée depuis 10 jours : consultation seule (lecture et exports permis, écritures refusées)
+  maj(dans(-10)); tk = connect(); lic = ok(call(tk, 'me')).licence;
+  assert.strictEqual(lic.lecture_seule, true); assert.strictEqual(lic.blocage_dans, 20);
+  ok(call(tk, 'agentsVisible')); ok(call(tk, 'demandesList'));
+  fail(call(tk, 'agentCreate', { nom: 'APRES FIN', email: 'apres@licence.dz', role: 'agent', password: 'apresfinpw1' }), /consultation seule \(blocage dans 20 jour/);
+  fail(call(tk, 'pointer', { agent_id: 'x', date: dans(0), statut: 'T' }), /consultation seule/);
+  ok(call(tk, 'passwordOwn', 'licencepw1', 'nouveaupw12')); // le mot de passe reste modifiable
+  // expirée depuis plus de 30 jours : accès bloqué
+  maj(dans(-31)); fail(call(null, 'login', 'admin@licence.dz', 'nouveaupw12', 'LICENCE'), /accès bloqué/);
+  fail(call(tk, 'agentsVisible'), /accès bloqué/);
+  // renouvelée : tout redevient normal
+  maj(dans(365)); tk = ok(call(null, 'login', 'admin@licence.dz', 'nouveaupw12', 'LICENCE')).token; ok(call(tk, 'agentCreate', { nom: 'RENOUVELE', email: 'ren@licence.dz', role: 'agent', password: 'renouvelepw1' }));
+  // suspendu : toujours bloqué tout de suite
+  ok(call(owner, 'clientUpdate', 'LICENCE', { statut: 'suspendu' })); fail(call(null, 'login', 'admin@licence.dz', 'nouveaupw12', 'LICENCE'), /suspendu/);
+});

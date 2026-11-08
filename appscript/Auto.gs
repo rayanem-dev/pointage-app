@@ -44,6 +44,7 @@ var Auto = (function () {
       if (!s || !s.on) return;
       try {
         Store.setTenant('', ''); if (code !== 'MAIN') Tenants.use(code);
+        if (Tenants.lectureSeule()) return; // licence expirée : consultation seule, plus de pointage automatique
         var today = Dates.today();
         if (s.last === today || heureNow < (s.heure || DEFAUT)) return;
         var user = Agents.get(userId);
