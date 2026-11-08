@@ -224,3 +224,23 @@ test('scan nommé par le scanner (Doc0234.pdf) : type, agent et date lus dans le
   assert.strictEqual(champs.date, '2026-11-01', 'date de délivrance (« Fait à … le »), pas la date d\'entrée');
   assert.match(r.nom_final || r.nom || '', /MEZIANE.*CertificatTravail_2026-11-01/i);
 });
+
+test('agent retrouvé dans le contenu d\'un certificat : nom composé avec tiret, ordre prénom / nom, nom de famille seul ; sinon le nom lu est indiqué', () => {
+  env.fetchHandler = (url) => {
+    if (url.startsWith('https://www.googleapis.com/upload/drive/v3/files')) return { code: 200, body: JSON.stringify({ id: 'ocr1' }) };
+    if (url.includes('/files/ocr1/export')) return { code: 200, body: ocr };
+    return null;
+  };
+  const gens = {
+    tiret: ok(call(T.admin, 'agentCreate', { nom: 'LAKHDARI Sofiane-Amine', email: 'lk@t.fr', role: 'agent', password: 'lakhdaripw1' })).agent.id,
+    inverse: ok(call(T.admin, 'agentCreate', { nom: 'Walid Eddine TEBBAL', email: 'tb@t.fr', role: 'agent', password: 'tebbalpw1' })).agent.id,
+    famille: ok(call(T.admin, 'agentCreate', { nom: 'OUALI Farid Nabil', email: 'ou@t.fr', role: 'agent', password: 'oualipw12' })).agent.id,
+  };
+  const texte = (nom, prenom) => `SARL EXEMPLE Certificat de Travail certifie par la présente que : Monsieur : Nom : ${nom} Prénom : ${prenom} Date de naissance : 01-01-1990 Lieu de naissance : LIEU A été employé au sein de notre SARL Fait à Ville le : 01-11-2026 LA DIRECTION`;
+  const lire = (nom, prenom) => { ocr = texte(nom, prenom); return ok(call(T.admin, 'depotAdd', { nom: 'Doc' + Math.floor(Math.random() * 9000 + 1000) + '.pdf', mime: 'application/pdf', base64: unique() })); };
+  assert.strictEqual(lire('LAKHDARI', 'Sofiane Amine').agent_id, gens.tiret, 'nom composé avec tiret');
+  assert.strictEqual(lire('TEBBAL', 'Walid Eddine').agent_id, gens.inverse, 'prénom avant le nom dans la liste');
+  assert.strictEqual(lire('OUALI', 'Farid').agent_id, gens.famille, 'prénom incomplet : le nom de famille suffit');
+  const inconnu = lire('INCONNU', 'Jean Paul');
+  assert.strictEqual(inconnu.agent_id, ''); assert.match(inconnu.avertissement, /Nom lu dans le document : INCONNU Jean Paul/);
+});

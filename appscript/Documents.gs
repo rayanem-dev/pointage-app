@@ -181,17 +181,24 @@ var Documents = (function () {
   function findAgents(t, agents) {
     var words = {}; t.split(/[^a-z0-9]+/).forEach(function (w) { if (w) words[w] = true; });
     var scored = agents.map(function (a) {
-      var toks = n(a.nom).split(' ').filter(function (x) { return x.length >= 2; });
+      var toks = n(a.nom).split(/[^a-z0-9]+/).filter(function (x) { return x.length >= 2; }); // « Sofiane-Amine » compte pour deux mots, comme dans le texte lu
       var hit = toks.filter(function (x) { return words[x]; }).length;
       return { a: a, toks: toks.length, hit: hit };
     }).filter(function (s) { return s.hit > 0 && s.hit === s.toks && s.toks >= 2; }); // nom ET prénom présents
-    var partial = agents.filter(function (a) { var toks = n(a.nom).split(' '); return toks.length >= 2 && words[toks[0]] && !scored.some(function (s) { return s.a.id === a.id; }); });
+    var partial = agents.filter(function (a) { var toks = n(a.nom).split(/[^a-z0-9]+/).filter(Boolean); return toks.length >= 2 && toks.some(function (x) { return x.length >= 4 && words[x]; }) && !scored.some(function (s) { return s.a.id === a.id; }); }); // le nom de famille seul suffit pour proposer l'agent
     var res = scored.length ? scored.map(function (s) { return s.a; }) : partial;
     if (res.length) return res;
     // Aucun nom exact : noms d'orthographe proche (une faute de frappe dans le nom du fichier : BEHEIN / BELHEINE) proposés à vérifier.
     var mots = Object.keys(words).filter(function (w) { return w.length >= 4 && !/^\d+$/.test(w); });
     var flou = agents.filter(function (a) { return n(a.nom).split(' ').some(function (tok) { return tok.length >= 4 && mots.some(function (w) { return distance(tok, w) <= (tok.length >= 7 ? 2 : 1) && w !== tok; }); }); });
     flou.flou = true; return flou;
+  }
+  // « Nom : DUPONT Prénom : Marc Antoine » (certificats, attestations) : nom lu dans le contenu, montré quand l'agent n'est pas reconnu.
+  function nomLu(t) {
+    var m = /\bnom\s*:?\s*([a-z'-]+(?: [a-z'-]+){0,2}?)\s+prenoms?\s*:?\s*([a-z'-]+(?: [a-z'-]+){0,3}?)\s+(?:date|lieu|ne le|nee le|n )/.exec(t);
+    if (!m) return '';
+    var cap = function (s) { return s.split(' ').map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' '); };
+    return m[1].toUpperCase() + ' ' + cap(m[2]);
   }
   function distance(a, b) {
     var prev = []; for (var j = 0; j <= b.length; j += 1) prev.push(j);
@@ -213,6 +220,7 @@ var Documents = (function () {
         if (!type) { var tt = detectType(text); if (tt) { type = tt; source = 'contenu'; } }
         if (type) { var avant = merge(f, {}); f = merge(f, extract(type, text)); if (['date', 'mois', 'mois2'].some(function (k) { return f[k] && !avant[k]; })) avert.push('Dates lues dans le contenu du document : à vérifier.'); }
         if (!agent && cands.length !== 1) { var byText = findAgents(text, agents || []); if (byText.length) cands = byText; }
+        if (!agent && !cands.length) { var lu = nomLu(text); if (lu) avert.push('Nom lu dans le document : ' + lu + ' (aucun agent de ce nom : choisissez-le ou créez-le).'); }
         if (agent) {
           var autre = (agents || Agents.list()).filter(function (x) { return x.id !== agent.id && Agents.isPerson(x) && n(x.nom).indexOf(' ') > 0 && text.indexOf(n(x.nom)) >= 0; })[0];
           if (autre && text.indexOf(n(agent.nom)) < 0) avert.push('Ce document semble concerner ' + autre.nom + ', pas ' + agent.nom + '.');

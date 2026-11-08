@@ -156,16 +156,22 @@ final class Documents {
 
     // ----- reconnaissance de l'agent concerné -----
     /** @return array{0: array, 1: bool} [agents proposés, orthographe approchée] */
+    // « Nom : DUPONT Prénom : Marc Antoine » (certificats, attestations) : nom lu dans le contenu, montré quand l'agent n'est pas reconnu.
+    private static function nomLu(string $t): string {
+        if (!preg_match("~\bnom\s*:?\s*([a-z'-]+(?: [a-z'-]+){0,2}?)\s+prenoms?\s*:?\s*([a-z'-]+(?: [a-z'-]+){0,3}?)\s+(?:date|lieu|ne le|nee le|n )~", $t, $m)) return '';
+        $cap = fn($s) => implode(' ', array_map(fn($w) => strtoupper(substr($w, 0, 1)) . substr($w, 1), explode(' ', $s)));
+        return strtoupper($m[1]) . ' ' . $cap($m[2]);
+    }
     private static function findAgents(string $t, array $agents): array {
         $words = []; foreach (preg_split('/[^a-z0-9]+/', $t) as $w) if ($w !== '') $words[$w] = true;
         $scored = [];
         foreach ($agents as $a) {
-            $toks = array_values(array_filter(explode(' ', self::n($a['nom'])), fn($x) => strlen($x) >= 2));
+            $toks = array_values(array_filter(preg_split('/[^a-z0-9]+/', self::n($a['nom'])), fn($x) => strlen($x) >= 2));
             $hit = count(array_filter($toks, fn($x) => isset($words[$x])));
             if ($hit > 0 && $hit === count($toks) && count($toks) >= 2) $scored[] = $a;
         }
         $ids = array_map(fn($a) => $a['id'], $scored);
-        $partial = array_values(array_filter($agents, function ($a) use ($words, $ids) { $toks = explode(' ', self::n($a['nom'])); return count($toks) >= 2 && isset($words[$toks[0]]) && !in_array($a['id'], $ids, true); }));
+        $partial = array_values(array_filter($agents, function ($a) use ($words, $ids) { $toks = array_values(array_filter(preg_split('/[^a-z0-9]+/', self::n($a['nom'])))); if (count($toks) < 2 || in_array($a['id'], $ids, true)) return false; foreach ($toks as $x) if (strlen($x) >= 4 && isset($words[$x])) return true; return false; }));
         $res = $scored ?: $partial;
         if ($res) return [$res, false];
         $mots = array_values(array_filter(array_keys($words), fn($w) => strlen((string)$w) >= 4 && !preg_match('/^\d+$/', (string)$w)));
@@ -185,6 +191,7 @@ final class Documents {
                 if (!$type) { $tt = self::detectType($text); if ($tt) { $type = $tt; $source = 'contenu'; } }
                 if ($type) { $avant = self::merge($f, []); $f = self::merge($f, self::extract($type, $text)); foreach (['date', 'mois', 'mois2'] as $k) if ($f[$k] && !$avant[$k]) { $avert[] = 'Dates lues dans le contenu du document : à vérifier.'; break; } }
                 if (!$agent && count($cands) !== 1) { [$byText] = self::findAgents($text, $agents ?? []); if ($byText) { $cands = $byText; $flou = false; } }
+                if (!$agent && !$cands) { $lu = self::nomLu($text); if ($lu) $avert[] = 'Nom lu dans le document : ' . $lu . ' (aucun agent de ce nom : choisissez-le ou créez-le).'; }
                 if ($agent) {
                     foreach (($agents ?? Agents::list()) as $x) if ($x['id'] !== $agent['id'] && Agents::isPerson($x) && strpos(self::n($x['nom']), ' ') > 0 && strpos($text, self::n($x['nom'])) !== false) { if (strpos($text, self::n($agent['nom'])) === false) $avert[] = 'Ce document semble concerner ' . $x['nom'] . ', pas ' . $agent['nom'] . '.'; break; }
                 }

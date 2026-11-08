@@ -1017,7 +1017,7 @@ function DocumentsPage() {
       var c = it.champs; var t = it.type; var inp = function (label, val, type, key, ph) { var el = h('input', { type: type, value: val || '', placeholder: ph || '', style: 'min-width:120px' }); el.onchange = function () { var p = {}; p[key] = el.value; upd(it, { champs: p }); }; return h('label', { class: 'inline' }, h('small', null, label), el); };
       if (t === 'titre_conge') return [inp('Début du congé', c.date, 'date', 'date')];
       if (t === 'contrat') return [inp('Début du contrat', c.date, 'date', 'date')];
-      if (t === 'attestation_travail') return [inp('Établie le', c.date, 'date', 'date')];
+      if (t === 'attestation_travail' || t === 'certificat_travail') return [inp('Établie le', c.date, 'date', 'date')];
       if (t === 'ats') return [inp('Date', c.date, 'date', 'date')];
       if (t === 'attestation_cnas') return [inp('Date du document', c.date, 'date', 'date'), inp('N° sécurité sociale', c.nss, 'text', 'nss', '9600270193')];
       if (t === 'fiche_emolument') return [inp('Mois', fmtMois(c.mois), 'text', 'mois', 'mars 2026')];
