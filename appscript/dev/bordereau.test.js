@@ -178,3 +178,25 @@ test('total du bordereau détecté même sur la ligne suivante ou via la phrase 
   assert.strictEqual(parse('detectTotal', 'Arrêté le présent bordereau à la somme de : Cinquante-Six Millions Dinars Algériens( 40 500 000,00 DA) en hors taxes'), 40500000);
   assert.strictEqual(parse('detectTotal', 'rien ici'), null);
 });
+
+// ---- Bordereau à total de jours (« Total (365 jours X 2 ans X Nb d'agent) »), sections et sous-totaux : entreprise fictive ----
+const HEAD2 = 'Item\nDésignation\nNbre\nd\'agent\nU\nTotal\n(365\njours X\n2ans X\nNb\nd\'agent)\nPrix U\nMontant\n';
+const L2 = [['01', 'Technicien électricien', '02', 'Jour', '1460', '9 800,00', '14 308 000,00'], ['02', 'Chef de chantier', '01', 'Jour', '730', '12 000,00', '8 760 000,00'], ['03', 'Camion 2,5 tonnes', '02', 'Jour', '1460', '5 500,00', '8 030 000,00']];
+const L2B = [['01', 'Topographe', '01', 'Jour', '120', '12 000,00', '1 440 000,00']];
+const FIN2 = 'S Total 2\n1 440 000,00\nTotal General en Hors Taxe (HT) = S Total1 + S Total 2\n32 538 000,00\nArrêter le présent bordereau des prix à la somme de trente-deux millions (32 538 000,00 DA) En Hors Taxes (HT).\n';
+const TEXTE2 = 'CONTRAT CLIENT/SARL DEMO N° 1/00/TST/2026\nANNEXE 03 :\nBordereau Des Prix\n1. Equipe permanente :\n' + HEAD2 + 'Equipe Travaux\n' + L2.map((r) => r.join('\n')).join('\n') + '\nMoyens Materiel\nS Total 1\n31 098 000,00\n2. Equipe à la demande :\nItem\nDésignation\nNbre d\'agent\nU\nTotal (Jour)\nPrix U\nMontant\n' + L2B.map((r) => r.join('\n')).join('\n') + '\n' + FIN2;
+test('bordereau à total de jours : nombre d\'agents = total ÷ (365 × années), délai de référence, sans lignes parasites ni doublon de sous-total', () => {
+  const lignes = toF(parse('solveText', TEXTE2), 0);
+  assert.deepStrictEqual(lignes.map((l) => [l.designation, l.positions, l.delai, l.prix_unitaire]), [['Technicien électricien', 2, 730, 9800], ['Chef de chantier', 1, 730, 12000], ['Camion 2,5 tonnes', 2, 730, 5500], ['Topographe', 1, 120, 12000]]);
+  assert.ok(lignes.every((l) => l.fiable), JSON.stringify(lignes));
+  assert.strictEqual(parse('detectTotal', TEXTE2), 32538000);
+  assert.strictEqual(parse('detectDelai', TEXTE2), 730);
+});
+test('bordereau à total de jours en tableau HTML : colonnes « Total (… jours) » ≠ montant, titres de section et sous-totaux ignorés', () => {
+  const tr = (c) => '<tr>' + c.map((x) => '<td>' + x + '</td>').join('') + '</tr>';
+  const html = '<table>' + tr(['Item', 'Désignation', 'Nbre d\'agent', 'U', 'Total (365 jours X 2ans X Nb d\'agent)', 'Prix U', 'Montant']) + tr(['Equipe Travaux', '', '', '', '', '', '']) + L2.map(tr).join('').replace(/<tr><td>(\d\d)<\/td><td>/g, '<tr><td>$1</td><td>') + tr(['Moyens Materiel', '', '', '', '', '', '']) + tr(['S Total 1', '', '', '', '', '', '31 098 000,00']) + '</table>';
+  const rows = parse('htmlRows', html); const lignes = parse('parseRows', rows);
+  const f = toF(lignes, 730);
+  assert.deepStrictEqual(f.map((l) => [l.designation, l.positions, l.delai, l.montant]), [['Technicien électricien', 2, 730, 14308000], ['Chef de chantier', 1, 730, 8760000], ['Camion 2,5 tonnes', 2, 730, 8030000]]);
+  assert.ok(f.every((l) => l.fiable), JSON.stringify(f));
+});

@@ -26,6 +26,7 @@ var Bordereau = (function () {
     if (/position|nbre.*poste|nombre.*poste|nb.*poste/.test(t)) return 'positions';
     if (/delai|duree|mobilisation/.test(t)) return 'delai';
     if (/prix|p\.? ?u\b|unitaire|tarif/.test(t)) return 'prix';
+    if (/total.*(jour|\bnb\b|nbre|nombre|agent|\d{3})/.test(t) && !/montant|hors taxe|\bht\b/.test(t)) return 'quantite'; // « Total (365 jours X 3 ans X Nb d'agent) », « Total (Jour) » : total de jours, pas un montant
     if (/montant|total/.test(t)) return 'montant';
     if (/nombre|nbre|\bnb\b/.test(t)) return 'nombre';
     if (/quantite|qte|\bqt\b/.test(t)) return 'quantite';
@@ -47,7 +48,8 @@ var Bordereau = (function () {
     var d = clean(cells[map.designation]);
     if (!/[a-zà-ÿ]{3}/i.test(d) || SKIP.test(noAcc(d))) return null;
     var num = function (k) { return map[k] === undefined ? NaN : toNumber(cells[map[k]]); };
-    return { designation: d, unite: map.unite === undefined ? '' : clean(cells[map.unite]), quantite: num('quantite'), prix_unitaire: num('prix'), montant: num('montant'), positions: num('positions') > 0 ? num('positions') : num('nombre'), delai: num('delai'), mapped: true };
+    var r = { designation: d, unite: map.unite === undefined ? '' : clean(cells[map.unite]), quantite: num('quantite'), prix_unitaire: num('prix'), montant: num('montant'), positions: num('positions') > 0 ? num('positions') : num('nombre'), delai: num('delai'), mapped: true };
+    return r.prix_unitaire > 0 || r.montant > 0 ? r : null; // titres de section (« Equipe Genie Civil », « Moyens Materiel ») et sous-totaux : pas de ligne
   }
 
   // Sans en-tête exploitable : première cellule « texte » = désignation, nombres qui suivent = quantité, prix, montant.
@@ -119,6 +121,8 @@ var Bordereau = (function () {
 
   // Délai de mobilisation / durée en jours mentionné dans le document (« délai : 540 jours »).
   function detectDelai(text) {
+    var base = /365\s*jours?\s*[x×*]\s*(\d{1,2})\s*ans?\b/i.exec(String(text || '')); // en-tête « Total (365 jours X 3 ans X Nb d'agent) » : délai de référence = 365 × nombre d'années
+    if (base) return 365 * Number(base[1]);
     var m = /(?:d[ée]lai|dur[ée]e|mobilisation)[^\d]{0,40}(\d{2,4})\s*(?:jours?|j\b)/i.exec(String(text || ''));
     return m ? Number(m[1]) : 0;
   }
@@ -127,7 +131,7 @@ var Bordereau = (function () {
   // Un scan n'est pas toujours rendu en tableau (cellules sur des lignes séparées, colonnes les unes après les autres...).
   // On cherche donc dans tout le texte les groupes de nombres qui vérifient  nombre × tarif × délai = montant,
   // puis on associe à chacun la désignation qui le précède (ou, si les colonnes sont séparées, dans l'ordre).
-  var HEADER_WORDS = /designation|nombre|tarif|journalier|delai|mobilisation|montant|quantite|unite|prix|total|annexe|bordereau|arrete|^contrat\b|n°|\bpage\b|hors taxes|dinars|^\(?da\)?$|^\(?jours?\)?$|^\(?ht\)?$/;
+  var HEADER_WORDS = /^item$|^u$|nbre|d'agent|^agent|\bans\b|jours x|\bx\b|^equipe|moyens|s total|sous.?total|general|designation|nombre|tarif|journalier|delai|mobilisation|montant|quantite|unite|prix|total|annexe|bordereau|arrete|^contrat\b|n°|\bpage\b|hors taxes|dinars|^\(?da\)?$|^\(?jours?\)?$|^\(?ht\)?$/;
   function numberTokens(text) {
     var out = []; var re = new RegExp(NUM.source, 'g'); var m;
     while ((m = re.exec(text)) !== null) { var v = toNumber(m[0]); if (!isNaN(v)) out.push({ pos: m.index, v: v }); }
@@ -136,7 +140,7 @@ var Bordereau = (function () {
   function designationCandidates(text) {
     var out = []; var offset = 0;
     String(text).split('\n').forEach(function (line, idx) {
-      var t = clean(line.replace(new RegExp(NUM.source, 'g'), ' ').replace(/\b(jours?|da|dzd)\b/ig, ' ')).replace(/^[-–.:()|\s]+|[-–.:()|\s]+$/g, '');
+      var t = clean(line.replace(/^\s*\d{1,3}\s*[.)-]?\s+(?=[A-Za-zÀ-ÿ])/, ' ').replace(/(?:[\s]+(?:\d[\d  ,.]*|jours?|da|dzd))+\s*$/ig, ' ').replace(/\b(jours?|da|dzd)\b/ig, ' ')).replace(/^[-–.:()|\s]+|[-–.:()|\s]+$/g, ''); // les chiffres du début et de la fin de ligne (n° d'item, quantités, prix) sont retirés, ceux du milieu (« Camion 2,5 tonnes ») restent
       var letters = (t.match(/[A-Za-zÀ-ÿ]/g) || []).length;
       if (letters >= 3 && !HEADER_WORDS.test(noAcc(t))) out.push({ pos: offset, text: t, line: idx });
       offset += line.length + 1;
@@ -144,7 +148,7 @@ var Bordereau = (function () {
     return out;
   }
   function solveText(text) {
-    var tokens = numberTokens(text);
+    var tokens = numberTokens(text); var base = detectDelai(text) >= 365 && /365\s*jours?\s*[x×*]/i.test(text) ? detectDelai(text) : 0;
     var small = tokens.filter(function (t) { return t.v >= 1 && t.v <= 200 && t.v % 1 === 0; });
     var days = tokens.filter(function (t) { return t.v >= 20 && t.v <= 3650 && t.v % 1 === 0; });
     var rows = [];
@@ -168,6 +172,11 @@ var Bordereau = (function () {
       if (best) rows.push(best);
     });
     rows.sort(function (a, b) { return a.m.pos - b.m.pos; });
+    // Colonne « Total (365 jours X 3 ans X Nb d'agent) » : le nombre d'agents est déjà dans le total de jours (2 agents → 2190 = 2 × 1095)
+    rows.forEach(function (r) { var T = r.n.v * r.d.v; if (base && T % base === 0 && r.d.v >= base) { var nb = tokens.filter(function (t) { return t.v === T / base && t.pos < r.d.pos; }).sort(function (x, y) { return y.pos - x.pos; })[0]; /* la colonne « Nbre d'agent », juste avant le total : sinon le n° d'item du début de ligne place la désignation hors de la ligne */ r.n = { pos: nb ? nb.pos : r.n.pos, v: T / base }; r.d = { pos: r.d.pos, v: base }; } });
+    // Un sous-total qui reprend le montant d'une ligne (« S Total 2 » = Topographe) ne doit pas compter deux fois : on le retire si la somme dépasse le total annoncé exactement de ce montant
+    var annonce = detectTotal(text);
+    if (!isNaN(annonce)) { var somme0 = rows.reduce(function (t, r) { return t + r.m.v; }, 0); var extra = somme0 - annonce; if (extra > 0) { for (var q = rows.length - 1; q >= 0; q -= 1) { if (Math.abs(rows[q].m.v - extra) < 0.01) { rows.splice(q, 1); break; } } } }
     if (!rows.length) return [];
     var firstPos = function (r) { return Math.min(r.n.pos, r.d.pos, r.p.pos, r.m.pos); };
     var lastPos = function (r) { return Math.max(r.n.pos, r.d.pos, r.p.pos, r.m.pos); };
@@ -195,7 +204,7 @@ var Bordereau = (function () {
   // « Nombre » désigne les postes ; on le vérifie avec Montant = postes × tarif × délai.
   function toFonctions(lines, delai) {
     return lines.map(function (r) {
-      var d = r.delai > 0 ? r.delai : (Number(delai) > 0 ? Number(delai) : 0);
+      var d = r.delai > 0 ? r.delai : (r.positions > 0 && r.quantite > 0 && r.quantite % r.positions === 0 ? r.quantite / r.positions : (Number(delai) > 0 ? Number(delai) : 0)); // total de jours ÷ nombre d'agents
       var positions = NaN;
       if (r.positions > 0) positions = r.positions;
       else if (d > 0 && r.prix_unitaire > 0 && r.montant > 0) {
@@ -238,7 +247,9 @@ var Bordereau = (function () {
   function detectTotal(text) {
     var t = String(text || '');
     // « Total (DA) en (HT) 40 500 000,00 » (même ligne ou ligne suivante), sinon le montant entre parenthèses de la phrase d'arrêté
-    var m = /total[^\d]{0,40}?(\d{1,3}(?:[ \u00a0]\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?)/i.exec(t) || /\(\s*(\d{1,3}(?:[ \u00a0]\d{3})+(?:[.,]\d+)?)\s*(?:DA|DZD)\s*\)/i.exec(t);
+    var G = '(\\d{1,3}(?:[ \u00a0]\\d{3})+(?:[.,]\\d+)?)';
+    var m = new RegExp('total\\s+g[eé]n[eé]ral[\\s\\S]{0,90}?' + G, 'i').exec(t) || new RegExp('\\(\\s*' + G + '\\s*(?:DA|DZD)\\s*\\)', 'i').exec(t); // « Total General en HT = S Total1 + S Total 2 151 683 750,00 » puis la phrase d'arrêté
+    if (!m) { m = /total[^\d]{0,40}?(\d{1,3}(?:[ \u00a0]\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?)/i.exec(t); if (m && toNumber(m[1]) < 1000) m = null; } // le « 365 » de l'en-tête « Total (365 jours… » n'est pas un total
     return m ? toNumber(m[1]) : NaN;
   }
 

@@ -4,7 +4,7 @@ final class Bordereau {
     const NUM = '\d{1,3}(?:[ \x{00a0}]\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?';
     const VH = '~vehicule|\bvh\b|pick.?up|4 ?x ?4|camion|voiture|engin|minibus|\bbus\b|ambulance|fourgon|camionnette|\bmoto|tracteur|grue~u';
     const SKIP = '~^(total|montant total|sous.?total|arret|tva|ttc|t\.v\.a|net a payer|somme|fait a|lu et)~u';
-    const HEADER_WORDS = '~designation|nombre|tarif|journalier|delai|mobilisation|montant|quantite|unite|prix|total|annexe|bordereau|arrete|^contrat\b|n°|\bpage\b|hors taxes|dinars|^\(?da\)?$|^\(?jours?\)?$|^\(?ht\)?$~u';
+    const HEADER_WORDS = '~^item$|^u$|nbre|d\'agent|^agent|\bans\b|jours x|\bx\b|^equipe|moyens|s total|sous.?total|general|designation|nombre|tarif|journalier|delai|mobilisation|montant|quantite|unite|prix|total|annexe|bordereau|arrete|^contrat\b|n°|\bpage\b|hors taxes|dinars|^\(?da\)?$|^\(?jours?\)?$|^\(?ht\)?$~u';
 
     private static function noAcc($s): string { return trim(preg_replace('/\s+/u', ' ', mb_strtolower(Format::stripAccents((string)($s ?? ''))))); }
     private static function clean($s): string { return trim(preg_replace('/\s+/u', ' ', str_replace(["\u{00a0}", "\u{202f}"], ' ', (string)($s ?? '')))); }
@@ -22,6 +22,7 @@ final class Bordereau {
         if (preg_match('~position|nbre.*poste|nombre.*poste|nb.*poste~', $t)) return 'positions';
         if (preg_match('~delai|duree|mobilisation~', $t)) return 'delai';
         if (preg_match('~prix|p\.? ?u\b|unitaire|tarif~', $t)) return 'prix';
+        if (preg_match('~total.*(jour|\bnb\b|nbre|nombre|agent|\d{3})~', $t) && !preg_match('~montant|hors taxe|\bht\b~', $t)) return 'quantite'; // « Total (365 jours X 3 ans X Nb d'agent) », « Total (Jour) »
         if (preg_match('~montant|total~', $t)) return 'montant';
         if (preg_match('~nombre|nbre|\bnb\b~', $t)) return 'nombre';
         if (preg_match('~quantite|qte|\bqt\b~', $t)) return 'quantite';
@@ -39,7 +40,8 @@ final class Bordereau {
         if (!preg_match('/[a-zà-ÿ]{3}/iu', $d) || preg_match(self::SKIP, self::noAcc($d))) return null;
         $num = fn($k) => isset($map[$k]) ? self::toNumber($cells[$map[$k]] ?? '') : NAN;
         $pos = $num('positions');
-        return ['designation' => $d, 'unite' => isset($map['unite']) ? self::clean($cells[$map['unite']] ?? '') : '', 'quantite' => $num('quantite'), 'prix_unitaire' => $num('prix'), 'montant' => $num('montant'), 'positions' => $pos > 0 ? $pos : $num('nombre'), 'delai' => $num('delai'), 'mapped' => true];
+        $r = ['designation' => $d, 'unite' => isset($map['unite']) ? self::clean($cells[$map['unite']] ?? '') : '', 'quantite' => $num('quantite'), 'prix_unitaire' => $num('prix'), 'montant' => $num('montant'), 'positions' => $pos > 0 ? $pos : $num('nombre'), 'delai' => $num('delai'), 'mapped' => true];
+        return ($r['prix_unitaire'] > 0 || $r['montant'] > 0) ? $r : null; // titres de section et sous-totaux : pas de ligne
     }
     private static function rowHeuristic(array $cells): ?array {
         $di = -1; foreach ($cells as $i => $c) if ($di < 0 && preg_match('/[a-zà-ÿ]{3}/iu', self::clean($c)) && is_nan(self::toNumber($c))) $di = $i;
@@ -81,7 +83,7 @@ final class Bordereau {
         }
         return array_values(array_filter(self::parseRows($rows), fn($l) => $l['montant'] > 0));
     }
-    public static function detectDelai($text): int { return preg_match('/(?:d[ée]lai|dur[ée]e|mobilisation)[^\d]{0,40}(\d{2,4})\s*(?:jours?|j\b)/iu', (string)($text ?? ''), $m) ? (int)$m[1] : 0; }
+    public static function detectDelai($text): int { if (preg_match('/365\s*jours?\s*[x×*]\s*(\d{1,2})\s*ans?\b/iu', (string)($text ?? ''), $b)) return 365 * (int)$b[1]; return preg_match('/(?:d[ée]lai|dur[ée]e|mobilisation)[^\d]{0,40}(\d{2,4})\s*(?:jours?|j\b)/iu', (string)($text ?? ''), $m) ? (int)$m[1] : 0; }
 
     private static function numberTokens(string $text): array {
         $out = []; if (!preg_match_all('~' . self::NUM . '~u', $text, $ms, PREG_OFFSET_CAPTURE)) return $out;
@@ -91,7 +93,8 @@ final class Bordereau {
     private static function designationCandidates(string $text): array {
         $out = []; $offset = 0;
         foreach (explode("\n", $text) as $idx => $line) {
-            $t = self::clean(preg_replace('/\b(jours?|da|dzd)\b/iu', ' ', preg_replace('~' . self::NUM . '~u', ' ', $line))); $t = preg_replace('/^[-–.:()|\s]+|[-–.:()|\s]+$/u', '', $t);
+            $l2 = preg_replace('/^\s*\d{1,3}\s*[.)-]?\s+(?=[A-Za-zÀ-ÿ])/u', ' ', $line); $l2 = preg_replace('/(?:\s+(?:\d[\d\x{00a0}\x{202f} ,.]*|jours?|da|dzd))+\s*$/iu', ' ', $l2);
+            $t = self::clean(preg_replace('/\b(jours?|da|dzd)\b/iu', ' ', $l2)); $t = preg_replace('/^[-–.:()|\s]+|[-–.:()|\s]+$/u', '', $t);
             $letters = preg_match_all('/[A-Za-zÀ-ÿ]/u', $t);
             if ($letters >= 3 && !preg_match(self::HEADER_WORDS, self::noAcc($t))) $out[] = ['pos' => $offset, 'text' => $t, 'line' => $idx];
             $offset += strlen($line) + 1;
@@ -99,7 +102,7 @@ final class Bordereau {
         return $out;
     }
     public static function solveText($text): array {
-        $text = (string)($text ?? ''); $tokens = self::numberTokens($text);
+        $text = (string)($text ?? ''); $tokens = self::numberTokens($text); $base = (self::detectDelai($text) >= 365 && preg_match('/365\s*jours?\s*[x×*]/iu', $text)) ? self::detectDelai($text) : 0;
         $small = array_values(array_filter($tokens, fn($t) => $t['v'] >= 1 && $t['v'] <= 200 && fmod($t['v'], 1) == 0.0));
         $days = array_values(array_filter($tokens, fn($t) => $t['v'] >= 20 && $t['v'] <= 3650 && fmod($t['v'], 1) == 0.0));
         $rows = [];
@@ -117,6 +120,10 @@ final class Bordereau {
         }
         usort($rows, fn($a, $b) => $a['m']['pos'] <=> $b['m']['pos']);
         if (!$rows) return [];
+        // Colonne « Total (365 jours X 3 ans X Nb d'agent) » : le nombre d'agents est déjà dans le total de jours
+        foreach ($rows as &$r0) { $T = $r0['n']['v'] * $r0['d']['v']; if ($base && fmod($T, $base) == 0.0 && $r0['d']['v'] >= $base) { $nb = null; foreach ($tokens as $t0) if ($t0['v'] == $T / $base && $t0['pos'] < $r0['d']['pos'] && (!$nb || $t0['pos'] > $nb['pos'])) $nb = $t0; $r0['n'] = ['pos' => $nb ? $nb['pos'] : $r0['n']['pos'], 'v' => $T / $base]; $r0['d'] = ['pos' => $r0['d']['pos'], 'v' => $base]; } } unset($r0);
+        $annonce = self::detectTotal($text);
+        if (!is_nan($annonce)) { $somme0 = array_sum(array_map(fn($r) => $r['m']['v'], $rows)); $extra = $somme0 - $annonce; if ($extra > 0) { for ($q = count($rows) - 1; $q >= 0; $q--) if (abs($rows[$q]['m']['v'] - $extra) < 0.01) { array_splice($rows, $q, 1); break; } } }
         $firstPos = fn($r) => min($r['n']['pos'], $r['d']['pos'], $r['p']['pos'], $r['m']['pos']); $lastPos = fn($r) => max($r['n']['pos'], $r['d']['pos'], $r['p']['pos'], $r['m']['pos']);
         $cands = self::designationCandidates($text);
         $interleaved = count($rows) === 1;
@@ -138,7 +145,7 @@ final class Bordereau {
     }
     public static function toFonctions(array $lines, $delai): array {
         return array_map(function ($r) use ($delai) {
-            $d = $r['delai'] > 0 ? $r['delai'] : ((float)$delai > 0 ? (float)$delai : 0); $positions = NAN;
+            $d = $r['delai'] > 0 ? $r['delai'] : (($r['positions'] > 0 && $r['quantite'] > 0 && fmod($r['quantite'], $r['positions']) == 0.0) ? $r['quantite'] / $r['positions'] : ((float)$delai > 0 ? (float)$delai : 0)); $positions = NAN;
             if ($r['positions'] > 0) $positions = $r['positions'];
             elseif ($d > 0 && $r['prix_unitaire'] > 0 && $r['montant'] > 0) { $p = $r['montant'] / ($r['prix_unitaire'] * $d); if (abs($p - round($p)) < 0.01 && round($p) >= 1) $positions = round($p); }
             if (!($positions > 0) && $r['quantite'] > 0) $positions = $d > 0 ? ($r['quantite'] >= $d ? $r['quantite'] / $d : $r['quantite']) : ($r['quantite'] <= 100 ? $r['quantite'] : NAN);
@@ -171,7 +178,9 @@ final class Bordereau {
     public static function detectTotal($text): float {
         $t = (string)($text ?? '');
         $n = '(\d{1,3}(?:[ \x{00a0}]\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?)';
-        if (preg_match('/total[^\d]{0,40}?' . $n . '/iu', $t, $m) || preg_match('/\(\s*(\d{1,3}(?:[ \x{00a0}]\d{3})+(?:[.,]\d+)?)\s*(?:DA|DZD)\s*\)/iu', $t, $m)) return self::toNumber($m[1]);
+        $g = '(\d{1,3}(?:[ \x{00a0}]\d{3})+(?:[.,]\d+)?)';
+        if (preg_match('/total\s+g[eé]n[eé]ral[\s\S]{0,90}?' . $g . '/iu', $t, $m) || preg_match('/\(\s*' . $g . '\s*(?:DA|DZD)\s*\)/iu', $t, $m)) return self::toNumber($m[1]);
+        if (preg_match('/total[^\d]{0,40}?' . $n . '/iu', $t, $m) && self::toNumber($m[1]) >= 1000) return self::toNumber($m[1]);
         return NAN;
     }
     /** @return array{rows: array, text: string} */
