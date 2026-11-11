@@ -120,12 +120,19 @@ final class Bordereau {
         }
         usort($rows, fn($a, $b) => $a['m']['pos'] <=> $b['m']['pos']);
         if (!$rows) return [];
+        if (!$base) { // en-tête mal lu : pgcd des totaux multiples de 365
+            $gcd = function ($a, $b) use (&$gcd) { return $b ? $gcd($b, fmod($a, $b)) : $a; };
+            $mult = array_values(array_filter(array_map(fn($r) => $r['n']['v'] * $r['d']['v'], $rows), fn($T) => $T >= 365 && fmod($T, 365) == 0.0));
+            if (count($mult) >= 2) { $g = array_reduce($mult, fn($c, $x) => $c === null ? $x : $gcd($c, $x)); if ($g >= 365 && fmod($g, 365) == 0.0 && $g <= 3650) $base = $g; }
+        }
         // Colonne « Total (365 jours X 3 ans X Nb d'agent) » : le nombre d'agents est déjà dans le total de jours
         foreach ($rows as &$r0) { $T = $r0['n']['v'] * $r0['d']['v']; if ($base && fmod($T, $base) == 0.0 && $r0['d']['v'] >= $base) { $nb = null; foreach ($tokens as $t0) if ($t0['v'] == $T / $base && $t0['pos'] < $r0['d']['pos'] && (!$nb || $t0['pos'] > $nb['pos'])) $nb = $t0; $r0['n'] = ['pos' => $nb ? $nb['pos'] : $r0['n']['pos'], 'v' => $T / $base]; $r0['d'] = ['pos' => $r0['d']['pos'], 'v' => $base]; } } unset($r0);
         $annonce = self::detectTotal($text);
         if (!is_nan($annonce)) { $somme0 = array_sum(array_map(fn($r) => $r['m']['v'], $rows)); $extra = $somme0 - $annonce; if ($extra > 0) { for ($q = count($rows) - 1; $q >= 0; $q--) if (abs($rows[$q]['m']['v'] - $extra) < 0.01) { array_splice($rows, $q, 1); break; } } }
         $firstPos = fn($r) => min($r['n']['pos'], $r['d']['pos'], $r['p']['pos'], $r['m']['pos']); $lastPos = fn($r) => max($r['n']['pos'], $r['d']['pos'], $r['p']['pos'], $r['m']['pos']);
         $cands = self::designationCandidates($text);
+        $fus = []; foreach ($cands as $c) { $pi = count($fus) - 1; if ($pi >= 0 && $c['line'] === $fus[$pi]['line'] + 1 && (preg_match('/^[a-zà-ÿ]/u', $c['text']) || preg_match('/\b(ou|et|de|du|des|en|d\'|à)$/iu', $fus[$pi]['text']))) { $fus[$pi]['text'] .= ' ' . $c['text']; $fus[$pi]['line'] = $c['line']; } else $fus[] = $c; }
+        $cands = $fus; // désignation coupée sur deux lignes
         $interleaved = count($rows) === 1;
         if (!$interleaved) { $interleaved = true; for ($i = 1; $i < count($rows); $i++) { $ok = false; foreach ($cands as $c) if ($c['pos'] > $lastPos($rows[$i - 1]) && $c['pos'] < $firstPos($rows[$i])) { $ok = true; break; } if (!$ok) { $interleaved = false; break; } } }
         $names = [];
@@ -139,6 +146,7 @@ final class Bordereau {
         } else {
             $minFirst = min(array_map($firstPos, $rows)); $before = array_values(array_filter($cands, fn($c) => $c['pos'] < $minFirst));
             $pick = array_slice($before, max(0, count($before) - count($rows)));
+            if (count($pick) !== count($rows)) { $dernier = max(array_map($lastPos, $rows)); $tous = array_values(array_filter($cands, fn($c) => $c['pos'] < $dernier)); if (count($tous) >= count($rows)) $pick = array_slice($tous, 0, count($rows)); }
             foreach ($rows as $i => $r) $names[] = count($pick) === count($rows) ? $pick[$i]['text'] : '';
         }
         return array_map(fn($r, $i) => ['designation' => ($names[$i] ?? '') ?: '(à compléter)', 'unite' => 'Jour', 'quantite' => NAN, 'prix_unitaire' => $r['p']['v'], 'montant' => $r['m']['v'], 'positions' => $r['n']['v'], 'delai' => $r['d']['v'], 'mapped' => true, 'incertaine' => ($names[$i] ?? '') === ''], $rows, array_keys($rows));

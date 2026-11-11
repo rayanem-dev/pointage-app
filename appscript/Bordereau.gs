@@ -148,7 +148,7 @@ var Bordereau = (function () {
     return out;
   }
   function solveText(text) {
-    var tokens = numberTokens(text); var base = detectDelai(text) >= 365 && /365\s*jours?\s*[x×*]/i.test(text) ? detectDelai(text) : 0;
+    var tokens = numberTokens(text); var base = detectDelai(text) >= 365 && /365\s*jours?\s*[x×*]/i.test(text) ? detectDelai(text) : 0; // sinon déduite plus bas des totaux de jours
     var small = tokens.filter(function (t) { return t.v >= 1 && t.v <= 200 && t.v % 1 === 0; });
     var days = tokens.filter(function (t) { return t.v >= 20 && t.v <= 3650 && t.v % 1 === 0; });
     var rows = [];
@@ -172,6 +172,10 @@ var Bordereau = (function () {
       if (best) rows.push(best);
     });
     rows.sort(function (a, b) { return a.m.pos - b.m.pos; });
+    if (!base) { // en-tête mal lu : au moins deux totaux multiples de 365 → leur pgcd est le délai de référence (2190, 3285, 1095 → 1095)
+      var gcd = function (a, b) { return b ? gcd(b, a % b) : a; }; var mult = rows.map(function (r) { return r.n.v * r.d.v; }).filter(function (T) { return T >= 365 && T % 365 === 0; });
+      if (mult.length >= 2) { var g = mult.reduce(gcd); if (g >= 365 && g % 365 === 0 && g <= 365 * 10) base = g; }
+    }
     // Colonne « Total (365 jours X 3 ans X Nb d'agent) » : le nombre d'agents est déjà dans le total de jours (2 agents → 2190 = 2 × 1095)
     rows.forEach(function (r) { var T = r.n.v * r.d.v; if (base && T % base === 0 && r.d.v >= base) { var nb = tokens.filter(function (t) { return t.v === T / base && t.pos < r.d.pos; }).sort(function (x, y) { return y.pos - x.pos; })[0]; /* la colonne « Nbre d'agent », juste avant le total : sinon le n° d'item du début de ligne place la désignation hors de la ligne */ r.n = { pos: nb ? nb.pos : r.n.pos, v: T / base }; r.d = { pos: r.d.pos, v: base }; } });
     // Un sous-total qui reprend le montant d'une ligne (« S Total 2 » = Topographe) ne doit pas compter deux fois : on le retire si la somme dépasse le total annoncé exactement de ce montant
@@ -181,6 +185,7 @@ var Bordereau = (function () {
     var firstPos = function (r) { return Math.min(r.n.pos, r.d.pos, r.p.pos, r.m.pos); };
     var lastPos = function (r) { return Math.max(r.n.pos, r.d.pos, r.p.pos, r.m.pos); };
     var cands = designationCandidates(text);
+    cands = cands.reduce(function (acc, c) { var prev = acc[acc.length - 1]; if (prev && c.line === prev.line + 1 && (/^[a-zà-ÿ]/.test(c.text) || /\b(ou|et|de|du|des|en|d'|à)$/i.test(prev.text))) { prev.text += ' ' + c.text; prev.line = c.line; } else acc.push(c); return acc; }, []); // désignation coupée sur deux lignes
     var interleaved = rows.length === 1 || rows.slice(1).every(function (r, i) { return cands.some(function (c) { return c.pos > lastPos(rows[i]) && c.pos < firstPos(r); }); });
     var names = [];
     if (interleaved) {
@@ -193,6 +198,7 @@ var Bordereau = (function () {
     } else { // colonnes lues l'une après l'autre : les K dernières désignations avant le premier nombre, dans l'ordre
       var before = cands.filter(function (c) { return c.pos < Math.min.apply(null, rows.map(firstPos)); });
       var pick = before.slice(Math.max(0, before.length - rows.length));
+      if (pick.length !== rows.length) { var dernier = Math.max.apply(null, rows.map(lastPos)); var tous = cands.filter(function (c) { return c.pos < dernier; }); if (tous.length >= rows.length) pick = tous.slice(0, rows.length); } // désignations dispersées dans le texte : on prend les premières, dans l'ordre
       rows.forEach(function (r, i) { names.push(pick.length === rows.length ? pick[i].text : ''); });
     }
     return rows.map(function (r, i) {

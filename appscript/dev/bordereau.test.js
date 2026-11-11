@@ -200,3 +200,11 @@ test('bordereau à total de jours en tableau HTML : colonnes « Total (… jours
   assert.deepStrictEqual(f.map((l) => [l.designation, l.positions, l.delai, l.montant]), [['Technicien électricien', 2, 730, 14308000], ['Chef de chantier', 1, 730, 8760000], ['Camion 2,5 tonnes', 2, 730, 8030000]]);
   assert.ok(f.every((l) => l.fiable), JSON.stringify(f));
 });
+
+test('bordereau à total de jours, colonnes lues l\'une après l\'autre, en-tête « 365 jours » illisible, désignation coupée : base déduite des totaux, noms dans l\'ordre', () => {
+  const noms = ['Technicien électricien', 'Chef de chantier', 'Magasinier\nqualifié de dépôt', 'Camion 2,5 tonnes'];
+  const items = ['01', '02', '03', '04']; const nb = ['02', '03', '01', '02']; const tot = ['1460', '2190', '730', '1460']; const prix = ['9 800,00', '12 000,00', '8 000,00', '5 500,00']; const mt = ['14 308 000,00', '26 280 000,00', '5 840 000,00', '8 030 000,00'];
+  const texte = 'CONTRAT CLIENT/SARL DEMO N° 1/00/TST/2026\nBordereau Des Prix\nItem\nDésignation\nNbre\nd\'agent\nU\nTotal\n(jours)\nPrix U\nMontant\nEquipe Travaux\n' + noms.join('\n') + '\n' + [items, nb, ['Jour', 'Jour', 'Jour', 'Jour'], tot, prix, mt].map((c) => c.join('\n')).join('\n') + '\nS Total 1\n54 458 000,00\nTotal General en Hors Taxe (HT)\n54 458 000,00\n';
+  const l = toF(parse('solveText', texte), 0);
+  assert.deepStrictEqual(l.map((x) => [x.designation, x.positions, x.delai]), [['Technicien électricien', 2, 730], ['Chef de chantier', 3, 730], ['Magasinier qualifié de dépôt', 1, 730], ['Camion 2,5 tonnes', 2, 730]], JSON.stringify(l));
+});
