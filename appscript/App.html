@@ -106,12 +106,22 @@ function act(btn, box, fn, okText) {
     .catch(function (e) { box.show(e.message, false); })
     .then(function (r) { btn.disabled = false; return r; });
 }
+// Bouton « Envoyer l'accès » à côté d'une adresse (administrateur seulement) : envoie un nouveau mot de passe provisoire au compte créé pour cette adresse.
+function accesBtn(input) {
+  var b = h('button', { type: 'button', title: 'Envoyer à cette adresse son lien, son identifiant et un mot de passe provisoire' }, 'Envoyer l’accès'); var m = msgBox(); var wrap = h('div', { style: 'display:grid;gap:4px' }, b, m);
+  b.onclick = function () {
+    var e = input.value.trim(); if (!e) { m.show('Saisissez d’abord une adresse e-mail.', false); return; }
+    if (!window.confirm(tr('Envoyer ses accès à ' + e + ' ? Un nouveau mot de passe provisoire est créé.'))) return;
+    act(b, m, function () { return call('accesEnvoyerEmail', e); }).then(function (x) { if (x) m.show('✓ Accès envoyés à ' + x.to + '.', true); });
+  };
+  return wrap;
+}
 // Quatre cases distinctes pour quatre adresses e-mail ; la valeur (lue ou écrite) reste « a@x, b@y, c@z ».
-function emailsBox(value, onInput, n) {
+function emailsBox(value, onInput, n, avecAcces) {
   var list = String(value || '').split(/[\s,;]+/).filter(Boolean);
   var cases = Math.min(4, Math.max(n || 4, list.length)); // jamais moins de cases que d'adresses déjà enregistrées
   var ins = Array.apply(null, Array(cases)).map(function (_, i) { return i; }).map(function (i) { return h('input', { type: 'email', placeholder: 'Adresse e-mail ' + (i + 1), value: list[i] || '', autocomplete: 'off' }); });
-  var box = h('div', { class: 'emails3', style: 'display:grid;gap:6px' }, ins);
+  var box = h('div', { class: 'emails3', style: 'display:grid;gap:6px' }, avecAcces && S.user.role === 'admin' ? ins.map(function (x) { return h('div', { style: 'display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start' }, x, accesBtn(x)); }) : ins);
   Object.defineProperty(box, 'value', {
     get: function () { return ins.map(function (x) { return x.value.trim(); }).filter(Boolean).join(', '); },
     set: function (v) { var l = String(v || '').split(/[\s,;]+/).filter(Boolean); ins.forEach(function (x, i) { x.value = l[i] || ''; }); }
@@ -120,12 +130,13 @@ function emailsBox(value, onInput, n) {
   return box;
 }
 // Personnel administratif : une adresse par ligne, avec la case « droits de responsable pointage » (sinon consultation seule). Valeur : « a@x|1, b@y|0 ».
-function staffBox(value) {
+function staffBox(value, avecAcces) {
   var list = String(value || '').split(/[\s,;]+/).filter(Boolean).map(function (t) { var p = t.split('|'); return { email: p[0], droits: p[1] === '1' }; });
   var rows = [0, 1, 2, 3].map(function (i) {
     var em = h('input', { type: 'email', placeholder: 'Adresse e-mail ' + (i + 1), value: (list[i] || {}).email || '', autocomplete: 'off' });
     var ck = h('input', { type: 'checkbox', checked: !!(list[i] || {}).droits });
-    return { em: em, ck: ck, node: h('div', { class: 'staffrow', style: 'display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center' }, em, h('label', { class: 'inline', style: 'white-space:nowrap' }, ck, ' Droits de responsable pointage')) };
+    var acc = avecAcces && S.user.role === 'admin';
+    return { em: em, ck: ck, node: h('div', { class: 'staffrow', style: 'display:grid;grid-template-columns:' + (acc ? '1fr auto auto' : '1fr auto') + ';gap:10px;align-items:center' }, em, h('label', { class: 'inline', style: 'white-space:nowrap' }, ck, ' Droits de responsable pointage'), acc ? accesBtn(em) : null) };
   });
   var box = h('div', { style: 'display:grid;gap:6px' }, rows.map(function (r) { return r.node; }));
   Object.defineProperty(box, 'value', { get: function () { return rows.filter(function (r) { return r.em.value.trim(); }).map(function (r) { return r.em.value.trim() + '|' + (r.ck.checked ? '1' : '0'); }).join(', '); } });
@@ -1473,10 +1484,11 @@ function ClientsPage() {
         var email = h('input', { type: 'email', value: cur.email }); var nom = h('input', { value: cur.nom }); var pw = h('input', { placeholder: 'laisser vide = inchangé' });
         sel.onchange = function () { cur = list.filter(function (a) { return a.id === sel.value; })[0]; email.value = cur.email; nom.value = cur.nom; pw.value = ''; };
         var save = h('button', { class: 'primary', type: 'button' }, 'Enregistrer'); var reset = h('button', { type: 'button' }, 'Réinitialiser le mot de passe');
+        var envoi = h('button', { type: 'button', title: 'Envoie au gérant son lien, son code entreprise, son identifiant et un nouveau mot de passe provisoire' }, 'Envoyer l’accès au gérant'); envoi.onclick = function () { if (window.confirm(tr('Envoyer ses accès à ' + cur.email + ' ? Un nouveau mot de passe provisoire est créé.'))) act(envoi, box, function () { return call('clientAdminAcces', c.code, cur.id); }).then(function (x) { if (x) box.show('✓ Accès envoyés à ' + x.to + '.', true); }); };
         var show = function (r) { if (!r) return; cur.email = r.email; cur.nom = r.nom; box.show('✓ Gérant mis à jour : ' + r.email + (r.password ? ' — mot de passe : ' + r.password + ' (à communiquer)' : '') + '.', true); pw.value = ''; };
         save.onclick = function () { act(save, box, function () { return call('clientAdminUpdate', c.code, { id: cur.id, email: email.value, nom: nom.value, password: pw.value }); }).then(show); };
         reset.onclick = function () { if (window.confirm('Générer un nouveau mot de passe provisoire pour ' + cur.email + ' ?')) act(reset, box, function () { return call('clientAdminUpdate', c.code, { id: cur.id, reinit: true }); }).then(show); };
-        body.replaceChildren.apply(body, [list.length > 1 ? field('Gérant', sel) : null, h('div', { class: 'row' }, field('E-mail (identifiant de connexion)', email, 'grow2'), field('Nom', nom), field('Nouveau mot de passe', pw)), h('div', { class: 'sendbar' }, save, reset)].filter(Boolean));
+        body.replaceChildren.apply(body, [list.length > 1 ? field('Gérant', sel) : null, h('div', { class: 'row' }, field('E-mail (identifiant de connexion)', email, 'grow2'), field('Nom', nom), field('Nouveau mot de passe', pw)), h('div', { class: 'sendbar' }, save, reset, envoi)].filter(Boolean));
       }).catch(function (e) { body.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
       return h('div', { class: 'compact', style: 'padding:6px 0' }, body, box);
     }
@@ -1657,8 +1669,8 @@ function SetupPage() {
       var sets = groups.map(function (g) {
         var fields = defs.filter(function (d) { return d.group === g; }).map(function (d) {
           if (d.type === 'logo') return logoControl(d);
-          if (d.type === 'staff') { var sb = staffBox(data.values[d.key]); inputs[d.key] = sb; return emailsField(d.label, sb, 'grow2', d.hint); }
-          if (d.type === 'emails') { var eb = emailsBox(data.values[d.key], null, d.n); inputs[d.key] = eb; return emailsField(d.label, eb, 'grow2', d.hint); }
+          if (d.type === 'staff') { var sb = staffBox(data.values[d.key], true); inputs[d.key] = sb; return emailsField(d.label, sb, 'grow2', d.hint); }
+          if (d.type === 'emails') { var eb = emailsBox(data.values[d.key], null, d.n, d.key === 'direction_email'); inputs[d.key] = eb; return emailsField(d.label, eb, 'grow2', d.hint); }
           var el = d.type === 'select' ? h('select', null, d.options.map(function (o) { return h('option', { value: o[0] }, o[1]); })) : d.type === 'bool' ? h('select', null, h('option', { value: '1' }, 'Oui'), h('option', { value: '0' }, 'Non')) : d.type === 'area' ? h('textarea', { rows: 3 }) : h('input', { type: d.type === 'number' ? 'number' : d.type === 'color' ? 'color' : 'text', min: 1 });
           el.value = data.values[d.key] || (d.type === 'color' ? '#000000' : ''); inputs[d.key] = el;
           return field(d.label, el, d.type === 'text' || d.type === 'area' ? 'grow2' : '', d.hint);

@@ -742,6 +742,18 @@
      "The publisher account has a company selector in the header. Choosing a client opens its space with all its administrator's rights: every tab, attendance (view and edit), user passwords, settings. A banner reminds you that you are in support mode; \"Back to administration\" or \"My space (publisher)\" returns to your console. Every access is recorded in the connections log. A suspended client must be reactivated first. A second list lets you pick one of the company's users (agent, manager, client…) and sign in as them to see what they see and step in; the access is recorded in the log. The \"Version\" card in the Clients tab shows whether the site and the server are up to date.",
      "لحساب الناشر منتقي شركة في الترويسة. اختيار عميل يفتح مساحته بكل صلاحيات مسؤولها: كل العلامات، والحضور (اطلاع وتعديل)، وكلمات مرور المستخدمين، والإعدادات. يذكّرك شريط بأنك في وضع الدعم؛ و«العودة إلى الإدارة» أو «مساحتي (الناشر)» يعيدك إلى لوحتك. كل دخول يُسجَّل في سجل الاتصالات. يجب أولًا إعادة تفعيل العميل الموقوف. تتيح قائمة ثانية اختيار أحد مستخدمي الشركة (عون، مسؤول، عميل…) والدخول مكانه لرؤية ما يراه والتدخل؛ ويُسجَّل الدخول في السجل. تبيّن بطاقة «الإصدار» في علامة العملاء هل الموقع والخادم محدّثان."
     ]
+   },
+   {
+    "t": [
+     "Envoyer les accès par e-mail",
+     "Send access by e-mail",
+     "إرسال بيانات الدخول بالبريد"
+    ],
+    "x": [
+     "Setup → Prestataire : à côté de chaque adresse e-mail du responsable pointage et du personnel administratif, « Envoyer l'accès » envoie à cette personne le lien, l'identifiant et un mot de passe provisoire (un nouveau à chaque envoi). Le compte est créé quand vous enregistrez la page. Réservé à l'administrateur. L'éditeur dispose du même bouton pour le gérant d'un client (Clients → Gérant : e-mail / mot de passe).",
+     "Setup → Provider: next to each e-mail address of the attendance manager and administrative staff, \"Send access\" sends that person the link, username and a temporary password (a new one each time). The account is created when you save the page. Reserved to the administrator. The publisher has the same button for a client's manager (Clients → Manager: e-mail / password).",
+     "الإعداد ← المزوّد: بجانب كل عنوان بريد لمسؤول التسجيل والموظفين الإداريين يرسل «إرسال بيانات الدخول» إلى الشخص الرابط والمعرّف وكلمة مرور مؤقتة (جديدة في كل مرة). يُنشأ الحساب عند حفظ الصفحة. مخصّص للمسؤول. وللناشر الزر نفسه لمسيّر العميل (العملاء ← المسيّر: البريد / كلمة المرور)."
+    ]
    }
   ]
  },

@@ -285,6 +285,8 @@ var HANDLERS = {
   clientAcces: { roles: ['admin'], fn: function (u, a) { return Tenants.access(u, a[0], a[1]); } },
   clientUtilisateurs: { roles: ['admin'], fn: function (u, a) { return Tenants.users(u, a[0]); } },
   clientAdmins: { roles: ['admin'], fn: function (u, a) { return Tenants.admins(u, a[0]); } },
+  clientAdminAcces: { roles: ['admin'], write: true, fn: function (u, a) { return Tenants.adminSendAccess(u, a[0], a[1]); } },
+  accesEnvoyerEmail: { roles: ['admin'], write: true, fn: function (u, a) { return Agents.sendAccessByEmail(u, a[0]); } },
   clientAdminUpdate: { roles: ['admin'], write: true, fn: function (u, a) { return Tenants.adminUpdate(u, a[0], a[1]); } },
   clientDelete: { roles: ['admin'], write: true, fn: function (u, a) { return Tenants.remove(u, a[0], a[1]); } },
   editeurContact: { roles: ['admin'], fn: function (u) { Tenants.requireOwner(u); return Tenants.contact(); } },

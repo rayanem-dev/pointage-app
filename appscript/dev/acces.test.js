@@ -127,3 +127,13 @@ test('sécurité : un texte saisi commençant par = + - @ n\'est jamais une form
 test('logo : le contenu doit correspondre au format annoncé', () => {
   fail(call(T.admin, 'logoUpload', { qui: 'client', mime: 'image/png', base64: Buffer.from('<svg onload=alert(1)>').toString('base64') }), /image valide/);
 });
+
+test('envoi des accès par adresse (Setup, administrateur seulement)', () => {
+  env.mails.length = 0;
+  const r = ok(call(T.admin, 'accesEnvoyerEmail', 'Farid@T.fr'));
+  assert.strictEqual(r.to, 'farid@t.fr'); assert.ok(env.mails.some((m) => m.to === 'farid@t.fr' && /Mot de passe provisoire/.test(m.body)));
+  fail(call(T.admin, 'accesEnvoyerEmail', 'inconnu@t.fr'), /Aucun compte/);
+  const ag = ok(call(T.admin, 'agentCreate', { nom: 'SIMPLE AGENT', email: 'sa@t.fr', role: 'agent', password: 'agentpw123' }));
+  const t = ok(call(null, 'login', 'sa@t.fr', 'agentpw123')).token;
+  fail(call(t, 'accesEnvoyerEmail', 'farid@t.fr'), /./); assert.ok(ag.agent.id);
+});

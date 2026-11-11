@@ -150,6 +150,14 @@ var Agents = (function () {
     Mail.send({ to: a.email, replyTo: user.email || undefined, subject: 'Votre accès Sijil — ' + societe, body: body, societe: societe, cta: { label: 'Ouvrir Sijil', url: code ? Tenants.lien(code) : CFG.APP_SHELL_URL } });
     return { envoye: true, to: a.email, nouveau: !reuse, password: reuse ? '' : pw };
   }
+  // Envoie ses accès (nouveau mot de passe provisoire) au compte créé pour une adresse du prestataire (Setup) : administrateur seulement.
+  function sendAccessByEmail(user, email) {
+    if (user.role !== 'admin') throw httpErr_('Accès refusé', 'FORBIDDEN');
+    var e = String(email || '').trim().toLowerCase();
+    var a = list().filter(function (x) { return String(x.email).toLowerCase() === e; })[0];
+    if (!a) throw httpErr_('Aucun compte pour cette adresse : enregistrez d\'abord la page (le compte est créé à l\'enregistrement)');
+    return sendAccess(user, a.id, '');
+  }
   function changeOwnPassword(user, current, next) {
     if (!Auth.check(user, current)) throw httpErr_('Mot de passe actuel incorrect');
     setPassword(user, user.id, next);
@@ -165,5 +173,5 @@ var Agents = (function () {
     Store.writeTable('Agents', all.concat([admin]));
     return publicAgent(admin);
   }
-  return { tous: tous, alpha: alpha, sendAccess: sendAccess, list: list, get: get, publicAgent: publicAgent, visibleTo: visibleTo, manageable: manageable, create: create, update: update, isPerson: isPerson, updateMany: updateMany, rotationParams: rotationParams, normRotation: normRotation, setPassword: setPassword, changeOwnPassword: changeOwnPassword, ensureAdmin: ensureAdmin };
+  return { tous: tous, alpha: alpha, sendAccess: sendAccess, sendAccessByEmail: sendAccessByEmail, list: list, get: get, publicAgent: publicAgent, visibleTo: visibleTo, manageable: manageable, create: create, update: update, isPerson: isPerson, updateMany: updateMany, rotationParams: rotationParams, normRotation: normRotation, setPassword: setPassword, changeOwnPassword: changeOwnPassword, ensureAdmin: ensureAdmin };
 })();

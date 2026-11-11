@@ -214,6 +214,21 @@ var Tenants = (function () {
       return { id: b.id, nom: b.nom, email: b.email, password: password };
     });
   }
+  // Envoie au gérant ses accès (lien, code entreprise, identifiant, nouveau mot de passe provisoire) : bouton de l'éditeur.
+  function adminSendAccess(user, code, id) {
+    requireOwner(user); var c = mustFind(code);
+    return inClient(c, function () {
+      var a = Store.readTable('Agents').filter(function (x) { return x.role === 'admin' && x.id === id; })[0];
+      if (!a) throw httpErr_('Administrateur introuvable');
+      if (!/^\S+@\S+\.\S+$/.test(a.email || '')) throw httpErr_('Ce gérant n\'a pas d\'adresse e-mail valide');
+      var pw = Utilities.getUuid().replace(/-/g, '').slice(0, 10);
+      Agents.setPassword({ role: 'admin', id: '' }, a.id, pw);
+      var societe = Params.get().prestataire_nom || c.nom || 'Sijil'; var lien = lien(c.code);
+      Mail.send({ to: a.email, replyTo: user.email || undefined, subject: 'Votre accès Sijil — ' + societe, societe: societe, cta: { label: 'Ouvrir Sijil', url: lien },
+        body: 'Bonjour ' + a.nom + ',\n\nVotre espace Sijil (' + societe + ') est prêt :\nLien : ' + lien + '\nCode entreprise : ' + c.code + '\nIdentifiant : ' + a.email + '\nMot de passe provisoire : ' + pw + '\n(à changer à la première connexion)' });
+      return { envoye: true, to: a.email };
+    });
+  }
   // Suppression : l'annuaire perd la ligne et le classeur du client part à la corbeille Drive (récupérable 30 jours). Le classeur principal ne se supprime pas.
   function remove(user, code, confirm) {
     requireOwner(user);
@@ -302,5 +317,5 @@ var Tenants = (function () {
     var m = list().filter(function (r) { return !r.classeur_id; })[0];
     return m ? m.code : '';
   }
-  return { licence: licence, lectureSeule: lectureSeule, GRACE_JOURS: GRACE_JOURS, users: users, activityAll: activityAll, codeActuel: codeActuel, lien: lien, envoyerMessage: envoyerMessage, vitrine: vitrine, access: access, admins: admins, adminUpdate: adminUpdate, remove: remove, contact: contact, setContact: setContact, apropos: apropos, commentaire: commentaire, normCode: normCode, multi: multi, use: use, isOwner: isOwner, requireOwner: requireOwner, clients: clients, create: create, update: update, resolve: resolve, test: test, find: find, list: list };
+  return { adminSendAccess: adminSendAccess, licence: licence, lectureSeule: lectureSeule, GRACE_JOURS: GRACE_JOURS, users: users, activityAll: activityAll, codeActuel: codeActuel, lien: lien, envoyerMessage: envoyerMessage, vitrine: vitrine, access: access, admins: admins, adminUpdate: adminUpdate, remove: remove, contact: contact, setContact: setContact, apropos: apropos, commentaire: commentaire, normCode: normCode, multi: multi, use: use, isOwner: isOwner, requireOwner: requireOwner, clients: clients, create: create, update: update, resolve: resolve, test: test, find: find, list: list };
 })();

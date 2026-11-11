@@ -6868,5 +6868,40 @@
   "Contrat actif",
   "Active contract",
   "عقد ساري"
+ ],
+ [
+  "Envoyer l’accès",
+  "Send access",
+  "إرسال بيانات الدخول"
+ ],
+ [
+  "Envoyer à cette adresse son lien, son identifiant et un mot de passe provisoire",
+  "Send this address its link, username and a temporary password",
+  "إرسال الرابط والمعرّف وكلمة مرور مؤقتة إلى هذا العنوان"
+ ],
+ [
+  "Saisissez d’abord une adresse e-mail.",
+  "Enter an e-mail address first.",
+  "أدخل عنوان بريد إلكتروني أولًا."
+ ],
+ [
+  "Envoyer l’accès au gérant",
+  "Send access to the manager",
+  "إرسال بيانات الدخول إلى المسيّر"
+ ],
+ [
+  "Envoie au gérant son lien, son code entreprise, son identifiant et un nouveau mot de passe provisoire",
+  "Sends the manager their link, company code, username and a new temporary password",
+  "يرسل إلى المسيّر الرابط ورمز المؤسسة والمعرّف وكلمة مرور مؤقتة جديدة"
+ ],
+ [
+  "Aucun compte pour cette adresse : enregistrez d'abord la page (le compte est créé à l'enregistrement)",
+  "No account for this address: save the page first (the account is created on save)",
+  "لا حساب لهذا العنوان: احفظ الصفحة أولًا (يُنشأ الحساب عند الحفظ)"
+ ],
+ [
+  "Ce gérant n'a pas d'adresse e-mail valide",
+  "This manager has no valid e-mail address",
+  "ليس لهذا المسيّر عنوان بريد صالح"
  ]
 ]

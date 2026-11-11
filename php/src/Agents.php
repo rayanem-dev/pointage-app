@@ -130,6 +130,13 @@ final class Agents {
         Mail::send(['to' => $a['email'], 'replyTo' => $user['email'] ?: null, 'subject' => 'Votre accès Sijil — ' . $societe, 'body' => $body, 'societe' => $societe, 'cta' => ['label' => 'Ouvrir Sijil', 'url' => Mail::shell()]]);
         return ['envoye' => true, 'to' => $a['email'], 'nouveau' => !$reuse, 'password' => $reuse ? '' : $pw];
     }
+    public static function sendAccessByEmail(array $user, $email): array {
+        if ($user['role'] !== 'admin') throw httpErr('Accès refusé', 'FORBIDDEN');
+        $e = strtolower(trim((string)$email)); $a = null;
+        foreach (self::list() as $x) if (strtolower((string)$x['email']) === $e) $a = $x;
+        if (!$a) throw httpErr("Aucun compte pour cette adresse : enregistrez d'abord la page (le compte est créé à l'enregistrement)");
+        return self::sendAccess($user, $a['id'], '');
+    }
     public static function changeOwnPassword(array $user, $current, $next): void {
         if (!Auth::check($user, $current)) throw httpErr('Mot de passe actuel incorrect');
         self::setPassword($user, $user['id'], (string)$next);
