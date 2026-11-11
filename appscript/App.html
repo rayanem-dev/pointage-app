@@ -1481,8 +1481,20 @@ function ClientsPage() {
       return h('div', { class: 'compact', style: 'padding:6px 0' }, body, box);
     }
     var rows = [];
+    // Pastille d'état : contrat actif, essai, démonstration, suspendu, ou licence expirée (consultation seule 30 jours puis blocage).
+    function etatBadge(c) {
+      var reste = c.fin_licence ? Math.round((new Date(c.fin_licence + 'T00:00:00') - new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00')) / 86400000) : null;
+      var t, col;
+      if (c.code === 'DEMO') { t = 'Démonstration'; col = '#7c3aed'; }
+      else if (c.statut === 'suspendu') { t = 'Suspendu'; col = '#b91c1c'; }
+      else if (reste !== null && reste < -30) { t = 'Expiré : bloqué'; col = '#b91c1c'; }
+      else if (reste !== null && reste < 0) { t = 'Expiré : consultation seule'; col = '#b45309'; }
+      else if (c.statut === 'essai') { t = 'Essai'; col = '#b45309'; }
+      else { t = 'Contrat actif'; col = '#15803d'; }
+      return h('div', { style: 'margin-top:4px' }, h('span', { class: 'badge', style: 'background:' + col + ';color:#fff;white-space:nowrap' }, tr(t) + (reste !== null && reste >= 0 && c.code !== 'DEMO' && c.statut !== 'suspendu' ? ' · ' + reste + ' j' : '')));
+    }
     data.clients.forEach(function (c) {
-      var s = h('select', { disabled: c.principal }, ['actif', 'essai', 'suspendu'].map(function (x) { return h('option', { value: x }, { actif: 'Actif', essai: 'Essai', suspendu: 'Suspendu' }[x]); })); s.value = c.statut;
+      var s = h('select', { disabled: c.principal, style: 'min-width:110px' }, ['actif', 'essai', 'suspendu'].map(function (x) { return h('option', { value: x }, { actif: 'Actif', essai: 'Essai', suspendu: 'Suspendu' }[x]); })); s.value = c.statut;
       var d = h('input', { type: 'date', value: c.fin_licence });
       var vit = h('input', { type: 'checkbox', checked: !!c.vitrine, title: "Afficher cette entreprise dans la liste « Ils nous font confiance » de la page d'accueil (avec son accord)" });
       var m = msgBox();
@@ -1510,7 +1522,7 @@ function ClientsPage() {
       };
       var ex = h('input', { value: c.exec_url || '', placeholder: 'Hébergé (déploiement commun)' }); var em = msgBox();
       ex.onchange = function () { act(ex, em, function () { return call('clientUpdate', c.code, { exec_url: ex.value }); }, 'Enregistré'); };
-      rows.push(h('tr', { class: c.statut === 'suspendu' ? 'off' : '' }, h('td', null, h('b', null, c.code), c.principal ? h('small', null, 'classeur principal') : null), h('td', null, c.nom, c.contact ? h('small', null, c.contact) : null), h('td', null, s), h('td', null, d, m), h('td', { style: 'text-align:center' }, vit), h('td', null, ex, em), h('td', { class: 'actions' }, cl, ' ', tst, ' ', enter, ' ', adm, ' ', del, c.classeur ? h('a', { href: c.classeur, target: '_blank', rel: 'noopener', style: 'margin-left:8px' }, 'Classeur') : null, tm, dm, enm)));
+      rows.push(h('tr', { class: c.statut === 'suspendu' ? 'off' : '' }, h('td', null, h('b', null, c.code), c.principal ? h('small', null, 'classeur principal') : null), h('td', null, c.nom, c.contact ? h('small', null, c.contact) : null), h('td', null, s, etatBadge(c)), h('td', null, d, m), h('td', { style: 'text-align:center' }, vit), h('td', null, ex, em), h('td', { class: 'actions' }, cl, ' ', tst, ' ', enter, ' ', adm, ' ', del, c.classeur ? h('a', { href: c.classeur, target: '_blank', rel: 'noopener', style: 'margin-left:8px' }, 'Classeur') : null, tm, dm, enm)));
       if (open[c.code]) rows.push(h('tr', null, h('td', { colspan: 7 }, adminPanel(c))));
     });
     // Contact de l'éditeur : affiché aux clients (onglet « À propos »)

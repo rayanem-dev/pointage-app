@@ -6853,5 +6853,20 @@
   "Aucune demande en attente de la direction.",
   "No request waiting for management.",
   "لا طلب في انتظار الإدارة."
+ ],
+ [
+  "Expiré : bloqué",
+  "Expired: blocked",
+  "منتهٍ: محجوب"
+ ],
+ [
+  "Expiré : consultation seule",
+  "Expired: read-only",
+  "منتهٍ: قراءة فقط"
+ ],
+ [
+  "Contrat actif",
+  "Active contract",
+  "عقد ساري"
  ]
 ]
