@@ -131,8 +131,9 @@ final class Bordereau {
         if (!is_nan($annonce)) { $somme0 = array_sum(array_map(fn($r) => $r['m']['v'], $rows)); $extra = $somme0 - $annonce; if ($extra > 0) { for ($q = count($rows) - 1; $q >= 0; $q--) if (abs($rows[$q]['m']['v'] - $extra) < 0.01) { array_splice($rows, $q, 1); break; } } }
         $firstPos = fn($r) => min($r['n']['pos'], $r['d']['pos'], $r['p']['pos'], $r['m']['pos']); $lastPos = fn($r) => max($r['n']['pos'], $r['d']['pos'], $r['p']['pos'], $r['m']['pos']);
         $cands = self::designationCandidates($text);
-        $fus = []; foreach ($cands as $c) { $pi = count($fus) - 1; if ($pi >= 0 && $c['line'] === $fus[$pi]['line'] + 1 && (preg_match('/^[a-zà-ÿ]/u', $c['text']) || preg_match('/\b(ou|et|de|du|des|en|d\'|à)$/iu', $fus[$pi]['text']))) { $fus[$pi]['text'] .= ' ' . $c['text']; $fus[$pi]['line'] = $c['line']; } else $fus[] = $c; }
+        $fus = []; foreach ($cands as $c) { $pi = count($fus) - 1; if ($pi >= 0 && $c['line'] <= $fus[$pi]['line'] + 4 && (preg_match('/^[a-zà-ÿ]/u', $c['text']) || ($c['line'] === $fus[$pi]['line'] + 1 && preg_match('/\b(ou|et|de|du|des|en|d\'|à)$/iu', $fus[$pi]['text'])))) { $fus[$pi]['text'] .= ' ' . $c['text']; $fus[$pi]['line'] = $c['line']; } else $fus[] = $c; }
         $cands = $fus; // désignation coupée sur deux lignes
+        if (preg_match('/d[eé]signation/iu', $text, $hm, PREG_OFFSET_CAPTURE)) { $apres = array_values(array_filter($cands, fn($c) => $c['pos'] > $hm[0][1])); if (count($apres) >= count($rows)) $cands = $apres; } // nom du client / du contrat avant l'en-tête : pas une désignation
         $interleaved = count($rows) === 1;
         if (!$interleaved) { $interleaved = true; for ($i = 1; $i < count($rows); $i++) { $ok = false; foreach ($cands as $c) if ($c['pos'] > $lastPos($rows[$i - 1]) && $c['pos'] < $firstPos($rows[$i])) { $ok = true; break; } if (!$ok) { $interleaved = false; break; } } }
         $names = [];

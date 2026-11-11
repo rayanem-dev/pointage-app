@@ -185,7 +185,8 @@ var Bordereau = (function () {
     var firstPos = function (r) { return Math.min(r.n.pos, r.d.pos, r.p.pos, r.m.pos); };
     var lastPos = function (r) { return Math.max(r.n.pos, r.d.pos, r.p.pos, r.m.pos); };
     var cands = designationCandidates(text);
-    cands = cands.reduce(function (acc, c) { var prev = acc[acc.length - 1]; if (prev && c.line === prev.line + 1 && (/^[a-zà-ÿ]/.test(c.text) || /\b(ou|et|de|du|des|en|d'|à)$/i.test(prev.text))) { prev.text += ' ' + c.text; prev.line = c.line; } else acc.push(c); return acc; }, []); // désignation coupée sur deux lignes
+    cands = cands.reduce(function (acc, c) { var prev = acc[acc.length - 1]; if (prev && c.line <= prev.line + 4 && (/^[a-zà-ÿ]/.test(c.text) || (c.line === prev.line + 1 && /\b(ou|et|de|du|des|en|d'|à)$/i.test(prev.text)))) { prev.text += ' ' + c.text; prev.line = c.line; } else acc.push(c); return acc; }, []); // désignation coupée sur deux lignes (la suite commence par une minuscule, parfois après un n° d'item)
+    var hd = /d[eé]signation/i.exec(text); if (hd) { var apresEntete = cands.filter(function (c) { return c.pos > hd.index; }); if (apresEntete.length >= rows.length) cands = apresEntete; } // le nom du client ou du contrat, avant l'en-tête du tableau, n'est pas une désignation
     var interleaved = rows.length === 1 || rows.slice(1).every(function (r, i) { return cands.some(function (c) { return c.pos > lastPos(rows[i]) && c.pos < firstPos(r); }); });
     var names = [];
     if (interleaved) {

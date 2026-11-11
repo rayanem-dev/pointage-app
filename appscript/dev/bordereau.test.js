@@ -208,3 +208,12 @@ test('bordereau à total de jours, colonnes lues l\'une après l\'autre, en-têt
   const l = toF(parse('solveText', texte), 0);
   assert.deepStrictEqual(l.map((x) => [x.designation, x.positions, x.delai]), [['Technicien électricien', 2, 730], ['Chef de chantier', 3, 730], ['Magasinier qualifié de dépôt', 1, 730], ['Camion 2,5 tonnes', 2, 730]], JSON.stringify(l));
 });
+
+test('bordereau : nom du client avant l\'en-tête ignoré, désignation coupée par un n° d\'item, véhicule et dernier poste retrouvés', () => {
+  const texte = 'CONTRAT ACME/SARL DEMO N° 1/00/TST/2026\nACME\nAnnexe\nBordereau Des Prix\nItem\nDésignation\nNbre\nd\'agent\nU\nTotal\n(365 jours X 2ans X Nb d\'agent)\nPrix U\nMontant\n' +
+    'Equipe Travaux\nIngénieur chargé du suivi ou\n02\nsupervision des projets\nMétreur\nVéhicule 4x4 double cabines\nTopographe\n' +
+    ['02', '01', '02', '01'].join('\n') + '\n' + ['Jour', 'Jour', 'Jour', 'Jour'].join('\n') + '\n' + ['1460', '730', '1460', '120'].join('\n') + '\n' + ['9 800,00', '8 000,00', '5 500,00', '12 000,00'].join('\n') + '\n' + ['14 308 000,00', '5 840 000,00', '8 030 000,00', '1 440 000,00'].join('\n') + '\nTotal General en Hors Taxe (HT)\n29 618 000,00\n';
+  const l = toF(parse('solveText', texte), 0);
+  assert.deepStrictEqual(l.map((x) => x.designation), ['Ingénieur chargé du suivi ou supervision des projets', 'Métreur', 'Véhicule 4x4 double cabines', 'Topographe'], JSON.stringify(l));
+  assert.deepStrictEqual(l.map((x) => [x.positions, x.delai]), [[2, 730], [1, 730], [2, 730], [1, 120]]);
+});
