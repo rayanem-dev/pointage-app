@@ -6903,5 +6903,235 @@
   "Ce gérant n'a pas d'adresse e-mail valide",
   "This manager has no valid e-mail address",
   "ليس لهذا المسيّر عنوان بريد صالح"
+ ],
+ [
+  "Aucun tableau d'agents reconnu : il faut une ligne d'en-tête avec « Nom et prénom » et au moins deux autres colonnes (e-mail, fonction, téléphone…)",
+  "No table of agents recognised: a header row with \"Full name\" and at least two other columns (e-mail, position, phone…) is required",
+  "لم يُتعرَّف على أي جدول للأعوان: يلزم سطر عناوين فيه «الاسم واللقب» وعمودان آخران على الأقل (البريد، الوظيفة، الهاتف…)"
+ ],
+ [
+  "Aucun agent dans ce fichier",
+  "No agent in this file",
+  "لا يوجد عون في هذا الملف"
+ ],
+ [
+  "300 agents au maximum par fichier",
+  "300 agents maximum per file",
+  "300 عون كحد أقصى في الملف"
+ ],
+ [
+  "Aucun agent à importer",
+  "No agent to import",
+  "لا يوجد عون للاستيراد"
+ ],
+ [
+  "Importer des agents (Excel ou CSV)",
+  "Import agents (Excel or CSV)",
+  "استيراد الأعوان (Excel أو CSV)"
+ ],
+ [
+  "Déposez votre fiche RH des agents : Sijil lit le nom, l’e-mail, la fonction et les renseignements RH, vous montre le résultat, et ne crée les comptes qu’après votre validation. Les renseignements RH (naissance, identité, sécurité sociale, CCP…) restent confidentiels : seul l’administrateur les voit.",
+  "Upload your HR sheet of agents: Sijil reads the name, e-mail, position and HR details, shows you the result, and creates the accounts only after you confirm. HR details (birth, identity, social security, bank account…) stay confidential: only the administrator sees them.",
+  "أودع بطاقة الموارد البشرية للأعوان: يقرأ Sijil الاسم والبريد والوظيفة والمعلومات الإدارية ويعرض النتيجة ولا ينشئ الحسابات إلا بعد تأكيدك. المعلومات الإدارية (الميلاد، الهوية، الضمان الاجتماعي، الحساب البريدي…) سرّية: لا يراها إلا المسؤول."
+ ],
+ [
+  "Choisir le fichier des agents",
+  "Choose the agents file",
+  "اختيار ملف الأعوان"
+ ],
+ [
+  "— sans contrat —",
+  "— no contract —",
+  "— بدون عقد —"
+ ],
+ [
+  "Importer",
+  "Import",
+  "استيراد"
+ ],
+ [
+  "Déjà dans Sijil",
+  "Already in Sijil",
+  "موجود في Sijil"
+ ],
+ [
+  "À corriger",
+  "To fix",
+  "للتصحيح"
+ ],
+ [
+  "dans le fichier",
+  "in the file",
+  "في الملف"
+ ],
+ [
+  "agent(s) lus",
+  "agent(s) read",
+  "عون مقروء"
+ ],
+ [
+  "nouveau(x)",
+  "new",
+  "جديد"
+ ],
+ [
+  "déjà dans Sijil",
+  "already in Sijil",
+  "موجود في Sijil"
+ ],
+ [
+  "à corriger",
+  "to fix",
+  "للتصحيح"
+ ],
+ [
+  "onglet",
+  "sheet",
+  "ورقة"
+ ],
+ [
+  "Colonnes reprises",
+  "Columns used",
+  "الأعمدة المعتمدة"
+ ],
+ [
+  "Colonnes non reprises",
+  "Columns not used",
+  "أعمدة غير معتمدة"
+ ],
+ [
+  "Onglets non repris",
+  "Sheets not used",
+  "أوراق غير معتمدة"
+ ],
+ [
+  "E-mail (identifiant)",
+  "E-mail (username)",
+  "البريد (المعرّف)"
+ ],
+ [
+  "Fiche RH",
+  "HR sheet",
+  "بطاقة الموارد البشرية"
+ ],
+ [
+  " Envoyer ses accès par e-mail à chaque nouvel agent (lien, identifiant, mot de passe provisoire)",
+  " Send each new agent their access by e-mail (link, username, temporary password)",
+  " إرسال بيانات الدخول بالبريد إلى كل عون جديد (الرابط، المعرّف، كلمة مرور مؤقتة)"
+ ],
+ [
+  "Identifiant",
+  "Username",
+  "المعرّف"
+ ],
+ [
+  "Mot de passe provisoire",
+  "Temporary password",
+  "كلمة مرور مؤقتة"
+ ],
+ [
+  "E-mail d’accès",
+  "Access e-mail",
+  "بريد الدخول"
+ ],
+ [
+  "non envoyé (bouton « Envoyer l’accès » de la fiche)",
+  "not sent (\"Send access\" button on the agent's form)",
+  "لم يُرسل (زر «إرسال بيانات الدخول» في البطاقة)"
+ ],
+ [
+  "Notez ces mots de passe provisoires : ils ne seront plus affichés. Chaque agent le change à sa première connexion.",
+  "Write down these temporary passwords: they will not be shown again. Each agent changes theirs at first sign-in.",
+  "دوّن كلمات المرور المؤقتة هذه: لن تُعرض مجددًا. يغيّرها كل عون عند أول دخول."
+ ],
+ [
+  "Fiche RH (confidentielle, administrateur seulement)",
+  "HR sheet (confidential, administrator only)",
+  "بطاقة الموارد البشرية (سرّية، للمسؤول فقط)"
+ ],
+ [
+  "Enregistrer la fiche RH",
+  "Save the HR sheet",
+  "حفظ بطاقة الموارد البشرية"
+ ],
+ [
+  "Fiche RH enregistrée",
+  "HR sheet saved",
+  "حُفظت بطاقة الموارد البشرية"
+ ],
+ [
+  "Mise à jour",
+  "Updated",
+  "آخر تحديث"
+ ],
+ [
+  "Nom (arabe)",
+  "Surname (Arabic)",
+  "اللقب (بالعربية)"
+ ],
+ [
+  "Prénom (arabe)",
+  "First name (Arabic)",
+  "الاسم (بالعربية)"
+ ],
+ [
+  "Date de naissance",
+  "Date of birth",
+  "تاريخ الميلاد"
+ ],
+ [
+  "Lieu de naissance",
+  "Place of birth",
+  "مكان الميلاد"
+ ],
+ [
+  "Père",
+  "Father",
+  "الأب"
+ ],
+ [
+  "Mère",
+  "Mother",
+  "الأم"
+ ],
+ [
+  "Adresse",
+  "Address",
+  "العنوان"
+ ],
+ [
+  "N° carte d’identité / NIN",
+  "ID card no. / NIN",
+  "رقم بطاقة التعريف / NIN"
+ ],
+ [
+  "N° carte d'identité / NIN",
+  "ID card no. / NIN",
+  "رقم بطاقة التعريف / NIN"
+ ],
+ [
+  "N° sécurité sociale (CNAS)",
+  "Social security no. (CNAS)",
+  "رقم الضمان الاجتماعي (CNAS)"
+ ],
+ [
+  "N° CCP / RIB",
+  "CCP / bank account no.",
+  "رقم الحساب البريدي / البنكي"
+ ],
+ [
+  "Situation familiale",
+  "Marital status",
+  "الحالة العائلية"
+ ],
+ [
+  "Prénom",
+  "First name",
+  "الاسم"
+ ],
+ [
+  "Date d'entrée",
+  "Start date",
+  "تاريخ الالتحاق"
  ]
 ]

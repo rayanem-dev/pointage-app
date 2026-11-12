@@ -175,6 +175,25 @@ CREATE TABLE IF NOT EXISTS `documents` (
   `nouveau` VARCHAR(190) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `fichesrh` (
+  `seq` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `agent_id` VARCHAR(190) NOT NULL,
+  `nom_ar` TEXT NOT NULL,
+  `prenom_ar` TEXT NOT NULL,
+  `telephone` TEXT NOT NULL,
+  `date_naissance` VARCHAR(190) NOT NULL,
+  `lieu_naissance` TEXT NOT NULL,
+  `pere` TEXT NOT NULL,
+  `mere` TEXT NOT NULL,
+  `adresse` TEXT NOT NULL,
+  `nin` TEXT NOT NULL,
+  `nss` TEXT NOT NULL,
+  `ccp` TEXT NOT NULL,
+  `situation` TEXT NOT NULL,
+  `maj_le` VARCHAR(190) NOT NULL,
+  `maj_par` VARCHAR(190) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `depots` (
   `seq` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `id` VARCHAR(190) NOT NULL,

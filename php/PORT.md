@@ -35,3 +35,8 @@ Le test de parité rejoue le même scénario (`tests/scenario.js`) sur Apps Scri
 
 ## 4. Après la mise à jour
 Mettez à jour la version et le commit de référence en tête de ce fichier.
+
+
+## v3.49.0 — table `FichesRH`
+
+Nouvelle table (fiche RH confidentielle des agents) : sur une installation existante, exécutez le `CREATE TABLE` de `FichesRH` qui figure dans `schema.sql` (les autres tables ne changent pas).

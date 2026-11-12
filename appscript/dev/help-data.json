@@ -457,6 +457,21 @@
       "المستخدمون والعتاد في القائمة نفسها: تشير شارة VH إلى المركبات."
      ]
     }
+   },
+   {
+    "t": [
+     "Importer des agents et fiche RH (administrateur)",
+     "Import agents and HR sheet (administrator)",
+     "استيراد الأعوان وبطاقة الموارد البشرية (المسؤول)"
+    ],
+    "x": [
+     "Onglet « Agents », carte « Importer des agents (Excel ou CSV) » : choisissez le contrat et, si besoin, le responsable d'équipe, puis déposez votre fiche RH. Colonnes lues : nom et prénom, e-mail (obligatoire : c'est l'identifiant), fonction, affectation, date d'entrée, et les renseignements RH (nom et prénom en arabe, téléphone, date et lieu de naissance, père, mère, adresse, n° de carte d'identité / NIN, n° de sécurité sociale, n° CCP / RIB, situation familiale). Sijil propose la fonction du contrat la plus proche, signale les lignes à corriger (e-mail absent ou en double) et les agents déjà présents (seule leur fiche RH est complétée, sans rien écraser). Rien n'est créé avant votre clic sur « Importer » ; les mots de passe provisoires sont affichés une fois et peuvent être envoyés par e-mail. La fiche RH est confidentielle : seul l'administrateur la voit et la modifie, dans « Modifier » l'agent, rubrique « Fiche RH ».",
+     "\"Agents\" tab, \"Import agents (Excel or CSV)\" card: choose the contract and, if needed, the team manager, then upload your HR sheet. Columns read: full name, e-mail (required: it is the username), position, assignment, start date, and HR details (name in Arabic, phone, date and place of birth, father, mother, address, ID card no. / NIN, social security no., CCP / bank account no., marital status). Sijil proposes the closest contract position, flags rows to fix (missing or duplicate e-mail) and agents already present (only their HR sheet is completed, nothing is overwritten). Nothing is created until you click \"Import\"; temporary passwords are shown once and can be sent by e-mail. The HR sheet is confidential: only the administrator sees and edits it, under \"Edit\" on the agent, \"HR sheet\" section.",
+     "تبويب «الأعوان»، بطاقة «استيراد الأعوان (Excel أو CSV)»: اختر العقد ومسؤول الفريق عند الحاجة ثم أودع بطاقة الموارد البشرية. الأعمدة المقروءة: الاسم واللقب، البريد الإلكتروني (إلزامي: هو المعرّف)، الوظيفة، التعيين، تاريخ الالتحاق، والمعلومات الإدارية (الاسم بالعربية، الهاتف، تاريخ ومكان الميلاد، الأب، الأم، العنوان، رقم بطاقة التعريف / NIN، رقم الضمان الاجتماعي، رقم الحساب البريدي / البنكي، الحالة العائلية). يقترح Sijil أقرب وظيفة في العقد وينبّه إلى الأسطر الواجب تصحيحها (بريد غائب أو مكرر) وإلى الأعوان الموجودين (تُكمَّل بطاقتهم فقط دون محو شيء). لا يُنشأ شيء قبل النقر على «استيراد»؛ تُعرض كلمات المرور المؤقتة مرة واحدة ويمكن إرسالها بالبريد. بطاقة الموارد البشرية سرّية: لا يراها ولا يعدّلها إلا المسؤول، من «تعديل» العون، قسم «بطاقة الموارد البشرية»."
+    ],
+    "roles": [
+     "admin"
+    ]
    }
   ]
  },

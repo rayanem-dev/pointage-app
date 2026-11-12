@@ -1230,7 +1230,7 @@ function AgentsPage() {
   function blank() { return { type: 'personne', nom: '', email: '', role: 'agent', fonction: '', affectation: '', contrat: S.user.role === 'chef' ? (S.user.contrat || '') : '', chef_id: '', acces_setup: false, acces_exports: false, password: '', rotation: '' }; }
   function fromAgent(a) { return { type: a.type === 'vehicule' ? 'vehicule' : 'personne', nom: a.nom, email: a.email, role: a.role, fonction: a.fonction, affectation: a.affectation, contrat: a.contrat, chef_id: a.chef_id, acces_setup: a.acces_setup === '1', acces_exports: a.acces_exports === '1', password: '', rotation: a.rotation || '' }; }
   function load() {
-    Promise.all([call('agentsManage'), call('contratsLite')]).then(function (r) { agents = r[0]; eff = r[1]; drawForm(); drawList(); })
+    Promise.all([call('agentsManage'), call('contratsLite')]).then(function (r) { agents = r[0]; eff = r[1]; drawForm(); drawList(); if (isAdmin && !importHost.firstChild) importHost.replaceChildren(importCard()); })
       .catch(function (e) { listHost.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
   }
   function contratInfo() { return eff.contrats.filter(function (c) { return c.numero === st.contrat; })[0]; }
@@ -1304,6 +1304,7 @@ function AgentsPage() {
         b.onclick = function () { act(b, m, function () { return call('agentEnvoyerAcces', lastAccess.id, lastAccess.password); }).then(function (x) { if (x) { lastAccess.sent = true; m.show('✓ Accès envoyés à ' + x.to + '.', true); } }); };
         return h('div', { class: 'card', style: 'margin:8px 0' }, h('b', null, lastAccess.nom + ' — ' + lastAccess.email + ' — mot de passe : ' + lastAccess.password), h('div', { class: 'sendbar' }, b), m);
       })() : null,
+      (editing && isAdmin && !vh) ? ficheRhBloc(editing) : null,
       box, btn, editing ? h('button', { type: 'button', onclick: function () { editing = null; st = blank(); drawForm(); } }, 'Annuler') : null);
     formHost.replaceChildren(form);
   }
@@ -1367,7 +1368,68 @@ function AgentsPage() {
       h('p', { class: 'muted' }, 'Cochez plusieurs lignes pour modifier leur affectation, rotation, contrat ou statut en une seule fois.'),
       h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, h('th', null, all), ['Nom', 'Rôle', 'Fonction', 'Affectation', 'Rotation', 'Contrat', 'Responsable', ''].map(function (t) { return h('th', null, t); }))), h('tbody', null, rows)))), nPicked ? bulkBar(nPicked) : null].filter(Boolean));
   }
-  wrap.append(formHost, listHost); load();
+  // ----- Import d'agents depuis un fichier (administrateur) : lecture, vérification à l'écran, puis création -----
+  var FICHE_LIB = [['nom_ar', 'Nom (arabe)'], ['prenom_ar', 'Prénom (arabe)'], ['telephone', 'Téléphone'], ['date_naissance', 'Date de naissance'], ['lieu_naissance', 'Lieu de naissance'], ['pere', 'Père'], ['mere', 'Mère'], ['adresse', 'Adresse'], ['nin', 'N° carte d’identité / NIN'], ['nss', 'N° sécurité sociale (CNAS)'], ['ccp', 'N° CCP / RIB'], ['situation', 'Situation familiale']];
+  function importCard() {
+    var file = h('input', { type: 'file', accept: '.xlsx,.xls,.csv', hidden: true }); var pick = h('button', { type: 'button', class: 'primary' }, 'Choisir le fichier des agents'); pick.onclick = function () { file.click(); };
+    var box = msgBox(); var zone = h('div'); var dernier = null; // dernier fichier lu (pour relire avec un autre contrat)
+    var contrat = h('select', null, h('option', { value: '' }, '— sans contrat —'), eff.contrats.map(function (c) { return h('option', { value: c.numero }, c.numero + (c.client ? ' — ' + c.client : '')); }));
+    var chefs = agents.filter(function (x) { return x.role === 'chef' && x.actif === '1'; });
+    var chef = h('select', null, h('option', { value: '' }, '—'), chefs.map(function (c) { return h('option', { value: c.id }, c.nom); }));
+    function lireFichier() {
+      if (!dernier) return; zone.replaceChildren(loading()); box.hide();
+      call('agentsImportAnalyser', { nom: dernier.nom, mime: dernier.mime, base64: dernier.base64, contrat: contrat.value }).then(montrer).catch(function (e) { zone.replaceChildren(); box.show(e.message, false); });
+    }
+    file.onchange = function () { var f = file.files[0]; if (!f) return; fileToBase64(f).then(function (b64) { dernier = { nom: f.name, mime: f.type, base64: b64 }; file.value = ''; lireFichier(); }).catch(function (e) { box.show(e.message, false); }); };
+    contrat.onchange = lireFichier;
+    function montrer(r) {
+      var on = {}; r.lignes.forEach(function (l, i) { on[i] = l.etat !== 'erreur' && !(l.etat === 'nouveau' && r.fonctions.length && !l.fonction); });
+      var envoyer = h('input', { type: 'checkbox' }); var go = h('button', { type: 'button', class: 'primary' }, 'Importer'); var m = msgBox();
+      function compte() { var n = r.lignes.filter(function (l, i) { return on[i]; }).length; go.textContent = tr('Importer') + ' (' + n + ')'; go.disabled = !n; }
+      var rows = r.lignes.map(function (l, i) {
+        var cb = h('input', { type: 'checkbox', checked: on[i], disabled: l.etat === 'erreur', onchange: function () { on[i] = cb.checked; compte(); } });
+        var fn = r.fonctions.length ? h('select', { disabled: l.etat !== 'nouveau', style: 'min-width:180px' }, h('option', { value: '' }, '— choisir dans le contrat —'), r.fonctions.map(function (f) { return h('option', { value: f }, f); })) : h('input', { value: l.fonction || '', disabled: l.etat !== 'nouveau' });
+        fn.value = l.fonction || ''; fn.onchange = function () { l.fonction = fn.value; };
+        var nb = FICHE_LIB.filter(function (k) { return l.fiche[k[0]]; }).length;
+        var etat = l.etat === 'nouveau' ? h('b', { style: 'color:var(--pos,#2e9e4f)' }, 'Nouveau') : l.etat === 'existant' ? h('b', { style: 'color:#b45309' }, 'Déjà dans Sijil') : h('b', { style: 'color:var(--neg)' }, 'À corriger');
+        return h('tr', null, h('td', null, cb), h('td', null, h('b', null, l.nom), l.fiche.nom_ar ? h('small', { class: 'muted', style: 'display:block' }, l.fiche.nom_ar + ' ' + l.fiche.prenom_ar) : null), h('td', null, l.email || '—'), h('td', null, fn, l.fonction_lue && l.fonction_lue !== l.fonction ? h('small', { class: 'muted', style: 'display:block' }, tr('dans le fichier') + ' : ' + l.fonction_lue) : null),
+          h('td', null, nb + ' / ' + FICHE_LIB.length), h('td', null, etat, l.message ? h('small', { class: 'muted', style: 'display:block' }, l.message) : null));
+      });
+      go.onclick = function () {
+        var choisies = r.lignes.filter(function (l, i) { return on[i]; }); var nv = choisies.filter(function (l) { return l.etat === 'nouveau'; }).length;
+        if (!window.confirm(tr('Importer ' + choisies.length + ' agent(s) ?') + (nv ? tr(' ' + nv + ' compte(s) seront créés.') : '') + (envoyer.checked ? tr(' Chaque nouvel agent recevra ses accès par e-mail.') : ''))) return;
+        act(go, m, function () { return call('agentsImportAppliquer', { lignes: choisies.map(function (l) { return { nom: l.nom, email: l.email, fonction: l.fonction, affectation: l.affectation, date_entree: l.date_entree, fiche: l.fiche, agent_id: l.agent_id }; }), contrat: contrat.value, chef_id: chef.value, envoyer: envoyer.checked }); }).then(function (x) {
+          if (!x) return; dernier = null;
+          zone.replaceChildren(h('p', { class: 'msg ' + (x.erreurs.length ? 'warn' : 'ok') }, '✓ ' + x.crees.length + ' agent(s) créé(s), ' + x.completes + ' fiche(s) RH complétée(s)' + (x.erreurs.length ? ' · ⚠ ' + x.erreurs.map(function (e) { return e.nom + ' : ' + e.message; }).join(' ; ') : '') + '.'),
+            x.crees.length ? h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['Agent', 'Identifiant', 'Mot de passe provisoire', 'E-mail d’accès'].map(function (t) { return h('th', null, t); }))), h('tbody', null, x.crees.map(function (c) { return h('tr', null, h('td', null, c.nom), h('td', null, c.email), h('td', null, c.password), h('td', null, c.mail || tr('non envoyé (bouton « Envoyer l’accès » de la fiche)'))); })))) : null,
+            x.crees.length ? h('p', { class: 'muted' }, 'Notez ces mots de passe provisoires : ils ne seront plus affichés. Chaque agent le change à sa première connexion.') : null);
+          call('agentsManage').then(function (l) { agents = l; drawList(); });
+        });
+      };
+      zone.replaceChildren(
+        h('p', null, h('b', null, r.lignes.length + ' ' + tr('agent(s) lus')), ' · ' + r.nouveaux + ' ' + tr('nouveau(x)') + ' · ' + r.existants + ' ' + tr('déjà dans Sijil') + ' · ' + r.erreurs + ' ' + tr('à corriger') + (r.feuille ? ' · ' + tr('onglet') + ' « ' + r.feuille + ' »' : '')),
+        h('p', { class: 'muted' }, tr('Colonnes reprises') + ' : ' + r.colonnes.map(function (c) { return tr(c.libelle); }).join(', ') + '.' + (r.ignorees.length ? ' ' + tr('Colonnes non reprises') + ' : ' + r.ignorees.join(', ') + '.' : '') + (r.autres_feuilles.length ? ' ' + tr('Onglets non repris') + ' : ' + r.autres_feuilles.join(', ') + '.' : '')),
+        h('div', { class: 'gridwrap' }, h('table', { class: 'table' }, h('thead', null, h('tr', null, ['', 'Nom et prénom', 'E-mail (identifiant)', 'Fonction', 'Fiche RH', 'État'].map(function (t) { return h('th', null, t); }))), h('tbody', null, rows))),
+        h('label', { class: 'inline' }, envoyer, ' Envoyer ses accès par e-mail à chaque nouvel agent (lien, identifiant, mot de passe provisoire)'), m, h('div', { class: 'sendbar' }, go));
+      compte();
+    }
+    return h('section', { class: 'card compact' }, h('h2', null, 'Importer des agents (Excel ou CSV)'),
+      h('p', { class: 'muted' }, 'Déposez votre fiche RH des agents : Sijil lit le nom, l’e-mail, la fonction et les renseignements RH, vous montre le résultat, et ne crée les comptes qu’après votre validation. Les renseignements RH (naissance, identité, sécurité sociale, CCP…) restent confidentiels : seul l’administrateur les voit.'),
+      h('div', { class: 'row' }, field('N° contrat de prestation', contrat), field('Responsable d’équipe', chef)), h('div', { class: 'sendbar' }, pick, file), box, zone);
+  }
+  // Fiche RH d'un agent (administrateur) : affichée sous le formulaire de modification.
+  function ficheRhBloc(a) {
+    var corps = h('div', null, loading()); var m = msgBox();
+    call('ficheRhGet', a.id).then(function (f) {
+      var ins = {}; var champs = FICHE_LIB.map(function (k) { var el = h('input', { type: k[0] === 'date_naissance' ? 'date' : 'text', value: f[k[0]] || '', dir: 'auto' }); ins[k[0]] = el; return field(k[1], el, k[0] === 'adresse' ? 'grow2' : ''); });
+      var sv = h('button', { type: 'button', class: 'primary' }, 'Enregistrer la fiche RH');
+      sv.onclick = function () { var o = {}; Object.keys(ins).forEach(function (k) { o[k] = ins[k].value; }); act(sv, m, function () { return call('ficheRhSave', a.id, o); }, 'Fiche RH enregistrée'); };
+      corps.replaceChildren(h('div', { class: 'row' }, champs), f.maj_le ? h('small', { class: 'muted' }, tr('Mise à jour') + ' : ' + frDateTime(f.maj_le) + (f.maj_par ? ' · ' + f.maj_par : '')) : null, m, h('div', { class: 'sendbar' }, sv));
+    }).catch(function (e) { corps.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+    return h('details', { class: 'theme', style: 'margin:8px 0' }, h('summary', null, 'Fiche RH (confidentielle, administrateur seulement)'), corps);
+  }
+  var importHost = h('div');
+  wrap.append(formHost, importHost, listHost); load();
   return wrap;
 }
 

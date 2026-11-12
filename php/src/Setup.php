@@ -26,7 +26,7 @@ final class Setup {
         if ($confirm !== 'VIDER') throw httpErr('Confirmation incorrecte : tapez VIDER');
         Documents::purgeFiles();
         Store::pdo()->exec('DELETE FROM pointage');
-        foreach (['Demandes', 'Envois', 'Documents', 'Depots', 'Attachements', 'AttachementsValides'] as $n) Store::writeTable($n, []);
+        foreach (['Demandes', 'Envois', 'Documents', 'Depots', 'Attachements', 'AttachementsValides', 'FichesRH'] as $n) Store::writeTable($n, []);
         Store::writeTable('Agents', array_values(array_filter(Agents::list(), fn($a) => $a['role'] === 'admin' || $a['role'] === 'client')));
         if ($mode === 'tout') { Store::writeTable('Agents', array_values(array_filter(Agents::list(), fn($a) => $a['role'] === 'admin'))); foreach (['Params', 'Contrats', 'Fonctions'] as $n) Store::writeTable($n, []); Params::set([]); }
         Store::reset();

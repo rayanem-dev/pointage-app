@@ -25,6 +25,12 @@ Positionnement à reprendre partout : « Gestion du temps de travail qui prend e
 - La case « Lire et renommer les fichiers sur mon PC » est cochée par défaut ; la case « Reconnaître l'agent automatiquement » envoie `auto_agent:false` à `depotAdd` quand elle est décochée. L'étape suivante est inchangée : liste « À vérifier avant envoi » puis envoi vers l'espace des agents.
 - `showDirectoryPicker` est refusé dans l'iframe d'Apps Script : le renommage sur place peut échouer (message clair, repli sur l'archive .zip). Dans le bac à sable, pdf.js se teste en interceptant les URL cdnjs (voir `dev/e2e-demo.js`).
 
+## Import des agents et fiche RH
+
+- `appscript/AgentsImport.gs` (miroir `php/src/AgentsImport.php`) : `agentsImportAnalyser` (rien n'est écrit) puis `agentsImportAppliquer`, et `ficheRhGet` / `ficheRhSave`. Tout est réservé à l'administrateur (rôle vérifié dans le dispatcher ET dans le module).
+- La fiche RH (table `FichesRH`) contient des données personnelles sensibles : jamais renvoyée par `agentsManage` ni par un autre appel, jamais dans un e-mail, jamais dans un jeu d'essai ou une capture (entreprise et personnes fictives uniquement). Un fichier RH envoyé par l'utilisateur ne va jamais dans le dépôt.
+- Version PHP : une installation existante doit créer la table `FichesRH` (voir `php/schema.sql`).
+
 ## Démonstration (essai public) et parcours de test
 
 - **Entreprise DEMO** (`appscript/Demo.gs`) : identifiant `demo`, mot de passe `demo` (comptes `demo-chef`, `demo-agent`, `demo-client`), données fictives relatives à la date du jour, remise à zéro chaque nuit par la tâche planifiée (`Auto.run` → `Demo.tick`). Créée / remise à zéro par l'éditeur : Clients → Démonstration. Protections : aucun e-mail réel (`Mail.send`), mot de passe, vidage et sauvegarde verrouillés (`Demo.blocked`), dépôts limités (`Demo.checkUpload`). Tout nouveau point d'entrée de fichier ou d'e-mail doit respecter ces règles. Lien d'essai : `https://rayanem-dev.github.io/pointage-app/?c=DEMO`.
