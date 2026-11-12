@@ -83,9 +83,15 @@ var Agents = (function () {
     if (!ids.length) throw httpErr_('Aucun agent sélectionné');
     var allowed = {};
     ['affectation', 'rotation', 'contrat', 'fonction', 'chef_id', 'actif'].forEach(function (k) { if (data && data[k] !== undefined && data[k] !== null) allowed[k] = data[k]; });
-    if (!Object.keys(allowed).length) throw httpErr_('Rien à modifier : renseignez au moins un champ');
+    // Rôle en lot (administrateur) : seulement Agent ↔ Responsable d'équipe ; les administrateurs, les clients et le matériel ne sont jamais changés ainsi.
+    var role = data && (data.role === 'agent' || data.role === 'chef') && user.role === 'admin' ? data.role : '';
+    if (!Object.keys(allowed).length && !role) throw httpErr_('Rien à modifier : renseignez au moins un champ');
     var all = list();
-    ids.forEach(function (id) { applyUpdate(user, all, id, allowed); });
+    ids.forEach(function (id) {
+      var a = all.filter(function (x) { return x.id === id; })[0]; var d = {}; Object.keys(allowed).forEach(function (k) { d[k] = allowed[k]; });
+      if (role && a && a.type !== 'vehicule' && (a.role === 'agent' || a.role === 'chef')) d.role = role;
+      applyUpdate(user, all, id, d);
+    });
     Store.writeTable('Agents', all);
     return { modifies: ids.length };
   }

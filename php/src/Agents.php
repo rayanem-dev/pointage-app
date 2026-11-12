@@ -67,9 +67,13 @@ final class Agents {
         if (!$ids) throw httpErr('Aucun agent sélectionné');
         $allowed = [];
         foreach (['affectation', 'rotation', 'contrat', 'fonction', 'chef_id', 'actif'] as $k) if (isset($data[$k])) $allowed[$k] = $data[$k];
-        if (!$allowed) throw httpErr('Rien à modifier : renseignez au moins un champ');
+        $role = (in_array($data['role'] ?? '', ['agent', 'chef'], true) && $user['role'] === 'admin') ? $data['role'] : ''; // rôle en lot : Agent ↔ Responsable d'équipe seulement
+        if (!$allowed && $role === '') throw httpErr('Rien à modifier : renseignez au moins un champ');
         $all = self::list();
-        foreach ($ids as $id) self::applyUpdate($user, $all, $id, $allowed);
+        foreach ($ids as $id) {
+            $d = $allowed; foreach ($all as $a) if ($a['id'] === $id && $role !== '' && ($a['type'] ?? '') !== 'vehicule' && in_array($a['role'], ['agent', 'chef'], true)) $d['role'] = $role;
+            self::applyUpdate($user, $all, $id, $d);
+        }
         Store::writeTable('Agents', $all);
         return ['modifies' => count($ids)];
     }

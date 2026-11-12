@@ -7133,5 +7133,10 @@
   "Date d'entrée",
   "Start date",
   "تاريخ الالتحاق"
+ ],
+ [
+  "Aucun responsable : donnez d’abord le rôle « Responsable d’équipe » à une personne (liste Rôle, à gauche).",
+  "No manager yet: first give the \"Team manager\" role to someone (Role list, on the left).",
+  "لا يوجد مسؤول: امنح أولًا دور «مسؤول الفريق» لشخص (قائمة الدور على اليسار)."
  ]
 ]

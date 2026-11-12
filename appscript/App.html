@@ -1311,7 +1311,7 @@ function AgentsPage() {
   var picked = {};
   function bulkBar(n) {
     var chefs = agents.filter(function (x) { return x.role === 'chef' && x.actif === '1'; });
-    var v = { affectation: '', contrat: '__keep', fonction: '__keep', chef_id: '__keep', rotation: '__keep', actif: '__keep' };
+    var v = { affectation: '', contrat: '__keep', fonction: '__keep', chef_id: '__keep', rotation: '__keep', actif: '__keep', role: '__keep' };
     var aff = h('input', { placeholder: 'laisser vide = ne pas modifier' }); aff.oninput = function () { v.affectation = aff.value; };
     var fon = h('select', null);
     // Fonctions proposées : celles du contrat choisi (sinon celles de tous les contrats) ; le choix est vérifié par contrat à l'enregistrement.
@@ -1326,6 +1326,7 @@ function AgentsPage() {
     var chef = h('select', null, h('option', { value: '__keep' }, '— ne pas modifier —'), h('option', { value: '' }, '(aucun)'), chefs.map(function (c) { return h('option', { value: c.id }, c.nom); })); chef.onchange = function () { v.chef_id = chef.value; };
     var rot = rotationPicker('__keep', true, 'Rotation par défaut', function (x) { v.rotation = x; }, true);
     var act1 = h('select', null, h('option', { value: '__keep' }, '— ne pas modifier —'), h('option', { value: '1' }, 'Actif'), h('option', { value: '0' }, 'Désactivé')); act1.onchange = function () { v.actif = act1.value; };
+    var rol = h('select', null, h('option', { value: '__keep' }, '— ne pas modifier —'), h('option', { value: 'agent' }, 'Agent'), h('option', { value: 'chef' }, 'Responsable d’équipe')); rol.onchange = function () { v.role = rol.value; };
     var box = msgBox(); var go1 = h('button', { class: 'primary' }, 'Enregistrer pour ' + n + ' sélectionné' + (n > 1 ? 's' : ''));
     var clear = h('button', { type: 'button' }, 'Tout désélectionner'); clear.onclick = function () { picked = {}; drawList(); };
     go1.onclick = function () {
@@ -1336,12 +1337,13 @@ function AgentsPage() {
       if (isAdmin && v.chef_id !== '__keep') data.chef_id = v.chef_id;
       if (v.rotation !== '__keep') data.rotation = v.rotation;
       if (v.actif !== '__keep') data.actif = v.actif;
+      if (isAdmin && v.role !== '__keep') data.role = v.role;
       var ids = Object.keys(picked).filter(function (k) { return picked[k]; });
       if (!Object.keys(data).length) { box.show('Choisissez au moins une valeur à appliquer.', false); return; }
       act(go1, box, function () { return call('agentsUpdateMany', ids, data); }, function (r) { return r.modifies + ' agent(s) modifié(s)'; }).then(function (r) { if (r) { flash = r.modifies + ' agent(s) modifié(s)'; picked = {}; load(); } });
     };
     return h('section', { class: 'card compact bulk' }, h('h3', null, 'Modifier ' + n + ' agent' + (n > 1 ? 's' : '') + ' en même temps'),
-      h('div', { class: 'row' }, field('Affectation', aff, 'grow2'), field('Rotation', rot.node), field('Contrat', con), field('Fonction', fon), isAdmin ? field('Responsable d’équipe', chef) : null, field('Statut', act1)),
+      h('div', { class: 'row' }, field('Affectation', aff, 'grow2'), field('Rotation', rot.node), field('Contrat', con), field('Fonction', fon), isAdmin ? field('Rôle', rol) : null, isAdmin ? field('Responsable d’équipe', chef, null, chefs.length ? null : 'Aucun responsable : donnez d’abord le rôle « Responsable d’équipe » à une personne (liste Rôle, à gauche).') : null, field('Statut', act1)),
       h('div', { class: 'sendbar' }, go1, clear), box);
   }
   function drawList() {

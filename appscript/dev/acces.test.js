@@ -137,3 +137,16 @@ test('envoi des accès par adresse (Setup, administrateur seulement)', () => {
   const t = ok(call(null, 'login', 'sa@t.fr', 'agentpw123')).token;
   fail(call(t, 'accesEnvoyerEmail', 'farid@t.fr'), /./); assert.ok(ag.agent.id);
 });
+
+test('rôle en lot : l\'administrateur passe des agents en responsable d\'équipe ; admin, client et responsable non-admin jamais concernés', () => {
+  const a1 = ok(call(T.admin, 'agentCreate', { nom: 'FUTUR CHEF', email: 'fc@t.fr', role: 'agent', password: 'agentpw123' })).agent;
+  const cl = ok(call(T.admin, 'agentCreate', { nom: 'CLIENT X', email: 'cx@t.fr', role: 'client', password: 'clientpw12' })).agent;
+  const adminId = ok(call(T.admin, 'agentsManage')).find((x) => x.email === 'admin@t.fr').id;
+  assert.strictEqual(ok(call(T.admin, 'agentsUpdateMany', [a1.id, cl.id, adminId], { role: 'chef' })).modifies, 3);
+  const l = ok(call(T.admin, 'agentsManage')); const role = (id) => l.find((x) => x.id === id).role;
+  assert.deepStrictEqual([role(a1.id), role(cl.id), role(adminId)], ['chef', 'client', 'admin']);
+  const tc = ok(call(null, 'login', 'fc@t.fr', 'agentpw123')).token;
+  fail(call(tc, 'agentsUpdateMany', [T.id], { role: 'chef' }), /./);
+  fail(call(T.admin, 'agentsUpdateMany', [a1.id], { role: 'admin' }), /Rien à modifier/);
+  ok(call(T.admin, 'agentsUpdateMany', [a1.id], { role: 'agent' })); assert.strictEqual(ok(call(T.admin, 'agentsManage')).find((x) => x.id === a1.id).role, 'agent');
+});
