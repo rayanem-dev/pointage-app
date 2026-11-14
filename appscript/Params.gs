@@ -12,6 +12,7 @@ var Params = (function () {
     { key: 'prestataire_rib', label: 'RIB N°', group: 'Prestataire', type: 'text', def: '' },
     { key: 'prestataire_banque', label: 'Banque', group: 'Prestataire', type: 'text', def: '' },
     { key: 'prestataire_contact', label: 'Tél / Fax / Email', group: 'Prestataire', type: 'text', def: '' },
+    { key: 'prestataire_employeur', label: "N° d'employeur (documents RH)", group: 'Prestataire', type: 'text', def: '' },
     { key: 'prestataire_ville', label: 'Ville (« Fait à »)', group: 'Prestataire', type: 'text', def: '' },
     { key: 'logo_prestataire_id', label: 'Logo du prestataire', group: 'Prestataire', type: 'logo', def: '' },
     { key: 'jours_travail', label: 'Jours de travail par shift', group: 'Rotation', type: 'number', def: '28' },

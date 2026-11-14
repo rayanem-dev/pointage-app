@@ -31,6 +31,13 @@ Positionnement à reprendre partout : « Gestion du temps de travail qui prend e
 - La fiche RH (table `FichesRH`) contient des données personnelles sensibles : jamais renvoyée par `agentsManage` ni par un autre appel, jamais dans un e-mail, jamais dans un jeu d'essai ou une capture (entreprise et personnes fictives uniquement). Un fichier RH envoyé par l'utilisateur ne va jamais dans le dépôt.
 - Version PHP : une installation existante doit créer la table `FichesRH` (voir `php/schema.sql`).
 
+## Documents RH préremplis
+
+- `appscript/Modeles.gs` : `modeleDonnees` (champs proposés), `modeleApercu` (HTML) et `modeleGenerer` (HTML → PDF par `Blob.getAs`, puis `Documents.upload` : le PDF est nommé et rangé comme un dépôt). Types : `certificat_travail`, `attestation_travail`, `titre_conge`. Un nouveau modèle = une entrée dans `TYPES` et `CHAMPS`, sa mise en page dans `page()`, ses libellés dans `MODELE_LIB` (App.html).
+- Droit : administrateur, ou responsable d'équipe avec la case `acces_rh` (colonne de `Agents`, accordée par l'administrateur), pour les agents qu'il voit. Les données de la fiche RH ne sortent que par là.
+- Les modèles viennent de documents réels de clients : ne jamais mettre ces documents ni leurs données dans le dépôt, les tests ou les captures.
+- Non porté en PHP (pas de conversion HTML → PDF) : voir `php/PORT.md`.
+
 ## Démonstration (essai public) et parcours de test
 
 - **Entreprise DEMO** (`appscript/Demo.gs`) : identifiant `demo`, mot de passe `demo` (comptes `demo-chef`, `demo-agent`, `demo-client`), données fictives relatives à la date du jour, remise à zéro chaque nuit par la tâche planifiée (`Auto.run` → `Demo.tick`). Créée / remise à zéro par l'éditeur : Clients → Démonstration. Protections : aucun e-mail réel (`Mail.send`), mot de passe, vidage et sauvegarde verrouillés (`Demo.blocked`), dépôts limités (`Demo.checkUpload`). Tout nouveau point d'entrée de fichier ou d'e-mail doit respecter ces règles. Lien d'essai : `https://rayanem-dev.github.io/pointage-app/?c=DEMO`.

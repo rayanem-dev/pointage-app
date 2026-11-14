@@ -644,6 +644,22 @@
      "Sijil flags the same file uploaded twice (red \"Duplicate\": already filed for the agent or already in the list): it is not ticked by default and sending it requires confirmation. A document of the same type and period as an already filed one (e.g. a second March payslip) gets an orange warning, without blocking. Duplicate detection covers documents uploaded since this version.",
      "ينبّه Sijil إلى الملف نفسه المودَع مرتين («مكرّر» بالأحمر: مصنّف لدى العون أو مدرج في القائمة): لا يُحدَّد تلقائيًا ويتطلب إرساله تأكيدًا. ويحصل مستند من النوع والفترة نفسيهما لمستند مصنّف (مثل كشف راتب ثانٍ لشهر مارس) على تحذير برتقالي دون منع. يشمل اكتشاف التكرار المستندات المودَعة منذ هذا الإصدار."
     ]
+   },
+   {
+    "t": [
+     "Établir un certificat, une attestation ou un titre de congé",
+     "Draw up a certificate, an attestation or a leave permit",
+     "إعداد شهادة عمل أو شهادة توظيف أو سند عطلة"
+    ],
+    "x": [
+     "Onglet « Documents », carte « Établir un document RH » : choisissez l'agent et le document (certificat de travail, attestation de travail, titre de congé), puis « Préparer le document ». Sijil remplit les champs avec ce qu'il sait : nom et prénom, fonction, date d'entrée, et, depuis la fiche RH, la date et le lieu de naissance et le n° de sécurité sociale ; l'en-tête reprend le nom, l'adresse, le logo et le n° d'employeur de Setup → Prestataire. Relisez, corrigez, regardez l'« Aperçu », puis « Générer et ranger dans l'espace de l'agent » : le PDF est nommé et classé comme un document déposé, et l'agent est prévenu. Sur une demande « À clôturer », le bouton « Établir le document » fait la même chose ; pour un titre de congé, les dates viennent de la demande, la reprise et le nombre de jours sont calculés, et le cadre « Détail calcul du droit de congé » apparaît si vous remplissez les jours de présence, le droit ou le reliquat. Réservé à l'administrateur et aux responsables d'équipe autorisés par lui (case de la fiche du responsable). Le document sort sans signature ni cachet : imprimez-le pour le signer, ou déposez ensuite la version signée.",
+     "\"Documents\" tab, \"Draw up an HR document\" card: choose the agent and the document (work certificate, employment attestation, leave permit), then \"Prepare the document\". Sijil fills in what it knows: name, position, start date and, from the HR sheet, date and place of birth and social security no.; the header uses the name, address, logo and employer no. from Setup → Provider. Review, correct, check the \"Preview\", then \"Generate and file in the agent's space\": the PDF is named and filed like an uploaded document, and the agent is notified. On a request \"To close\", the \"Draw up the document\" button does the same; for a leave permit, dates come from the request, return date and number of days are calculated, and the \"Leave entitlement calculation\" box appears if you fill in days present, entitlement or carry-over. Reserved to the administrator and to team managers he authorises (box on the manager's form). The document comes without signature or stamp: print it to sign, or upload the signed version afterwards.",
+     "تبويب «المستندات»، بطاقة «إعداد وثيقة إدارية»: اختر العون والمستند (شهادة عمل، شهادة توظيف، سند عطلة) ثم «تحضير المستند». يملأ Sijil ما يعرفه: الاسم واللقب، الوظيفة، تاريخ الالتحاق، ومن بطاقة الموارد البشرية تاريخ ومكان الميلاد ورقم الضمان الاجتماعي؛ وتأخذ الترويسة الاسم والعنوان والشعار ورقم المستخدِم من الإعداد ← المزوّد. راجع وصحّح وانظر «معاينة» ثم «إنشاء وحفظ في فضاء العون»: يُسمّى ملف PDF ويُصنَّف كمستند مودَع ويُبلَّغ العون. على طلب «للإغلاق» يقوم زر «إعداد المستند» بالأمر نفسه؛ في سند العطلة تأتي التواريخ من الطلب ويُحسب تاريخ الاستئناف وعدد الأيام، ويظهر إطار «تفصيل حساب الحق في العطلة» إذا ملأت أيام الحضور أو الحق أو المتبقّي. مخصّص للمسؤول ولمسؤولي الفرق الذين يرخّص لهم (خانة في بطاقة المسؤول). يخرج المستند دون توقيع ولا ختم: اطبعه للتوقيع أو أودع النسخة الموقّعة بعد ذلك."
+    ],
+    "roles": [
+     "chef",
+     "admin"
+    ]
    }
   ]
  },

@@ -40,3 +40,9 @@ Mettez à jour la version et le commit de référence en tête de ce fichier.
 ## v3.49.0 — table `FichesRH`
 
 Nouvelle table (fiche RH confidentielle des agents) : sur une installation existante, exécutez le `CREATE TABLE` de `FichesRH` qui figure dans `schema.sql` (les autres tables ne changent pas).
+
+
+## v3.50.0 — documents RH préremplis
+
+- Nouvelle colonne `acces_rh` dans la table `Agents` : `ALTER TABLE` à passer sur une installation existante (voir `schema.sql`).
+- Non porté : `Modeles.gs` (certificat de travail, attestation de travail, titre de congé en PDF). La version Apps Script convertit une page HTML en PDF par un service Google ; la version PHP n'a pas d'équivalent. Les appels `modele*` renvoient un message clair. À faire : mise en page avec le générateur PDF de `SheetPdf.php` ou une bibliothèque HTML → PDF.

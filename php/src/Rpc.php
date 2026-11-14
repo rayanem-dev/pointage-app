@@ -12,6 +12,8 @@ final class Rpc {
     private static function nonDispo(string $quoi): Closure { return function () use ($quoi) { throw httpErr($quoi . " : pas encore disponible dans la version PHP / MySQL"); }; }
     private static function filtrerType(array $list, bool $personnesSeules): array { return array_values(array_filter($list, fn($x) => !$personnesSeules || $x['type'] !== 'vehicule')); }
 
+    /** Fonction de la version Apps Script pas encore portée en PHP. */
+    private static function nonPorte() { throw httpErr("L'établissement des documents RH n'est pas encore disponible dans cette version (PHP)"); }
     public static function handlers(): array {
         static $H = null; if ($H) return $H;
         $S = self::STAFF; $W = self::WORKERS; $V = self::VIEWERS; $A = ['admin'];
@@ -170,6 +172,10 @@ final class Rpc {
             'repairStructure' => ['roles' => $A, 'write' => true, 'fn' => fn() => Setup::repairStructure()],
             'vider' => ['roles' => $A, 'write' => true, 'fn' => fn($u, $a) => Setup::vider($a[0] ?? '', $a[1] ?? '')],
             'pointageExport' => ['roles' => $A, 'fn' => fn($u, $a) => Archive::exportXlsx($u, $a[0] ?? [])],
+            // Documents RH préremplis : la mise en page PDF n'existe pas encore dans la version PHP (voir PORT.md)
+            'modeleDonnees' => ['roles' => $S, 'fn' => fn($u, $a) => self::nonPorte()],
+            'modeleApercu' => ['roles' => $S, 'fn' => fn($u, $a) => self::nonPorte()],
+            'modeleGenerer' => ['roles' => $S, 'write' => true, 'fn' => fn($u, $a) => self::nonPorte()],
             'agentsImportAnalyser' => ['roles' => $A, 'fn' => fn($u, $a) => AgentsImport::analyser($u, $a[0] ?? [])],
             'agentsImportAppliquer' => ['roles' => $A, 'write' => true, 'fn' => fn($u, $a) => AgentsImport::appliquer($u, $a[0] ?? [])],
             'ficheRhGet' => ['roles' => $A, 'fn' => fn($u, $a) => AgentsImport::ficheGet($u, $a[0] ?? '')],

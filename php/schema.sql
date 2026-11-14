@@ -27,7 +27,8 @@ CREATE TABLE IF NOT EXISTS `agents` (
   `rotation` VARCHAR(190) NOT NULL,
   `acces_exports` VARCHAR(190) NOT NULL,
   `portee` VARCHAR(190) NOT NULL,
-  `origine` VARCHAR(190) NOT NULL
+  `origine` VARCHAR(190) NOT NULL,
+  `acces_rh` VARCHAR(190) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `contrats` (

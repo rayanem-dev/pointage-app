@@ -741,6 +741,45 @@ function PointerPage() {
 }
 function GroupePage() { var staff = S.user.role === 'admin' || S.user.role === 'chef'; return GridView({ canEdit: staff, canRemark: S.user.role === 'client' || S.user.role === 'agent', exportable: S.user.role !== 'agent', periods: true }).el; } // l'agent consulte son propre pointage (lecture seule)
 
+// ---------- documents RH préremplis (certificat de travail, attestation de travail, titre de congé) ----------
+function peutModeles() { return S.user.role === 'admin' || (S.user.role === 'chef' && S.user.acces_rh === '1'); }
+var MODELES = { certificat_travail: 'Certificat de travail', attestation_travail: 'Attestation de travail', titre_conge: 'Titre de congé' };
+var MODELE_LIB = { numero: 'N° du document (facultatif)', qualite: 'Qualité du signataire', civilite: 'Civilité', nom: 'Nom', prenom: 'Prénom', date_naissance: 'Date de naissance', lieu_naissance: 'Lieu de naissance', nss: 'N° de sécurité sociale', fonction: 'En qualité de (fonction)', date_debut: 'Depuis le', date_fin: 'Au', ville: 'Fait à', date_doc: 'Le', signataire: 'Signature',
+  destination: 'Destination', nature: 'Nature du congé', jours: 'Nombre de jours de congé', reprise: 'Date de reprise', transport: 'Moyen de transport', derniere_reprise: 'Dernière reprise', jours_presence: 'Jours de présence', droit: 'Droit au congé', relicat: 'Reliquat', expiration: 'Expiration du contrat' };
+// Formulaire prérempli par le serveur : l'utilisateur relit, corrige, regarde l'aperçu, puis le PDF est rangé dans l'espace de l'agent. onDone(doc) après génération.
+function modeleForm(agentId, type, demandeId, onDone) {
+  var host = h('div', { class: 'card compact', style: 'margin:8px 0' }, loading());
+  call('modeleDonnees', { agent_id: agentId, type: type, demande_id: demandeId || '' }).then(function (r) {
+    var ins = {}; var m = msgBox(); var DATES = ['date_naissance', 'date_debut', 'date_fin', 'reprise', 'date_doc', 'derniere_reprise', 'expiration']; var NB = ['jours', 'jours_presence', 'droit', 'relicat'];
+    var lib = function (k) { return type === 'titre_conge' && k === 'date_debut' ? 'Date de départ en congé' : type === 'titre_conge' && k === 'fonction' ? 'Fonction' : MODELE_LIB[k]; };
+    var champs = Object.keys(r.champs).map(function (k) {
+      var el = k === 'civilite' ? h('select', null, h('option', { value: 'Monsieur' }, 'Monsieur'), h('option', { value: 'Madame' }, 'Madame')) : h('input', { type: DATES.indexOf(k) >= 0 ? 'date' : NB.indexOf(k) >= 0 ? 'number' : 'text' });
+      el.value = r.champs[k] || ''; ins[k] = el; return field(lib(k), el, /fonction|lieu|destination|transport|nature/.test(k) ? 'grow2' : '');
+    });
+    if (type === 'titre_conge') { // la reprise et le nombre de jours suivent les dates
+      var suit = function () { var a = ins.date_debut.value, b = ins.date_fin.value; if (a && b && b >= a) { ins.jours.value = Math.round((new Date(b) - new Date(a)) / 86400000) + 1; var d = new Date(b + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + 1); ins.reprise.value = d.toISOString().slice(0, 10); } };
+      ins.date_debut.onchange = suit; ins.date_fin.onchange = suit;
+    }
+    var valeurs = function () { var o = {}; Object.keys(ins).forEach(function (k) { o[k] = ins[k].value; }); return { agent_id: agentId, type: type, champs: o }; };
+    var voir = h('button', { type: 'button' }, 'Aperçu'); var go = h('button', { type: 'button', class: 'primary' }, 'Générer et ranger dans l’espace de l’agent'); var non = h('button', { type: 'button' }, 'Annuler');
+    voir.onclick = function () { act(voir, m, function () { return call('modeleApercu', valeurs()); }).then(function (x) { if (x) apercuHtml(r.titre + ' — ' + r.agent.nom, x.html); }); };
+    go.onclick = function () { act(go, m, function () { return call('modeleGenerer', valeurs()); }).then(function (x) { if (x) { host.replaceChildren(h('p', { class: 'msg ok' }, '✓ ' + tr('Document établi et rangé dans l’espace de') + ' ' + x.agent + ' : ' + (x.document.nom_original || x.document.titre || ''))); if (onDone) onDone(x.document); } }); };
+    non.onclick = function () { host.remove(); };
+    host.replaceChildren(h('h3', null, tr(r.titre) + ' — ' + r.agent.nom),
+      r.manque.length ? h('p', { class: 'msg warn' }, tr('Non renseigné dans la fiche de l’agent') + ' : ' + r.manque.map(function (x) { return tr(x); }).join(', ') + '. ' + tr('Complétez ci-dessous (ou dans la fiche RH de l’agent pour les prochaines fois).')) : null,
+      !r.societe.employeur || !r.societe.adresse ? h('p', { class: 'muted' }, tr('En-tête du document : renseignez l’adresse et le n° d’employeur dans Setup → Prestataire.')) : null,
+      h('div', { class: 'row' }, champs), type === 'titre_conge' ? h('p', { class: 'muted' }, 'Le cadre « Détail calcul du droit de congé » n’apparaît que si vous remplissez les jours de présence, le droit ou le reliquat ; le total et le reste sont calculés.') : null,
+      m, h('div', { class: 'sendbar' }, go, voir, non));
+  }).catch(function (e) { host.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
+  return host;
+}
+function apercuHtml(titre, html) {
+  var fr = h('iframe', { sandbox: '', style: 'width:100%;height:100%;border:0;background:#fff' }); fr.srcdoc = html;
+  var close = function () { m.remove(); }; var x = h('button', { type: 'button', class: 'primary', onclick: close }, 'Fermer');
+  var m = h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', onclick: function (e) { if (e.target === m) close(); } }, h('div', { class: 'mbox' }, h('div', { class: 'mhead' }, h('b', null, titre), x), fr));
+  document.body.append(m);
+}
+
 // ---------- demandes ----------
 function DemandesPage() {
   var wrap = h('div', { style: 'display:grid;gap:16px' });
@@ -797,11 +836,13 @@ function DemandesPage() {
     }
     if (d.statut === 'refusee') { ok.onclick = function () { fait(''); }; return h('div', { class: 'sendbar', style: 'margin-top:6px' }, ok, m); }
     var zone = h('div', { style: 'margin-top:6px' }, loading());
+    var etablir = null;
+    if (d.modele && peutModeles()) { etablir = h('button', { type: 'button', class: 'primary' }, tr('Établir le document') + ' (' + tr(MODELES[d.modele]) + ')'); etablir.onclick = function () { etablir.disabled = true; zone.after(modeleForm(d.agent_id, d.modele, d.id, function () { flash = { text: 'Document établi : il est dans l’espace de l’agent, vous pouvez clôturer.', ok: true }; load(); })); }; }
     call('demandeDocuments', d.id).then(function (docs) {
-      if (!docs.length) { zone.replaceChildren(h('p', { class: 'muted' }, tr('Aucun document transmis à l’agent : déposez-le d’abord dans l’onglet Documents, puis revenez clôturer.'))); return; }
+      if (!docs.length) { zone.replaceChildren(h('p', { class: 'muted' }, etablir ? tr('Aucun document transmis à l’agent : établissez-le ici, ou déposez-le dans l’onglet Documents.') : tr('Aucun document transmis à l’agent : déposez-le d’abord dans l’onglet Documents, puis revenez clôturer.')), etablir ? h('div', { class: 'sendbar' }, etablir) : null); return; }
       var sel = h('select', null, h('option', { value: '' }, tr('— choisir le document transmis —')), docs.map(function (x) { return h('option', { value: x.id }, (x.correspond ? '★ ' : '') + x.nom + (x.periode ? ' · ' + x.periode : '')); }));
       ok.onclick = function () { if (!sel.value) { m.show('Choisissez le document transmis à l’agent.', false); return; } fait(sel.value); };
-      zone.replaceChildren(sel, h('div', { class: 'sendbar', style: 'margin-top:6px' }, ok), m);
+      zone.replaceChildren(sel, h('div', { class: 'sendbar', style: 'margin-top:6px' }, ok, etablir), m);
     }).catch(function (e) { zone.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
     return zone;
   }
@@ -1207,10 +1248,19 @@ function DocumentsPage() {
       zone, h('div', { style: 'display:grid;gap:6px;margin:10px 0' }, h('label', { class: 'inline' }, autoAgent, ' Reconnaître l’agent automatiquement'),
         h('label', { class: 'inline' }, localChk, ' Lire et renommer les fichiers sur mon PC avant l’envoi (rien n’est envoyé tant que vous n’avez pas validé)'),
         h('label', { class: 'inline' }, pdfChk, ' Convertir les images (photos, scans JPG ou PNG) en PDF')), upBox);
-    wrap.append(form, lcard, queue);
+    var rhCard = null;
+    if (peutModeles()) {
+      var rhAgent = h('select', null); var rhType = h('select', null, Object.keys(MODELES).map(function (k) { return h('option', { value: k }, MODELES[k]); })); var rhZone = h('div');
+      var rhGo = h('button', { type: 'button', class: 'primary' }, 'Préparer le document');
+      rhGo.onclick = function () { if (!rhAgent.value) return; rhZone.replaceChildren(modeleForm(rhAgent.value, rhType.value, '', function () { sel.value = rhAgent.value; loadList(); })); };
+      rhCard = h('section', { class: 'card' }, h('h2', null, 'Établir un document RH'),
+        h('p', { class: 'muted' }, 'Certificat de travail, attestation de travail ou titre de congé : Sijil remplit le document avec les renseignements de l’agent (identité, naissance, n° de sécurité sociale, fonction, dates). Vous relisez, puis le PDF est rangé dans son espace.'),
+        h('div', { class: 'row' }, field('Agent', rhAgent, 'grow2'), field('Document', rhType)), h('div', { class: 'sendbar' }, rhGo), rhZone);
+    }
+    wrap.append(form, lcard, queue); if (rhCard) wrap.append(rhCard);
     sel.onchange = loadList;
     call('agentsVisible', true).then(function (agents) {
-      agentsAll = agents;
+      agentsAll = agents; if (rhCard) rhAgent.replaceChildren.apply(rhAgent, agents.filter(function (a) { return a.type !== 'vehicule'; }).map(function (a) { return h('option', { value: a.id }, a.nom); }));
       sel.replaceChildren.apply(sel, agents.map(function (a) { return h('option', { value: a.id }, a.nom); })); loadList();
       call('depotList').then(function (rows) { Q = rows; rows.forEach(function (r) { if (r.pret && !r.doublon_exact) chk[r.id] = true; }); drawQueue(); }).catch(function () {});
     });
@@ -1227,8 +1277,8 @@ function AgentsPage() {
   var eff = { contrats: [], strict: true, rotation: {} }; var agents = []; var editing = null; var flash = null; var accessSend = true; var lastAccess = null; // accessSend : envoyer les accès par e-mail à la création ; lastAccess : dernier compte créé
   var st = blank();
   var formHost = h('div'); var listHost = h('div');
-  function blank() { return { type: 'personne', nom: '', email: '', role: 'agent', fonction: '', affectation: '', contrat: S.user.role === 'chef' ? (S.user.contrat || '') : '', chef_id: '', acces_setup: false, acces_exports: false, password: '', rotation: '' }; }
-  function fromAgent(a) { return { type: a.type === 'vehicule' ? 'vehicule' : 'personne', nom: a.nom, email: a.email, role: a.role, fonction: a.fonction, affectation: a.affectation, contrat: a.contrat, chef_id: a.chef_id, acces_setup: a.acces_setup === '1', acces_exports: a.acces_exports === '1', password: '', rotation: a.rotation || '' }; }
+  function blank() { return { type: 'personne', nom: '', email: '', role: 'agent', fonction: '', affectation: '', contrat: S.user.role === 'chef' ? (S.user.contrat || '') : '', chef_id: '', acces_setup: false, acces_exports: false, acces_rh: false, password: '', rotation: '' }; }
+  function fromAgent(a) { return { type: a.type === 'vehicule' ? 'vehicule' : 'personne', nom: a.nom, email: a.email, role: a.role, fonction: a.fonction, affectation: a.affectation, contrat: a.contrat, chef_id: a.chef_id, acces_setup: a.acces_setup === '1', acces_exports: a.acces_exports === '1', acces_rh: a.acces_rh === '1', password: '', rotation: a.rotation || '' }; }
   function load() {
     Promise.all([call('agentsManage'), call('contratsLite')]).then(function (r) { agents = r[0]; eff = r[1]; drawForm(); drawList(); if (isAdmin && !importHost.firstChild) importHost.replaceChildren(importCard()); })
       .catch(function (e) { listHost.replaceChildren(h('p', { class: 'msg err' }, e.message)); });
@@ -1271,6 +1321,7 @@ function AgentsPage() {
     var rot = rotationPicker(st.rotation, true, 'Par défaut (' + eff.rotation.travail + '/' + eff.rotation.repos + ')', function (v) { st.rotation = v; });
     var setup = h('input', { type: 'checkbox', checked: st.acces_setup }); setup.addEventListener('change', function () { st.acces_setup = setup.checked; });
     var exps = h('input', { type: 'checkbox', checked: st.acces_exports }); exps.addEventListener('change', function () { st.acces_exports = exps.checked; });
+    var rhs = h('input', { type: 'checkbox', checked: st.acces_rh }); rhs.addEventListener('change', function () { st.acces_rh = rhs.checked; });
     var pw = bind(h('input', { minlength: 6, value: st.password, placeholder: 'généré automatiquement si vide' }), 'password');
     var box = msgBox(); var btn = h('button', { class: 'primary' }, editing ? 'Enregistrer' : (vh ? 'Ajouter le véhicule' : "Créer l'agent"));
     if (flash) { box.show(flash, true); flash = null; }
@@ -1278,7 +1329,7 @@ function AgentsPage() {
       ev.preventDefault();
       var data = { type: st.type, nom: st.nom, fonction: st.fonction, affectation: st.affectation, contrat: st.contrat, rotation: vh ? '' : st.rotation };
       if (!vh) data.email = st.email;
-      if (isAdmin) { data.chef_id = st.chef_id; if (!vh) { data.role = st.role; data.acces_setup = st.acces_setup; data.acces_exports = st.acces_exports; } }
+      if (isAdmin) { data.chef_id = st.chef_id; if (!vh) { data.role = st.role; data.acces_setup = st.acces_setup; data.acces_exports = st.acces_exports; data.acces_rh = st.acces_rh; } }
       if (!editing && !vh) data.password = st.password;
       var wantMail = !editing && !vh && accessSend;
       act(btn, box, function () { return editing ? call('agentUpdate', editing.id, data) : call('agentCreate', data); }, function (r) {
@@ -1297,6 +1348,7 @@ function AgentsPage() {
       st.role === 'client' && !vh ? h('p', { class: 'msg warn' }, "Compte de consultation du client : il suit le pointage, les contrats, les attachements et les factures validés (PDF), sans rien modifier et sans accès au Setup, aux demandes ni aux documents des agents. Le n° de contrat ci-dessus limite ce qu'il voit (vide = tout).") : null,
       (isAdmin && !vh) ? h('label', { class: 'inline' }, setup, " Autoriser l'accès à l'onglet Setup (responsable d’équipe uniquement)") : null,
       (isAdmin && !vh) ? h('label', { class: 'inline' }, exps, " Autoriser l'extraction de l'attachement et de la facture (responsable d’équipe uniquement ; la fiche de pointage est toujours permise)") : null,
+      (isAdmin && !vh) ? h('label', { class: 'inline' }, rhs, " Autoriser l'établissement des documents RH : certificat et attestation de travail, titre de congé (responsable d’équipe uniquement ; il voit alors la naissance et le n° de sécurité sociale de l'agent concerné)") : null,
       (editing || vh) ? null : field('Mot de passe initial', pw),
       (editing || vh) ? null : h('label', { class: 'inline' }, (function () { var c = h('input', { type: 'checkbox', checked: accessSend }); c.onchange = function () { accessSend = c.checked; }; return c; })(), " Envoyer ses accès par e-mail à la création (lien, identifiant, mot de passe provisoire)"),
       lastAccess && !editing ? (function () {

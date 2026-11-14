@@ -54,17 +54,20 @@ var Demandes = (function () {
     o.cloturee = !!d.date_cloture; o.etapes = etapes(d, ctx);
     var doc = d.document_id && ctx.docs[d.document_id]; o.document = doc ? { id: doc.id, nom: doc.nom_original || doc.titre, type: doc.type, periode: doc.periode || '' } : null;
     o.a_cloturer = REPONSES.indexOf(d.statut) >= 0 && !d.date_cloture;
-    if (o.a_cloturer) o.doc_propose = docPropose(d, ctx);
+    if (o.a_cloturer) { o.doc_propose = docPropose(d, ctx); var mv = docVoulu(d); o.modele = Modeles.TYPES[mv] ? mv : ''; } // modele : document que Sijil sait établir lui-même (certificat, attestation, titre de congé)
     var hid = handlerId(a, agentsById); o.responsable_nom = hid === 'admin' ? '' : (agentsById[hid] || {}).nom || ''; // qui traite : le responsable d'équipe de l'agent, sinon l'administrateur
     return o;
   }
   // Titre de congé : date de reprise = fin du congé + 1 jour ; sans date de fin, départ + durée du repos de la rotation de l'agent (ex. 16/10 + 28 j = 13/11).
   // Document déjà transmis à l'agent pour cette demande (même type, déposé depuis la demande, le plus récent) : proposé tel quel à la clôture, par n'importe quel responsable, qu'il l'ait déposé lui-même ou non.
-  function docPropose(d, ctx) {
+  // Type de document attendu pour une demande ; un type ajouté sans document attendu est retrouvé par son libellé (« Certificat de travail » → certificat_travail).
+  function docVoulu(d) {
     var voulu = docDe(d.type);
-    if (!voulu) { // type ajouté sans document attendu : on le retrouve par son libellé (« Certificat de travail » → certificat_travail)
-      var lib = Format.norm(T[d.type] || ''); Object.keys(CFG.TYPES_DOC).forEach(function (k) { var l = Format.norm(CFG.TYPES_DOC[k]); if (!voulu && l && lib && (lib === l || lib.indexOf(l) >= 0)) voulu = k; });
-    }
+    if (!voulu) { var lib = Format.norm(T[d.type] || ''); Object.keys(CFG.TYPES_DOC).forEach(function (k) { var l = Format.norm(CFG.TYPES_DOC[k]); if (!voulu && l && lib && (lib === l || lib.indexOf(l) >= 0)) voulu = k; }); }
+    return voulu;
+  }
+  function docPropose(d, ctx) {
+    var voulu = docVoulu(d);
     var apres = (ctx.parAgent[d.agent_id] || []).filter(function (x) { return String(x.date || '') >= String(d.date_creation || ''); }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
     if (!voulu) { var un = apres.length === 1 ? apres[0] : null; return un ? { id: un.id, nom: un.nom_original || un.titre, periode: un.periode || '', depose_par: un.depose_par || '', date: un.date || '' } : null; }
     var ok = (ctx.parAgent[d.agent_id] || []).filter(function (x) { return x.type === voulu && String(x.date || '') >= String(d.date_creation || ''); }).sort(function (a, b) { return a.date < b.date ? 1 : -1; })[0];

@@ -51,7 +51,7 @@ final class Agents {
             'id' => newId('A'), 'nom' => $nom, 'fonction' => $fonction, 'affectation' => trim((string)($data['affectation'] ?? '')),
             'contrat' => trim((string)($data['contrat'] ?? '')), 'email' => $email, 'role' => $role,
             'chef_id' => $isAdmin ? (string)($data['chef_id'] ?? '') : $user['id'], 'actif' => '1',
-            'acces_setup' => $isAdmin && $role === 'chef' && !empty($data['acces_setup']) ? '1' : '0', 'acces_exports' => $isAdmin && $role === 'chef' && !empty($data['acces_exports']) ? '1' : '0',
+            'acces_setup' => $isAdmin && $role === 'chef' && !empty($data['acces_setup']) ? '1' : '0', 'acces_exports' => $isAdmin && $role === 'chef' && !empty($data['acces_exports']) ? '1' : '0', 'acces_rh' => $isAdmin && $role === 'chef' && !empty($data['acces_rh']) ? '1' : '0',
             'password_hash' => $cred['password_hash'], 'salt' => $cred['salt'], 'date_entree' => (string)($data['date_entree'] ?? ''), 'type' => $type, 'rotation' => $isVh ? '' : self::normRotation($data['rotation'] ?? ''),
         ];
         Store::writeTable('Agents', array_merge($all, [$agent]));
@@ -106,7 +106,8 @@ final class Agents {
             }
             if (isset($data['acces_setup'])) $a['acces_setup'] = self::flag($data['acces_setup']);
             if (isset($data['acces_exports'])) $a['acces_exports'] = self::flag($data['acces_exports']);
-            if ($a['role'] !== 'chef') { $a['acces_setup'] = '0'; $a['acces_exports'] = '0'; }
+            if (isset($data['acces_rh'])) $a['acces_rh'] = self::flag($data['acces_rh']);
+            if ($a['role'] !== 'chef') { $a['acces_setup'] = '0'; $a['acces_exports'] = '0'; $a['acces_rh'] = '0'; }
         }
         if ($a['role'] !== 'admin' && $a['actif'] === '1' && ($a['contrat'] !== $before['contrat'] || $a['fonction'] !== $before['fonction'] || $before['actif'] !== '1')) $a['fonction'] = Contrats::checkAffectation($a, $a['id'], $all);
         $copy = $a; unset($a);

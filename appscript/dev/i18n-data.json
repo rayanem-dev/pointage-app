@@ -7138,5 +7138,245 @@
   "Aucun responsable : donnez d’abord le rôle « Responsable d’équipe » à une personne (liste Rôle, à gauche).",
   "No manager yet: first give the \"Team manager\" role to someone (Role list, on the left).",
   "لا يوجد مسؤول: امنح أولًا دور «مسؤول الفريق» لشخص (قائمة الدور على اليسار)."
+ ],
+ [
+  "Réservé à l'administrateur et aux responsables autorisés",
+  "Reserved to the administrator and authorised managers",
+  "مخصّص للمسؤول والمسؤولين المرخَّص لهم"
+ ],
+ [
+  "Un véhicule n'a pas de documents RH",
+  "A vehicle has no HR documents",
+  "المركبة ليست لها وثائق إدارية"
+ ],
+ [
+  "La date de fin précède la date de départ",
+  "The end date is before the departure date",
+  "تاريخ النهاية يسبق تاريخ المغادرة"
+ ],
+ [
+  "N° d'employeur (documents RH)",
+  "Employer no. (HR documents)",
+  "رقم المستخدِم (الوثائق الإدارية)"
+ ],
+ [
+  "Établir un document RH",
+  "Draw up an HR document",
+  "إعداد وثيقة إدارية"
+ ],
+ [
+  "Certificat de travail, attestation de travail ou titre de congé : Sijil remplit le document avec les renseignements de l’agent (identité, naissance, n° de sécurité sociale, fonction, dates). Vous relisez, puis le PDF est rangé dans son espace.",
+  "Work certificate, employment attestation or leave permit: Sijil fills in the document with the agent's details (identity, birth, social security no., position, dates). You review it, then the PDF is filed in the agent's space.",
+  "شهادة عمل أو شهادة توظيف أو سند عطلة: يملأ Sijil المستند بمعلومات العون (الهوية، الميلاد، رقم الضمان الاجتماعي، الوظيفة، التواريخ). تراجعه ثم يُحفظ ملف PDF في فضائه."
+ ],
+ [
+  "Document",
+  "Document",
+  "المستند"
+ ],
+ [
+  "Préparer le document",
+  "Prepare the document",
+  "تحضير المستند"
+ ],
+ [
+  "Certificat de travail",
+  "Work certificate",
+  "شهادة عمل"
+ ],
+ [
+  "Certificat de Travail",
+  "Work certificate",
+  "شهادة عمل"
+ ],
+ [
+  "Attestation de Travail",
+  "Employment attestation",
+  "شهادة توظيف"
+ ],
+ [
+  "Générer et ranger dans l’espace de l’agent",
+  "Generate and file in the agent's space",
+  "إنشاء وحفظ في فضاء العون"
+ ],
+ [
+  "Document établi et rangé dans l’espace de",
+  "Document drawn up and filed in the space of",
+  "أُعدّ المستند وحُفظ في فضاء"
+ ],
+ [
+  "Non renseigné dans la fiche de l’agent",
+  "Missing from the agent's record",
+  "غير مُدخل في بطاقة العون"
+ ],
+ [
+  "Complétez ci-dessous (ou dans la fiche RH de l’agent pour les prochaines fois).",
+  "Fill in below (or in the agent's HR sheet for next time).",
+  "أكمل أدناه (أو في بطاقة الموارد البشرية للعون للمرات القادمة)."
+ ],
+ [
+  "En-tête du document : renseignez l’adresse et le n° d’employeur dans Setup → Prestataire.",
+  "Document header: enter the address and employer no. in Setup → Provider.",
+  "ترويسة المستند: أدخل العنوان ورقم المستخدِم في الإعداد ← المزوّد."
+ ],
+ [
+  "Le cadre « Détail calcul du droit de congé » n’apparaît que si vous remplissez les jours de présence, le droit ou le reliquat ; le total et le reste sont calculés.",
+  "The \"Leave entitlement calculation\" box only appears if you fill in days present, entitlement or carry-over; total and balance are calculated.",
+  "لا يظهر إطار «تفصيل حساب الحق في العطلة» إلا إذا ملأت أيام الحضور أو الحق أو المتبقّي؛ يُحسب المجموع والباقي."
+ ],
+ [
+  "Établir le document",
+  "Draw up the document",
+  "إعداد المستند"
+ ],
+ [
+  "Document établi : il est dans l’espace de l’agent, vous pouvez clôturer.",
+  "Document drawn up: it is in the agent's space, you can close the request.",
+  "أُعدّ المستند: هو في فضاء العون ويمكنك الإغلاق."
+ ],
+ [
+  "Aucun document transmis à l’agent : établissez-le ici, ou déposez-le dans l’onglet Documents.",
+  "No document sent to the agent: draw it up here, or upload it in the Documents tab.",
+  "لا يوجد مستند مُرسَل إلى العون: أعدّه هنا أو أودعه في تبويب المستندات."
+ ],
+ [
+  " Autoriser l'établissement des documents RH : certificat et attestation de travail, titre de congé (responsable d’équipe uniquement ; il voit alors la naissance et le n° de sécurité sociale de l'agent concerné)",
+  " Allow drawing up HR documents: work certificate, employment attestation, leave permit (team manager only; they then see the birth details and social security no. of the agent concerned)",
+  " السماح بإعداد الوثائق الإدارية: شهادة العمل وشهادة التوظيف وسند العطلة (لمسؤول الفريق فقط؛ يرى حينها ميلاد العون المعني ورقم ضمانه الاجتماعي)"
+ ],
+ [
+  "N° du document (facultatif)",
+  "Document no. (optional)",
+  "رقم المستند (اختياري)"
+ ],
+ [
+  "Qualité du signataire",
+  "Signatory's title",
+  "صفة الموقّع"
+ ],
+ [
+  "Civilité",
+  "Title",
+  "اللقب"
+ ],
+ [
+  "Monsieur",
+  "Mr",
+  "السيد"
+ ],
+ [
+  "Madame",
+  "Mrs",
+  "السيدة"
+ ],
+ [
+  "N° de sécurité sociale",
+  "Social security no.",
+  "رقم الضمان الاجتماعي"
+ ],
+ [
+  "En qualité de (fonction)",
+  "As (position)",
+  "بصفة (الوظيفة)"
+ ],
+ [
+  "Depuis le",
+  "Since",
+  "منذ"
+ ],
+ [
+  "Fait à",
+  "Done at",
+  "حُرّر في"
+ ],
+ [
+  "Le",
+  "On",
+  "بتاريخ"
+ ],
+ [
+  "Signature",
+  "Signature",
+  "التوقيع"
+ ],
+ [
+  "Destination",
+  "Destination",
+  "الوجهة"
+ ],
+ [
+  "Nature du congé",
+  "Type of leave",
+  "طبيعة العطلة"
+ ],
+ [
+  "Nombre de jours de congé",
+  "Number of leave days",
+  "عدد أيام العطلة"
+ ],
+ [
+  "Date de reprise",
+  "Return date",
+  "تاريخ الاستئناف"
+ ],
+ [
+  "Moyen de transport",
+  "Means of transport",
+  "وسيلة النقل"
+ ],
+ [
+  "Dernière reprise",
+  "Last return",
+  "آخر استئناف"
+ ],
+ [
+  "Jours de présence",
+  "Days present",
+  "أيام الحضور"
+ ],
+ [
+  "Droit au congé",
+  "Leave entitlement",
+  "الحق في العطلة"
+ ],
+ [
+  "Reliquat",
+  "Carry-over",
+  "المتبقّي"
+ ],
+ [
+  "Expiration du contrat",
+  "Contract expiry",
+  "انتهاء العقد"
+ ],
+ [
+  "Date de départ en congé",
+  "Leave departure date",
+  "تاريخ الخروج في عطلة"
+ ],
+ [
+  "date de naissance",
+  "date of birth",
+  "تاريخ الميلاد"
+ ],
+ [
+  "lieu de naissance",
+  "place of birth",
+  "مكان الميلاد"
+ ],
+ [
+  "n° de sécurité sociale",
+  "social security no.",
+  "رقم الضمان الاجتماعي"
+ ],
+ [
+  "date d'entrée",
+  "start date",
+  "تاريخ الالتحاق"
+ ],
+ [
+  "À compléter : ",
+  "To complete: ",
+  "يجب إكمال: "
  ]
 ]

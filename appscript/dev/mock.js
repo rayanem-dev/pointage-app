@@ -81,7 +81,7 @@ function makeEnv() {
   };
   const store = (obj) => ({ get: (k) => (k in obj ? obj[k] : null), put: (k, v) => { obj[k] = String(v); }, remove: (k) => { delete obj[k]; }, setProperty: (k, v) => { obj[k] = String(v); }, getProperty: (k) => (k in obj ? obj[k] : null), getProperties: () => Object.assign({}, obj), deleteProperty: (k) => { delete obj[k]; } });
   const bytesOf = (x) => (Buffer.isBuffer(x) ? x : Array.isArray(x) ? Buffer.from(x.map((n) => n & 255)) : Buffer.from(String(x)));
-  const mkBlob = (bytes, mime, name) => ({ getBytes: () => Array.from(bytesOf(bytes)), getDataAsString: () => bytesOf(bytes).toString('utf8'), getContentType: () => mime, getName: () => name, setName() {}, getAs: (m) => mkBlob(bytes, m, String(name).replace(/\.[^.]+$/, '') + (m === 'application/pdf' ? '.pdf' : '')) });
+  const mkBlob = (bytes, mime, name) => ({ getBytes: () => Array.from(bytesOf(bytes)), getDataAsString: () => bytesOf(bytes).toString('utf8'), getContentType: () => mime, getName: () => name, setName() {}, getAs: (m) => mkBlob(m === 'application/pdf' && !String(bytesOf(bytes).slice(0, 4)).startsWith('%PDF') && /html/.test(mime || '') ? Buffer.concat([Buffer.from('%PDF-1.4\n'), bytesOf(bytes)]) : bytes, m, String(name).replace(/\.[^.]+$/, '') + (m === 'application/pdf' ? '.pdf' : '')) });
   const Utilities = {
     getUuid: () => crypto.randomUUID(),
     sleep: () => {},
